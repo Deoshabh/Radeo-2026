@@ -34,22 +34,30 @@ initializeBucket()
     console.warn("⚠️  Image upload features will not work");
     console.warn(
       "⚠️  Please ensure MinIO is running at:",
-      process.env.MINIO_ENDPOINT || "localhost:9000"
+      process.env.MINIO_ENDPOINT || "localhost:9000",
     );
   });
 
 /* =====================
    Middleware
 ===================== */
-app.use(express.json());
-app.use(cookieParser());
-
+// CORS must be configured BEFORE routes
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin:
+      process.env.CORS_ORIGIN || process.env.CLIENT_URL || "https://radeo.in",
     credentials: true,
-  })
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    optionsSuccessStatus: 200,
+  }),
 );
+
+// Handle preflight requests explicitly
+app.options("*", cors());
+
+app.use(express.json());
+app.use(cookieParser());
 
 // Rate limiter (basic protection)
 // Increased limits for development - adjust for production
@@ -59,7 +67,7 @@ app.use(
     max: 1000, // Increased from 100 to 1000 requests per window
     standardHeaders: true,
     legacyHeaders: false,
-  })
+  }),
 );
 
 /* =====================
@@ -122,6 +130,11 @@ app.use((err, req, res, next) => {
    Server Start
 ===================== */
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+const HOST = "0.0.0.0"; // Listen on all interfaces for Traefik
+
+app.listen(PORT, HOST, () => {
+  console.log(`🚀 Server running on http://${HOST}:${PORT}`);
+  console.log(
+    `📡 CORS enabled for: ${process.env.CORS_ORIGIN || process.env.CLIENT_URL || "https://radeo.in"}`,
+  );
 });
