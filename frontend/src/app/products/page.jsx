@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { productAPI, categoryAPI } from '@/utils/api';
 import ProductCard from '@/components/ProductCard';
 import { FiFilter, FiX } from 'react-icons/fi';
 
-export default function ProductsPage() {
+function ProductsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -387,5 +387,21 @@ export default function ProductsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-primary-50 pt-24">
+        <div className="container-custom section-padding">
+          <div className="flex justify-center items-center py-20">
+            <div className="spinner"></div>
+          </div>
+        </div>
+      </div>
+    }>
+      <ProductsContent />
+    </Suspense>
   );
 }
