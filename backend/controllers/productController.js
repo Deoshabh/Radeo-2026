@@ -17,7 +17,10 @@ exports.getAllProducts = async (req, res) => {
       query.category = category.toLowerCase();
     }
 
+    console.log("📦 Fetching products with query:", query);
     const products = await Product.find(query).sort({ createdAt: -1 });
+    console.log(`✅ Found ${products.length} products`);
+
     res.json(products);
   } catch (error) {
     console.error("Get products error:", error);

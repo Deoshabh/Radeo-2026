@@ -5,7 +5,11 @@ const Product = require("../models/Product");
 // @access  Private/Admin
 exports.getAllProducts = async (req, res) => {
   try {
+    console.log("📦 Admin: Fetching all products...");
     const products = await Product.find({}).sort({ createdAt: -1 });
+    console.log(
+      `✅ Admin: Found ${products.length} products (including inactive)`,
+    );
     res.json(products);
   } catch (error) {
     console.error("Get all products error:", error);
@@ -185,6 +189,15 @@ exports.createProduct = async (req, res) => {
       images: parsedImages,
       featured: featured || false,
       isActive: isActive !== undefined ? isActive : true,
+    });
+
+    console.log("✅ Product created successfully:", {
+      id: product._id,
+      name: product.name,
+      slug: product.slug,
+      isActive: product.isActive,
+      featured: product.featured,
+      category: product.category,
     });
 
     res.status(201).json(product);
