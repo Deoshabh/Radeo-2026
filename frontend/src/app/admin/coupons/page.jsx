@@ -140,7 +140,7 @@ export default function CouponsPage() {
 
   const handleToggleStatus = async (id, currentStatus) => {
     try {
-      await adminAPI.updateCoupon(id, { isActive: !currentStatus });
+      await adminAPI.toggleCouponStatus(id);
       toast.success('Coupon status updated');
       fetchCoupons();
     } catch (error) {

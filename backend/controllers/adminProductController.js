@@ -46,9 +46,16 @@ exports.createProduct = async (req, res) => {
       shippingAndReturns,
       category,
       price,
+      comparePrice,
+      brand,
+      sku,
+      stock,
       sizes,
+      colors,
+      tags,
       images,
       featured,
+      isActive,
     } = req.body;
 
     // Validate required fields
@@ -76,9 +83,16 @@ exports.createProduct = async (req, res) => {
       shippingAndReturns: shippingAndReturns || "",
       category,
       price,
+      comparePrice,
+      brand,
+      sku,
+      stock: stock || 0,
       sizes: sizes || [],
+      colors: colors || [],
+      tags: tags || [],
       images: images || [],
       featured: featured || false,
+      isActive: isActive !== undefined ? isActive : true,
     });
 
     res.status(201).json(product);

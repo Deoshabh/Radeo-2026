@@ -135,7 +135,7 @@ export default function CategoriesPage() {
 
   const handleToggleStatus = async (id, currentStatus) => {
     try {
-      await adminAPI.updateCategory(id, { isActive: !currentStatus });
+      await adminAPI.toggleCategoryStatus(id);
       toast.success('Category status updated');
       fetchCategories();
     } catch (error) {

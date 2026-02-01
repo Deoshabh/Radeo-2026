@@ -40,12 +40,29 @@ const productSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    comparePrice: {
+      type: Number,
+    },
+    brand: {
+      type: String,
+      trim: true,
+    },
+    sku: {
+      type: String,
+      trim: true,
+    },
+    stock: {
+      type: Number,
+      default: 0,
+    },
     sizes: [
       {
         size: String,
         stock: Number,
       },
     ],
+    colors: [String],
+    tags: [String],
     images: [
       {
         url: {
@@ -79,7 +96,7 @@ const productSchema = new mongoose.Schema(
       default: false,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Product", productSchema);

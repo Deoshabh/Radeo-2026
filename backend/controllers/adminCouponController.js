@@ -96,6 +96,96 @@ exports.toggleCouponStatus = async (req, res) => {
   }
 };
 
+// @desc    Update a coupon
+// @route   PATCH /api/v1/admin/coupons/:id
+// @access  Private/Admin
+exports.updateCoupon = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { code, type, value, minOrder, expiry, isActive } = req.body;
+
+    const coupon = await Coupon.findById(id);
+    if (!coupon) {
+      return res.status(404).json({ message: "Coupon not found" });
+    }
+
+    // Validate type if provided
+    if (type && !["flat", "percent"].includes(type)) {
+      return res
+        .status(400)
+        .json({ message: "Type must be 'flat' or 'percent'" });
+    }
+
+    // Validate value if provided
+    if (value !== undefined) {
+      if (value <= 0) {
+        return res
+          .status(400)
+          .json({ message: "Value must be greater than 0" });
+      }
+      if (type === "percent" && value > 100) {
+        return res
+          .status(400)
+          .json({ message: "Percentage cannot exceed 100" });
+      }
+    }
+
+    // Validate expiry if provided
+    if (expiry) {
+      const expiryDate = new Date(expiry);
+      if (expiryDate <= new Date()) {
+        return res
+          .status(400)
+          .json({ message: "Expiry date must be in the future" });
+      }
+      coupon.expiry = expiryDate;
+    }
+
+    // Check if new code conflicts with another coupon
+    if (code && code.toUpperCase() !== coupon.code) {
+      const existingCoupon = await Coupon.findOne({
+        _id: { $ne: id },
+        code: code.toUpperCase(),
+      });
+      if (existingCoupon) {
+        return res.status(400).json({ message: "Coupon code already exists" });
+      }
+      coupon.code = code.toUpperCase();
+    }
+
+    if (type) coupon.type = type;
+    if (value !== undefined) coupon.value = value;
+    if (minOrder !== undefined) coupon.minOrder = minOrder;
+    if (isActive !== undefined) coupon.isActive = isActive;
+
+    await coupon.save();
+    res.json(coupon);
+  } catch (error) {
+    console.error("Update coupon error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// @desc    Delete a coupon
+// @route   DELETE /api/v1/admin/coupons/:id
+// @access  Private/Admin
+exports.deleteCoupon = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const coupon = await Coupon.findById(id);
+    if (!coupon) {
+      return res.status(404).json({ message: "Coupon not found" });
+    }
+
+    await coupon.deleteOne();
+    res.json({ message: "Coupon deleted successfully" });
+  } catch (error) {
+    console.error("Delete coupon error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 // @desc    Validate and apply coupon
 // @route   POST /api/v1/coupons/validate
 // @access  Public

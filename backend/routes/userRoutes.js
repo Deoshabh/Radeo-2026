@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const { authenticate } = require("../middleware/auth");
 const {
+  getProfile,
+  updateProfile,
   getAddresses,
   addAddress,
   updateAddress,
@@ -10,6 +12,8 @@ const {
 } = require("../controllers/userController");
 
 // All routes are protected
+router.get("/profile", authenticate, getProfile);
+router.patch("/profile", authenticate, updateProfile);
 router.get("/addresses", authenticate, getAddresses);
 router.post("/addresses", authenticate, addAddress);
 router.patch("/addresses/:id", authenticate, updateAddress);

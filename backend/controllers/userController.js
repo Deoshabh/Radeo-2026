@@ -1,5 +1,65 @@
 const User = require("../models/User");
 
+// GET /api/v1/user/profile
+exports.getProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error("Get profile error:", error);
+    res
+      .status(500)
+      .json({ message: "Failed to fetch profile", error: error.message });
+  }
+};
+
+// PATCH /api/v1/user/profile
+exports.updateProfile = async (req, res) => {
+  try {
+    const { name, email, phone } = req.body;
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if email is being changed and if it's already taken
+    if (email && email !== user.email) {
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ message: "Email already in use" });
+      }
+      user.email = email;
+    }
+
+    if (name) user.name = name;
+    if (phone) user.phone = phone;
+
+    await user.save();
+
+    res.json({
+      message: "Profile updated successfully",
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error("Update profile error:", error);
+    res
+      .status(500)
+      .json({ message: "Failed to update profile", error: error.message });
+  }
+};
+
 // GET /api/v1/user/addresses
 exports.getAddresses = async (req, res) => {
   try {

@@ -116,13 +116,14 @@ export const orderAPI = {
 export const addressAPI = {
   getAddresses: () => api.get("/addresses"),
   addAddress: (data) => api.post("/addresses", data),
-  updateAddress: (id, data) => api.put(`/addresses/${id}`, data),
+  updateAddress: (id, data) => api.patch(`/addresses/${id}`, data),
   deleteAddress: (id) => api.delete(`/addresses/${id}`),
+  setDefaultAddress: (id) => api.patch(`/addresses/${id}/default`),
 };
 
 export const userAPI = {
   getProfile: () => api.get("/user/profile"),
-  updateProfile: (data) => api.put("/user/profile", data),
+  updateProfile: (data) => api.patch("/user/profile", data),
 };
 
 export const couponAPI = {
@@ -148,25 +149,31 @@ export const adminAPI = {
   getAllOrders: (params) => api.get("/admin/orders", { params }),
   getOrderById: (id) => api.get(`/admin/orders/${id}`),
   updateOrderStatus: (id, status) =>
-    api.patch(`/admin/orders/${id}/status`, { status }),
+    api.patch(`/admin/orders/${id}`, { status }),
 
   // Users
   getAllUsers: (params) => api.get("/admin/users", { params }),
   getUserById: (id) => api.get(`/admin/users/${id}`),
   updateUserRole: (id, role) => api.patch(`/admin/users/${id}/role`, { role }),
-  toggleUserStatus: (id) => api.patch(`/admin/users/${id}/toggle`),
+  toggleUserBlock: (id) => api.patch(`/admin/users/${id}/toggle-block`),
 
   // Categories
   getAllCategories: () => api.get("/admin/categories"),
   createCategory: (data) => api.post("/admin/categories", data),
-  updateCategory: (id, data) => api.put(`/admin/categories/${id}`, data),
+  updateCategory: (id, data) => api.patch(`/admin/categories/${id}`, data),
   deleteCategory: (id) => api.delete(`/admin/categories/${id}`),
+  toggleCategoryStatus: (id) => api.patch(`/admin/categories/${id}/toggle`),
 
   // Coupons
   getAllCoupons: () => api.get("/admin/coupons"),
   createCoupon: (data) => api.post("/admin/coupons", data),
-  updateCoupon: (id, data) => api.put(`/admin/coupons/${id}`, data),
+  updateCoupon: (id, data) => api.patch(`/admin/coupons/${id}`, data),
   deleteCoupon: (id) => api.delete(`/admin/coupons/${id}`),
+  toggleCouponStatus: (id) => api.patch(`/admin/coupons/${id}/toggle`),
+
+  // Media
+  getUploadUrl: (data) => api.post("/admin/media/upload-url", data),
+  deleteMedia: (key) => api.delete("/admin/media", { data: { key } }),
 
   // Stats
   getStats: () => api.get("/admin/stats"),

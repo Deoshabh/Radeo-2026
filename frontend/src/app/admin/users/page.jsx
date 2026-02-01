@@ -55,7 +55,7 @@ export default function AdminUsersPage() {
 
   const handleToggleStatus = async (userId) => {
     try {
-      await adminAPI.toggleUserStatus(userId);
+      await adminAPI.toggleUserBlock(userId);
       toast.success('User status updated successfully');
       fetchUsers();
     } catch (error) {

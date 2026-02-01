@@ -114,32 +114,97 @@ export default function NewProductPage() {
       return;
     }
     
+    if (!formData.slug) {
+      toast.error('Product slug is required');
+      return;
+    }
+    
     setLoading(true);
     
     try {
-      // Create FormData for file upload
-      const data = new FormData();
+      // Step 1: Upload images to MinIO
+      toast.loading('Uploading images...', { id: 'upload' });
+      const uploadedImages = [];
       
-      // Append images
-      images.forEach((image) => {
-        data.append('images', image);
-      });
+      for (let i = 0; i < images.length; i++) {
+        const file = images[i];
+        
+        // Get signed upload URL
+        const { data: urlData } = await adminAPI.getUploadUrl({
+          fileName: file.name,
+          fileType: file.type,
+          productSlug: formData.slug,
+        });
+        
+        // Upload image to MinIO using signed URL
+        await fetch(urlData.data.uploadUrl, {
+          method: 'PUT',
+          body: file,
+          headers: {
+            'Content-Type': file.type,
+          },
+        });
+        
+        // Add image metadata
+        uploadedImages.push({
+          url: urlData.data.publicUrl,
+          key: urlData.data.key,
+          isPrimary: i === 0,
+          order: i,
+        });
+      }
       
-      // Append other fields
-      Object.keys(formData).forEach(key => {
-        if (key === 'tags') {
-          // Convert tags string to array
-          const tagsArray = formData.tags.split(',').map(t => t.trim()).filter(Boolean);
-          data.append(key, JSON.stringify(tagsArray));
-        } else if (key === 'sizes' || key === 'colors') {
-          data.append(key, JSON.stringify(formData[key]));
-        } else {
-          data.append(key, formData[key]);
-        }
-      });
+      toast.success('Images uploaded successfully', { id: 'upload' });
       
-      await adminAPI.createProduct(data);
-      toast.success('Product created successfully');
+      // Step 2: Prepare product data
+      const productData = {
+        name: formData.name,
+        slug: formData.slug,
+        description: formData.description,
+        category: formData.category,
+        price: Number(formData.price),
+        images: uploadedImages,
+        featured: formData.isFeatured,
+      };
+      
+      // Add optional fields if they exist
+      if (formData.comparePrice) {
+        productData.comparePrice = Number(formData.comparePrice);
+      }
+      
+      if (formData.brand) {
+        productData.brand = formData.brand;
+      }
+      
+      if (formData.sku) {
+        productData.sku = formData.sku;
+      }
+      
+      if (formData.stock) {
+        productData.stock = Number(formData.stock);
+      }
+      
+      if (formData.sizes && formData.sizes.length > 0) {
+        productData.sizes = formData.sizes.map(size => ({
+          size,
+          stock: formData.stock ? Math.floor(Number(formData.stock) / formData.sizes.length) : 0,
+        }));
+      }
+      
+      if (formData.colors && formData.colors.length > 0) {
+        productData.colors = formData.colors;
+      }
+      
+      if (formData.tags) {
+        productData.tags = formData.tags.split(',').map(t => t.trim()).filter(Boolean);
+      }
+      
+      productData.isActive = formData.isActive;
+      
+      // Step 3: Create product
+      toast.loading('Creating product...', { id: 'create' });
+      await adminAPI.createProduct(productData);
+      toast.success('Product created successfully', { id: 'create' });
       router.push('/admin/products');
     } catch (error) {
       console.error('Failed to create product:', error);
@@ -302,7 +367,7 @@ export default function NewProductPage() {
                 >
                   <option value="">Select Category</option>
                   {categories.map(cat => (
-                    <option key={cat._id} value={cat._id}>{cat.name}</option>
+                    <option key={cat._id} value={cat.slug}>{cat.name}</option>
                   ))}
                 </select>
               </div>
