@@ -58,6 +58,26 @@ exports.createProduct = async (req, res) => {
       isActive,
     } = req.body;
 
+    // Log incoming data for debugging
+    console.log(
+      "Creating product with data:",
+      JSON.stringify(
+        {
+          name,
+          slug,
+          category,
+          price,
+          sizesType: typeof sizes,
+          sizesValue: sizes,
+          imagesType: typeof images,
+          imagesLength: images?.length,
+          imagesValue: images,
+        },
+        null,
+        2,
+      ),
+    );
+
     // Validate required fields
     if (!name || !slug || !description || !category || !price) {
       return res
@@ -71,6 +91,78 @@ exports.createProduct = async (req, res) => {
       return res
         .status(400)
         .json({ message: "Product with this slug already exists" });
+    }
+
+    // Parse sizes if it's a string (from JSON)
+    let parsedSizes = [];
+    if (sizes) {
+      if (typeof sizes === "string") {
+        try {
+          parsedSizes = JSON.parse(sizes);
+        } catch (e) {
+          console.error("Failed to parse sizes:", e);
+          parsedSizes = [];
+        }
+      } else if (Array.isArray(sizes)) {
+        parsedSizes = sizes;
+      }
+    }
+
+    // Parse images if it's a string (from JSON)
+    let parsedImages = [];
+    if (images) {
+      if (typeof images === "string") {
+        try {
+          parsedImages = JSON.parse(images);
+        } catch (e) {
+          console.error("Failed to parse images:", e);
+          parsedImages = [];
+        }
+      } else if (Array.isArray(images)) {
+        parsedImages = images;
+      }
+    }
+
+    // Parse colors if it's a string
+    let parsedColors = [];
+    if (colors) {
+      if (typeof colors === "string") {
+        try {
+          parsedColors = JSON.parse(colors);
+        } catch (e) {
+          console.error("Failed to parse colors:", e);
+          parsedColors = [];
+        }
+      } else if (Array.isArray(colors)) {
+        parsedColors = colors;
+      }
+    }
+
+    // Parse tags if it's a string
+    let parsedTags = [];
+    if (tags) {
+      if (typeof tags === "string") {
+        try {
+          parsedTags = JSON.parse(tags);
+        } catch (e) {
+          console.error("Failed to parse tags:", e);
+          parsedTags = [];
+        }
+      } else if (Array.isArray(tags)) {
+        parsedTags = tags;
+      }
+    }
+
+    // Validate images have required fields
+    if (parsedImages.length > 0) {
+      const validImages = parsedImages.every((img) => img.url && img.key);
+      if (!validImages) {
+        return res.status(400).json({
+          message:
+            "Invalid image data. Each image must have 'url' and 'key' properties",
+          receivedImages: parsedImages,
+        });
+      }
     }
 
     // Create product
@@ -87,10 +179,10 @@ exports.createProduct = async (req, res) => {
       brand,
       sku,
       stock: stock || 0,
-      sizes: sizes || [],
-      colors: colors || [],
-      tags: tags || [],
-      images: images || [],
+      sizes: parsedSizes,
+      colors: parsedColors,
+      tags: parsedTags,
+      images: parsedImages,
       featured: featured || false,
       isActive: isActive !== undefined ? isActive : true,
     });

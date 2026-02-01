@@ -129,31 +129,51 @@ export default function NewProductPage() {
       for (let i = 0; i < images.length; i++) {
         const file = images[i];
         
-        // Get signed upload URL
-        const { data: urlData } = await adminAPI.getUploadUrl({
-          fileName: file.name,
-          fileType: file.type,
-          productSlug: formData.slug,
-        });
-        
-        // Upload image to MinIO using signed URL
-        await fetch(urlData.data.uploadUrl, {
-          method: 'PUT',
-          body: file,
-          headers: {
-            'Content-Type': file.type,
-          },
-        });
-        
-        // Add image metadata
-        uploadedImages.push({
-          url: urlData.data.publicUrl,
-          key: urlData.data.key,
-          isPrimary: i === 0,
-          order: i,
-        });
+        try {
+          // Get signed upload URL
+          const { data: urlData } = await adminAPI.getUploadUrl({
+            fileName: file.name,
+            fileType: file.type,
+            productSlug: formData.slug,
+          });
+          
+          console.log('Upload URL response:', urlData);
+          
+          // Validate response structure
+          if (!urlData?.data?.uploadUrl || !urlData?.data?.publicUrl || !urlData?.data?.key) {
+            throw new Error(`Invalid upload URL response for ${file.name}`);
+          }
+          
+          // Upload image to MinIO using signed URL
+          const uploadResponse = await fetch(urlData.data.uploadUrl, {
+            method: 'PUT',
+            body: file,
+            headers: {
+              'Content-Type': file.type,
+            },
+          });
+          
+          if (!uploadResponse.ok) {
+            throw new Error(`Failed to upload ${file.name}: ${uploadResponse.statusText}`);
+          }
+          
+          // Add image metadata
+          uploadedImages.push({
+            url: urlData.data.publicUrl,
+            key: urlData.data.key,
+            isPrimary: i === 0,
+            order: i,
+          });
+          
+          console.log(`Image ${i + 1} uploaded:`, uploadedImages[i]);
+        } catch (uploadError) {
+          console.error(`Failed to upload image ${i + 1}:`, uploadError);
+          toast.error(`Failed to upload ${file.name}`);
+          throw uploadError;
+        }
       }
       
+      console.log('All images uploaded:', uploadedImages);
       toast.success('Images uploaded successfully', { id: 'upload' });
       
       // Step 2: Prepare product data
@@ -186,7 +206,7 @@ export default function NewProductPage() {
       
       if (formData.sizes && formData.sizes.length > 0) {
         productData.sizes = formData.sizes.map(size => ({
-          size,
+          size: size.toString(),
           stock: formData.stock ? Math.floor(Number(formData.stock) / formData.sizes.length) : 0,
         }));
       }
@@ -201,6 +221,8 @@ export default function NewProductPage() {
       
       productData.isActive = formData.isActive;
       
+      console.log('Product data to send:', productData);
+      
       // Step 3: Create product
       toast.loading('Creating product...', { id: 'create' });
       await adminAPI.createProduct(productData);
@@ -208,6 +230,7 @@ export default function NewProductPage() {
       router.push('/admin/products');
     } catch (error) {
       console.error('Failed to create product:', error);
+      console.error('Error details:', error.response?.data);
       toast.error(error.response?.data?.message || 'Failed to create product');
     } finally {
       setLoading(false);

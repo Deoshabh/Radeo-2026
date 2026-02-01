@@ -20,6 +20,12 @@ const { initializeBucket } = require("./utils/minio");
 const app = express();
 
 // ===============================
+// Trust Proxy (Required for Traefik)
+// ===============================
+// Enable trust proxy to properly handle X-Forwarded-For headers from Traefik
+app.set("trust proxy", 1);
+
+// ===============================
 // Database Connection
 // ===============================
 mongoose
