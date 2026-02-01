@@ -131,21 +131,26 @@ export default function NewProductPage() {
         
         try {
           // Get signed upload URL
-          const { data: urlData } = await adminAPI.getUploadUrl({
+          const { data: responseData } = await adminAPI.getUploadUrl({
             fileName: file.name,
             fileType: file.type,
             productSlug: formData.slug,
           });
           
-          console.log('Upload URL response:', urlData);
+          console.log('Upload URL response:', responseData);
           
           // Validate response structure
-          if (!urlData?.data?.uploadUrl || !urlData?.data?.publicUrl || !urlData?.data?.key) {
-            throw new Error(`Invalid upload URL response for ${file.name}`);
+          // Backend returns: { success: true, data: { signedUrl, publicUrl, key } }
+          const uploadUrlData = responseData?.data || responseData;
+          if (!uploadUrlData?.signedUrl || !uploadUrlData?.publicUrl || !uploadUrlData?.key) {
+            console.error('Invalid response structure:', uploadUrlData);
+            throw new Error(`Invalid upload URL response for ${file.name}. Got: ${JSON.stringify(uploadUrlData)}`);
           }
           
+          console.log('Using upload URL:', uploadUrlData.signedUrl);
+          
           // Upload image to MinIO using signed URL
-          const uploadResponse = await fetch(urlData.data.uploadUrl, {
+          const uploadResponse = await fetch(uploadUrlData.signedUrl, {
             method: 'PUT',
             body: file,
             headers: {
@@ -159,8 +164,8 @@ export default function NewProductPage() {
           
           // Add image metadata
           uploadedImages.push({
-            url: urlData.data.publicUrl,
-            key: urlData.data.key,
+            url: uploadUrlData.publicUrl,
+            key: uploadUrlData.key,
             isPrimary: i === 0,
             order: i,
           });
