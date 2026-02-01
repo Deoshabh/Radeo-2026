@@ -82,7 +82,7 @@ async function generateSignedUploadUrl(key, contentType) {
   // Defensive check: Ensure MinIO is initialized
   if (!isInitialized) {
     throw new Error(
-      "MinIO not initialized. Please ensure initializeBucket() was called at startup."
+      "MinIO not initialized. Please ensure initializeBucket() was called at startup.",
     );
   }
 
@@ -98,7 +98,7 @@ async function generateSignedUploadUrl(key, contentType) {
       BUCKET_NAME,
       key,
       5 * 60, // 5 minutes
-      { "Content-Type": contentType }
+      { "Content-Type": contentType },
     );
 
     // Generate public URL
@@ -124,7 +124,7 @@ async function deleteObject(key) {
   // Defensive check: Ensure MinIO is initialized
   if (!isInitialized) {
     throw new Error(
-      "MinIO not initialized. Please ensure initializeBucket() was called at startup."
+      "MinIO not initialized. Please ensure initializeBucket() was called at startup.",
     );
   }
 
@@ -163,7 +163,7 @@ async function deleteObjects(keys) {
   // Defensive check: Ensure MinIO is initialized
   if (!isInitialized) {
     throw new Error(
-      "MinIO not initialized. Please ensure initializeBucket() was called at startup."
+      "MinIO not initialized. Please ensure initializeBucket() was called at startup.",
     );
   }
 
