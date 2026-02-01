@@ -226,12 +226,20 @@ export default function CheckoutPage() {
         router.push(`/orders/${order._id}`);
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to place order');
+      console.error('Order creation error:', error.response?.data || error);
+      const errorMessage = error.response?.data?.message || 'Failed to place order';
+      const errorField = error.response?.data?.field;
+      
+      if (errorField) {
+        toast.error(`${errorMessage} (Field: ${errorField})`);
+      } else {
+        toast.error(errorMessage);
+      }
       setIsProcessing(false);
     }
   };
 
-  const subtotal = cart?.subtotal || 0;
+  const subtotal = cart?.totalAmount || 0;
   const shippingCost = subtotal > 1000 ? 0 : 50;
   const total = subtotal + shippingCost - discount;
 

@@ -93,6 +93,7 @@ export const CartProvider = ({ children }) => {
     addToCart,
     removeFromCart,
     clearCart,
+    fetchCart, // Export fetchCart method
     refreshCart: fetchCart,
     cartCount: getCartCount(),
     cartTotal: getCartTotal(),

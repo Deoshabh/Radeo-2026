@@ -4,7 +4,7 @@ const Cart = require("../models/Cart");
 exports.getCart = async (req, res) => {
   try {
     let cart = await Cart.findOne({ user: req.user.id }).populate(
-      "items.product"
+      "items.product",
     );
 
     if (!cart) {
@@ -65,7 +65,7 @@ exports.addToCart = async (req, res) => {
 
     // Check if item already exists with same product and size
     const existingItemIndex = cart.items.findIndex(
-      (item) => item.product.toString() === productId && item.size === size
+      (item) => item.product.toString() === productId && item.size === size,
     );
 
     if (existingItemIndex > -1) {
@@ -79,7 +79,23 @@ exports.addToCart = async (req, res) => {
     await cart.save();
     await cart.populate("items.product");
 
-    res.json(cart);
+    // Return consistent response format
+    const response = {
+      items: cart.items || [],
+      totalItems: cart.items
+        ? cart.items.reduce((sum, item) => sum + item.quantity, 0)
+        : 0,
+      totalAmount: cart.items
+        ? cart.items.reduce((sum, item) => {
+            if (item.product && item.product.price) {
+              return sum + item.product.price * item.quantity;
+            }
+            return sum;
+          }, 0)
+        : 0,
+    };
+
+    res.json(response);
   } catch (error) {
     console.error("Error adding to cart:", error);
     res.status(500).json({ message: "Cart operation failed" });
@@ -106,13 +122,29 @@ exports.removeFromCart = async (req, res) => {
 
     // Remove item with matching product and size
     cart.items = cart.items.filter(
-      (item) => !(item.product.toString() === productId && item.size === size)
+      (item) => !(item.product.toString() === productId && item.size === size),
     );
 
     await cart.save();
     await cart.populate("items.product");
 
-    res.json(cart);
+    // Return consistent response format
+    const response = {
+      items: cart.items || [],
+      totalItems: cart.items
+        ? cart.items.reduce((sum, item) => sum + item.quantity, 0)
+        : 0,
+      totalAmount: cart.items
+        ? cart.items.reduce((sum, item) => {
+            if (item.product && item.product.price) {
+              return sum + item.product.price * item.quantity;
+            }
+            return sum;
+          }, 0)
+        : 0,
+    };
+
+    res.json(response);
   } catch (error) {
     console.error("Error removing from cart:", error);
     res.status(500).json({ message: "Cart operation failed" });

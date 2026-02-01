@@ -34,16 +34,17 @@ exports.createOrder = async (req, res) => {
     ];
 
     for (const field of requiredFields) {
-      if (!shippingAddress[field] || !shippingAddress[field].trim()) {
+      if (!shippingAddress[field] || shippingAddress[field].trim() === "") {
         return res.status(400).json({
           message: `${field} is required in shipping address`,
+          field: field,
         });
       }
     }
 
     // Fetch cart for the user
     const cart = await Cart.findOne({ user: req.user.id }).populate(
-      "items.product"
+      "items.product",
     );
 
     // Check if cart exists and has items
@@ -211,6 +212,15 @@ exports.getOrderById = async (req, res) => {
 // POST /api/v1/orders/:id/razorpay
 exports.createRazorpayOrder = async (req, res) => {
   try {
+    // Validate Razorpay credentials first
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      console.error("❌ Razorpay credentials missing in environment variables");
+      return res.status(500).json({
+        message: "Payment system not configured. Please contact support.",
+        error: "RAZORPAY_CREDENTIALS_MISSING",
+      });
+    }
+
     const order = await Order.findById(req.params.id);
 
     if (!order) {
@@ -235,8 +245,14 @@ exports.createRazorpayOrder = async (req, res) => {
     // CRITICAL: Razorpay requires amount in paise (₹1 = 100 paise)
     // This is the ONLY place where we convert INR to paise
     // Use total (after discount) instead of subtotal
+    const amountInPaise = Math.round((order.total || order.subtotal) * 100);
+
+    console.log(
+      `Creating Razorpay order for ₹${order.total || order.subtotal} (${amountInPaise} paise)`,
+    );
+
     const razorpayOrder = await razorpay.orders.create({
-      amount: (order.total || order.subtotal) * 100, // Convert INR to paise for Razorpay
+      amount: amountInPaise,
       currency: "INR",
       receipt: `order_${order._id}`,
     });
@@ -252,7 +268,19 @@ exports.createRazorpayOrder = async (req, res) => {
     });
   } catch (error) {
     console.error("Create Razorpay order error:", error);
-    res.status(500).json({ message: "Server error" });
+
+    // Provide more specific error messages
+    if (error.error && error.error.description) {
+      return res.status(500).json({
+        message: "Payment gateway error: " + error.error.description,
+        error: "RAZORPAY_API_ERROR",
+      });
+    }
+
+    res.status(500).json({
+      message: "Failed to initialize payment. Please try again or use COD.",
+      error: "SERVER_ERROR",
+    });
   }
 };
 
