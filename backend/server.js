@@ -37,40 +37,45 @@ initializeBucket()
   .then(() => console.log("✅ MinIO bucket initialized and ready"))
   .catch((err) => {
     console.error("❌ MinIO initialization failed:", err.message);
-    console.warn("⚠️  Image upload features will not work");
-    console.warn(
-      "⚠️  Please ensure MinIO is running at:",
-      process.env.MINIO_ENDPOINT || "localhost:9000",
-    );
+    console.warn("⚠️ Image upload features will not work");
   });
 
 // ===============================
 // Middleware
 // ===============================
 
-// ---- CORS (CRITICAL) ----
+// ---- CORS (PRODUCTION SAFE) ----
+const allowedOrigins = ["https://radeo.in", "https://www.radeo.in"];
+
 app.use(
   cors({
-    origin:
-      process.env.CORS_ORIGIN || process.env.CLIENT_URL || "https://radeo.in",
+    origin: function (origin, callback) {
+      // allow server-to-server / curl / health checks
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("CORS not allowed"), false);
+    },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 
-// NOTE:
-// ❌ DO NOT add `app.options("*", cors())`
-// It crashes with newer Express/router versions
-// `cors()` already handles preflight correctly
+// ---- FORCE preflight handling (Traefik-safe) ----
+app.options("*", cors());
 
+// ---- Body & Cookies ----
 app.use(express.json());
 app.use(cookieParser());
 
 // ---- Rate Limiting ----
 app.use(
   rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
+    windowMs: 15 * 60 * 1000,
     max: 1000,
     standardHeaders: true,
     legacyHeaders: false,
@@ -121,7 +126,7 @@ app.use("/api/v1/wishlist", wishlistRoutes);
 app.use("/api/v1/user", userRoutes);
 
 // ===============================
-// Health Check (for Traefik)
+// Health Check (Traefik)
 // ===============================
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "OK" });
@@ -131,22 +136,18 @@ app.get("/health", (req, res) => {
 // Global Error Handler
 // ===============================
 app.use((err, req, res, next) => {
-  console.error(err);
+  console.error("❌ Error:", err.message);
   res.status(err.status || 500).json({
     message: err.message || "Internal Server Error",
   });
 });
 
 // ===============================
-// Server Start (Traefik-safe)
+// Server Start
 // ===============================
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(
-    `📡 CORS enabled for: ${
-      process.env.CORS_ORIGIN || process.env.CLIENT_URL || "https://radeo.in"
-    }`,
-  );
+  console.log("📡 CORS allowed origins:", allowedOrigins.join(", "));
 });
