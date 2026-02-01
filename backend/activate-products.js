@@ -50,8 +50,8 @@ async function activateProducts() {
         {
           $set: {
             isActive: true,
-            inStock: true,
-            stock: 100, // Set default stock if not set
+            isOutOfStock: false,
+            stock: 100, // Set default stock
           },
         },
       );

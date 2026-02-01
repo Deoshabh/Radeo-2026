@@ -197,13 +197,14 @@ exports.createProduct = async (req, res) => {
       comparePrice,
       brand,
       sku,
-      stock: stock || 0,
+      stock: stock !== undefined ? stock : 100, // Default to 100 if not provided
       sizes: parsedSizes,
       colors: parsedColors,
       tags: parsedTags,
       images: parsedImages,
       featured: featured || false,
       isActive: isActive !== undefined ? isActive : true,
+      isOutOfStock: false, // Default to not out of stock
     });
 
     console.log("✅ Product created successfully:", {
@@ -285,6 +286,7 @@ exports.updateProduct = async (req, res) => {
     if (description) product.description = description;
     if (category) product.category = category;
     if (price) product.price = price;
+    if (req.body.stock !== undefined) product.stock = req.body.stock;
     if (sizes !== undefined) product.sizes = sizes;
     if (images !== undefined) product.images = images;
     if (featured !== undefined) product.featured = featured;

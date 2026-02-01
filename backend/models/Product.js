@@ -53,7 +53,7 @@ const productSchema = new mongoose.Schema(
     },
     stock: {
       type: Number,
-      default: 0,
+      default: 100, // Default to 100 so products are available immediately
     },
     sizes: [
       {
@@ -96,7 +96,16 @@ const productSchema = new mongoose.Schema(
       default: false,
     },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  },
 );
+
+// Virtual field for inStock (calculated from stock quantity)
+productSchema.virtual("inStock").get(function () {
+  return this.stock > 0 && !this.isOutOfStock;
+});
 
 module.exports = mongoose.model("Product", productSchema);

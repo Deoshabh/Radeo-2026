@@ -272,6 +272,9 @@ function ProductFormContent() {
       
       if (formData.stock) {
         productData.stock = Number(formData.stock);
+      } else {
+        // Default stock to 100 if not specified
+        productData.stock = 100;
       }
       
       if (formData.sizes && formData.sizes.length > 0) {
