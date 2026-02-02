@@ -188,7 +188,7 @@ export default function ShippingPage() {
               Our Shipping Partners
             </h2>
             <p className="text-gray-700 mb-4">
-              We work with India's most trusted courier services to ensure safe and timely delivery:
+              We work with India&apos;s most trusted courier services to ensure safe and timely delivery:
             </p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-gray-50 rounded-lg p-4 text-center font-semibold text-gray-700">
