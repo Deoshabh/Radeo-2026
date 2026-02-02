@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { orderAPI } from '@/utils/api';
 import { FiPackage, FiTruck, FiCheck, FiX, FiArrowLeft, FiMapPin, FiClock, FiDollarSign } from 'react-icons/fi';
@@ -224,11 +225,15 @@ export default function OrderDetailPage() {
               <div className="space-y-4">
                 {order.items?.map((item, index) => (
                   <div key={index} className="flex items-center gap-4 p-4 border border-primary-200 rounded-lg">
-                    <img
-                      src={item.product?.images?.[0]?.url || item.product?.images?.[0] || '/placeholder.jpg'}
-                      alt={item.product?.name || 'Product'}
-                      className="w-20 h-20 object-cover rounded border border-primary-200"
-                    />
+                    <div className="relative w-20 h-20 flex-shrink-0">
+                      <Image
+                        src={item.product?.images?.[0]?.url || item.product?.images?.[0] || '/placeholder.jpg'}
+                        alt={item.product?.name || 'Product'}
+                        fill
+                        sizes="80px"
+                        className="object-cover rounded border border-primary-200"
+                      />
+                    </div>
                     <div className="flex-1">
                       <h4 className="font-semibold text-primary-900 mb-1">{item.product?.name || 'Product'}</h4>
                       <p className="text-sm text-primary-600 mb-1">

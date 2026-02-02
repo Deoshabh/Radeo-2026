@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import { FiShoppingCart, FiHeart, FiUser, FiSearch, FiMenu, FiX, FiLogOut, FiPackage } from 'react-icons/fi';
 import { useAuth } from '@/context/AuthContext';
@@ -178,11 +179,15 @@ export default function Navbar() {
                     }}
                     className="flex items-center gap-4 p-3 hover:bg-primary-50 transition-colors"
                   >
-                    <img
-                      src={product.images?.[0]?.url || product.images?.[0] || '/placeholder.jpg'}
-                      alt={product.name}
-                      className="w-16 h-16 object-cover rounded"
-                    />
+                    <div className="relative w-16 h-16 flex-shrink-0">
+                      <Image
+                        src={product.images?.[0]?.url || product.images?.[0] || '/placeholder.jpg'}
+                        alt={product.name}
+                        fill
+                        sizes="64px"
+                        className="object-cover rounded"
+                      />
+                    </div>
                     <div className="flex-1">
                       <h4 className="font-medium text-primary-900">{product.name}</h4>
                       <p className="text-sm text-primary-600">{product.category?.name}</p>

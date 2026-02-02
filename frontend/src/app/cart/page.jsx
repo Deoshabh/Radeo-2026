@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
@@ -57,11 +58,15 @@ export default function CartPage() {
             <div className="lg:col-span-2 space-y-3 sm:space-y-4">
               {cart.items.map((item) => (
                 <div key={`${item.product._id}-${item.size}`} className="bg-white rounded-lg p-4 sm:p-6 flex flex-col sm:flex-row gap-4 sm:gap-6">
-                  <img
-                    src={item.product.images?.[0]?.url || item.product.images?.[0] || '/placeholder.jpg'}
-                    alt={item.product.name}
-                    className="w-full sm:w-24 md:w-32 h-48 sm:h-24 md:h-32 object-cover rounded-lg"
-                  />
+                  <div className="relative w-full sm:w-24 md:w-32 h-48 sm:h-24 md:h-32 flex-shrink-0">
+                    <Image
+                      src={item.product.images?.[0]?.url || item.product.images?.[0] || '/placeholder.jpg'}
+                      alt={item.product.name}
+                      fill
+                      sizes="(max-width: 640px) 100vw, 128px"
+                      className="object-cover rounded-lg"
+                    />
+                  </div>
                   <div className="flex-1">
                     <Link href={`/products/${item.product.slug}`} className="font-serif text-lg sm:text-xl font-semibold text-primary-900 hover:text-brand-brown transition-colors">
                       {item.product.name}

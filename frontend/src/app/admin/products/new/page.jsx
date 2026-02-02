@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { adminAPI, categoryAPI, productAPI } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
 import AdminLayout from '@/components/AdminLayout';
@@ -342,10 +343,12 @@ function ProductFormContent() {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-4">
               {imagePreviews.map((preview, index) => (
                 <div key={index} className="relative aspect-square">
-                  <img
+                  <Image
                     src={preview}
                     alt={`Preview ${index + 1}`}
-                    className="w-full h-full object-cover rounded-lg"
+                    fill
+                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 20vw"
+                    className="object-cover rounded-lg"
                   />
                   <button
                     type="button"

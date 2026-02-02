@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { orderAPI } from '@/utils/api';
 import { FiPackage, FiTruck, FiCheck, FiX, FiEye, FiClock } from 'react-icons/fi';
@@ -180,11 +181,15 @@ export default function OrdersPage() {
                   <div className="space-y-4">
                     {order.items?.slice(0, 3).map((item, index) => (
                       <div key={index} className="flex items-center gap-4">
-                        <img
-                          src={item.product?.images?.[0]?.url || item.product?.images?.[0] || '/placeholder.jpg'}
-                          alt={item.product?.name || 'Product'}
-                          className="w-16 h-16 object-cover rounded border border-primary-200"
-                        />
+                        <div className="relative w-16 h-16 flex-shrink-0">
+                          <Image
+                            src={item.product?.images?.[0]?.url || item.product?.images?.[0] || '/placeholder.jpg'}
+                            alt={item.product?.name || 'Product'}
+                            fill
+                            sizes="64px"
+                            className="object-cover rounded border border-primary-200"
+                          />
+                        </div>
                         <div className="flex-1">
                           <h4 className="font-medium text-primary-900">{item.product?.name || 'Product'}</h4>
                           <p className="text-sm text-primary-600">

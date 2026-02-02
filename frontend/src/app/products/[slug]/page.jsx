@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 // Note: Dynamic metadata generation requires server component
 // For client components with dynamic data, we update meta tags via useEffect
@@ -124,11 +125,14 @@ export default function ProductDetailPage() {
           {/* Image Gallery */}
           <div className="space-y-4">
             {/* Main Image */}
-            <div className="aspect-square bg-white rounded-lg overflow-hidden">
-              <img
+            <div className="relative aspect-square bg-white rounded-lg overflow-hidden">
+              <Image
                 src={product.images[selectedImage]?.url || product.images[selectedImage] || '/placeholder.jpg'}
                 alt={product.name}
-                className="w-full h-full object-cover"
+                fill
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-cover"
+                priority
               />
             </div>
 
@@ -139,14 +143,16 @@ export default function ProductDetailPage() {
                   <button
                     key={idx}
                     onClick={() => setSelectedImage(idx)}
-                    className={`aspect-square bg-white rounded-lg overflow-hidden border-2 transition-all ${
+                    className={`relative aspect-square bg-white rounded-lg overflow-hidden border-2 transition-all ${
                       selectedImage === idx ? 'border-brand-brown' : 'border-transparent hover:border-primary-300'
                     }`}
                   >
-                    <img
+                    <Image
                       src={image?.url || image || '/placeholder.jpg'}
                       alt={`${product.name} ${idx + 1}`}
-                      className="w-full h-full object-cover"
+                      fill
+                      sizes="(max-width: 1024px) 25vw, 12vw"
+                      className="object-cover"
                     />
                   </button>
                 ))}

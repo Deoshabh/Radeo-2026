@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { FiHeart, FiShoppingCart } from 'react-icons/fi';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
@@ -54,10 +55,12 @@ export default function ProductCard({ product }) {
       <div className="card group overflow-hidden h-full flex flex-col">
         {/* Image Container */}
         <div className="relative aspect-[4/5] overflow-hidden bg-primary-100">
-          <img
+          <Image
             src={product.images?.[0]?.url || product.images?.[0] || '/placeholder.jpg'}
             alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            className="object-cover group-hover:scale-110 transition-transform duration-500"
           />
           
           {/* Wishlist Button */}

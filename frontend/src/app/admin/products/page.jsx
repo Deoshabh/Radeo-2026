@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { adminAPI } from '@/utils/api';
 import AdminLayout from '@/components/AdminLayout';
@@ -168,11 +169,15 @@ export default function AdminProductsPage() {
                     <tr key={product._id} className="hover:bg-primary-50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <img
-                            src={product.images?.[0]?.url || product.images?.[0] || '/placeholder.jpg'}
-                            alt={product.name}
-                            className="w-12 h-12 object-cover rounded border border-primary-200"
-                          />
+                          <div className="relative w-12 h-12 flex-shrink-0">
+                            <Image
+                              src={product.images?.[0]?.url || product.images?.[0] || '/placeholder.jpg'}
+                              alt={product.name}
+                              fill
+                              sizes="48px"
+                              className="object-cover rounded border border-primary-200"
+                            />
+                          </div>
                           <div>
                             <p className="font-medium text-primary-900">{product.name}</p>
                             <p className="text-sm text-primary-600">{product.category?.name}</p>
