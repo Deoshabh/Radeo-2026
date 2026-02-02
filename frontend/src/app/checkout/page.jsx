@@ -12,7 +12,7 @@ import { FiMapPin, FiPlus, FiEdit2, FiTag, FiCreditCard, FiDollarSign } from 're
 export default function CheckoutPage() {
   const router = useRouter();
   const { isAuthenticated, user, loading } = useAuth();
-  const { cart, fetchCart, cartCount } = useCart();
+  const { cart, fetchCart, cartCount, cartTotal } = useCart();
   
   const [addresses, setAddresses] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
@@ -239,7 +239,7 @@ export default function CheckoutPage() {
     }
   };
 
-  const subtotal = cart?.totalAmount || 0;
+  const subtotal = cartTotal || 0;
   const shippingCost = subtotal > 1000 ? 0 : 50;
   const total = subtotal + shippingCost - discount;
 

@@ -18,7 +18,7 @@ exports.getAdminStats = async (req, res) => {
 
     const totalRevenue = orders
       .filter((o) => o.status === "delivered")
-      .reduce((sum, order) => sum + order.totalPrice, 0);
+      .reduce((sum, order) => sum + (order.total || order.subtotal || 0), 0);
 
     const codCount = orders.filter((o) => o.paymentMethod === "cod").length;
     const razorpayCount = orders.filter(

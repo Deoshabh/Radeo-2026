@@ -7,6 +7,7 @@ const {
   getOrderById,
   createRazorpayOrder,
   verifyRazorpayPayment,
+  cancelOrder,
 } = require("../controllers/orderController");
 
 // Protect all routes
@@ -26,5 +27,8 @@ router.post("/:id/razorpay", createRazorpayOrder);
 
 // POST /:id/razorpay/verify → verify Razorpay payment
 router.post("/:id/razorpay/verify", verifyRazorpayPayment);
+
+// PATCH /:id/cancel → cancel order
+router.patch("/:id/cancel", cancelOrder);
 
 module.exports = router;

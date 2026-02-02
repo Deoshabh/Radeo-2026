@@ -193,7 +193,7 @@ exports.getOrderById = async (req, res) => {
     }
 
     // Check if order belongs to the user
-    if (order.user._id.toString() !== req.user.id) {
+    if (order.user._id.toString() !== req.user.id.toString()) {
       return res
         .status(403)
         .json({ message: "Not authorized to view this order" });
@@ -323,6 +323,50 @@ exports.verifyRazorpayPayment = async (req, res) => {
     res.json({ success: true, message: "Payment verified successfully" });
   } catch (error) {
     console.error("Verify Razorpay payment error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// @desc    Cancel an order
+// @route   PATCH /api/v1/orders/:id/cancel
+// @access  Private
+exports.cancelOrder = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id).populate(
+      "user",
+      "name email",
+    );
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // Check if order belongs to the user
+    if (order.user._id.toString() !== req.user.id.toString()) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to cancel this order" });
+    }
+
+    // Check if order can be cancelled
+    const cancellableStatuses = ["pending", "processing", "confirmed"];
+    if (!cancellableStatuses.includes(order.status.toLowerCase())) {
+      return res.status(400).json({
+        message: `Cannot cancel order with status: ${order.status}. Only pending, processing, or confirmed orders can be cancelled.`,
+      });
+    }
+
+    // Update order status to cancelled
+    order.status = "cancelled";
+    await order.save();
+
+    res.json({
+      success: true,
+      message: "Order cancelled successfully",
+      order,
+    });
+  } catch (error) {
+    console.error("Cancel order error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

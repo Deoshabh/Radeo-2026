@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { orderAPI } from '@/utils/api';
 import { FiPackage, FiTruck, FiCheck, FiX, FiArrowLeft, FiMapPin, FiClock, FiDollarSign } from 'react-icons/fi';
+import toast from 'react-hot-toast';
 
 export default function OrderDetailPage() {
   const router = useRouter();
@@ -14,6 +15,7 @@ export default function OrderDetailPage() {
   const { isAuthenticated, loading } = useAuth();
   const [order, setOrder] = useState(null);
   const [loadingOrder, setLoadingOrder] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -26,7 +28,23 @@ export default function OrderDetailPage() {
       fetchOrder();
     }
   }, [isAuthenticated, params.id]);
+  const handleCancelOrder = async () => {
+    if (!window.confirm('Are you sure you want to cancel this order?')) {
+      return;
+    }
 
+    try {
+      setCancelling(true);
+      await orderAPI.cancelOrder(params.id);
+      toast.success('Order cancelled successfully');
+      fetchOrder(); // Refresh order data
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      toast.error(error.response?.data?.message || 'Failed to cancel order');
+    } finally {
+      setCancelling(false);
+    }
+  };
   const fetchOrder = async () => {
     try {
       setLoadingOrder(true);
@@ -127,9 +145,22 @@ export default function OrderDetailPage() {
               <h1 className="text-2xl font-bold text-primary-900 mb-1">Order Details</h1>
               <p className="text-primary-600">Order ID: {order.orderId}</p>
             </div>
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-full border ${getStatusColor(order.status)}`}>
-              {getStatusIcon(order.status)}
-              <span className="font-medium capitalize">{order.status}</span>
+            <div className="flex items-center gap-3">
+              <div className={`flex items-center gap-2 px-4 py-2 rounded-full border ${getStatusColor(order.status)}`}>
+                {getStatusIcon(order.status)}
+                <span className="font-medium capitalize">{order.status}</span>
+              </div>
+              {/* Cancel Button - Only show for pending, processing, or confirmed orders */}
+              {['pending', 'processing', 'confirmed'].includes(order.status?.toLowerCase()) && (
+                <button
+                  onClick={handleCancelOrder}
+                  disabled={cancelling}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <FiX />
+                  {cancelling ? 'Cancelling...' : 'Cancel Order'}
+                </button>
+              )}
             </div>
           </div>
 
@@ -260,10 +291,6 @@ export default function OrderDetailPage() {
                     <span>Subtotal</span>
                     <span>₹{order.subtotal?.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-primary-700">
-                    <span>Shipping</span>
-                    <span>₹{order.shippingCost?.toLocaleString() || '0'}</span>
-                  </div>
                   {order.discount > 0 && (
                     <div className="flex justify-between text-green-600">
                       <span>Discount</span>
@@ -272,7 +299,7 @@ export default function OrderDetailPage() {
                   )}
                   <div className="flex justify-between text-lg font-bold text-primary-900 pt-2 border-t border-primary-200">
                     <span>Total</span>
-                    <span>₹{order.totalAmount?.toLocaleString()}</span>
+                    <span>₹{order.total?.toLocaleString()}</span>
                   </div>
                 </div>
               </div>
