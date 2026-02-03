@@ -44,7 +44,7 @@ function ProductFormContent() {
       construction: '',
       madeIn: 'India',
     },
-    careInstructions: '',
+    careInstructions: [],
   });
 
   useEffect(() => {
@@ -87,7 +87,7 @@ function ProductFormContent() {
           construction: product.specifications?.construction || '',
           madeIn: product.specifications?.madeIn || 'India',
         },
-        careInstructions: product.careInstructions || '',
+        careInstructions: Array.isArray(product.careInstructions) ? product.careInstructions : [],
       });
       
       // Set existing images
@@ -183,6 +183,27 @@ function ProductFormContent() {
 
   const handleColorChange = (colors) => {
     setFormData({ ...formData, colors });
+  };
+
+  // Care Instructions CRUD handlers
+  const handleAddCareInstruction = () => {
+    setFormData({
+      ...formData,
+      careInstructions: [...formData.careInstructions, ''],
+    });
+  };
+
+  const handleUpdateCareInstruction = (index, value) => {
+    const updated = [...formData.careInstructions];
+    updated[index] = value;
+    setFormData({ ...formData, careInstructions: updated });
+  };
+
+  const handleRemoveCareInstruction = (index) => {
+    setFormData({
+      ...formData,
+      careInstructions: formData.careInstructions.filter((_, i) => i !== index),
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -320,9 +341,11 @@ function ProductFormContent() {
       // Add specifications
       productData.specifications = formData.specifications;
       
-      // Add care instructions
-      if (formData.careInstructions) {
-        productData.careInstructions = formData.careInstructions;
+      // Add care instructions - filter out empty strings
+      if (formData.careInstructions && formData.careInstructions.length > 0) {
+        productData.careInstructions = formData.careInstructions.filter(instruction => instruction.trim() !== '');
+      } else {
+        productData.careInstructions = [];
       }
       
       productData.isActive = formData.isActive;
@@ -660,19 +683,45 @@ function ProductFormContent() {
               </div>
               
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-primary-900 mb-2">
-                  Care Instructions
+                <label className="block text-sm font-medium text-primary-900 mb-3">
+                  Care Instructions (Add as Points)
                 </label>
-                <textarea
-                  name="careInstructions"
-                  value={formData.careInstructions}
-                  onChange={handleChange}
-                  rows="3"
-                  className="w-full px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
-                  placeholder="e.g., Use a soft brush to remove dirt, apply leather conditioner regularly"
-                />
-                <p className="text-xs text-primary-500 mt-1">
-                  Provide care and maintenance instructions for the product
+                
+                <div className="space-y-3">
+                  {formData.careInstructions.map((instruction, index) => (
+                    <div key={index} className="flex gap-2">
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          value={instruction}
+                          onChange={(e) => handleUpdateCareInstruction(index, e.target.value)}
+                          className="w-full px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
+                          placeholder={`Care instruction point ${index + 1}`}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCareInstruction(index)}
+                        className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center"
+                        title="Remove instruction"
+                      >
+                        <FiX className="w-5 h-5" />
+                      </button>
+                    </div>
+                  ))}
+                  
+                  <button
+                    type="button"
+                    onClick={handleAddCareInstruction}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary-900 text-white rounded-lg hover:bg-primary-800 transition-colors"
+                  >
+                    <FiPlus className="w-5 h-5" />
+                    Add Care Instruction Point
+                  </button>
+                </div>
+                
+                <p className="text-xs text-primary-500 mt-2">
+                  Add each care instruction as a separate point (e.g., "Use a soft brush to remove dirt", "Apply leather conditioner regularly")
                 </p>
               </div>
             </div>

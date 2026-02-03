@@ -36,11 +36,11 @@ const productSchema = new mongoose.Schema(
         default: "India",
       },
     },
-    // Care instructions
-    careInstructions: {
+    // Care instructions as array of points
+    careInstructions: [{
       type: String,
-      default: "",
-    },
+      trim: true,
+    }],
     category: {
       type: String,
       required: true,

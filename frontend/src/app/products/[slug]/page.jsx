@@ -408,14 +408,17 @@ export default function ProductDetailPage() {
             {activeTab === 'care' && (
               <div>
                 <h3 className="font-serif text-2xl font-bold mb-4">Care Instructions</h3>
-                {product.careInstructions ? (
-                  <div className="text-primary-700 leading-relaxed whitespace-pre-line">
-                    {product.careInstructions}
-                  </div>
+                {product.careInstructions && product.careInstructions.length > 0 ? (
+                  <ul className="space-y-2 text-primary-700">
+                    {product.careInstructions.map((instruction, index) => (
+                      <li key={index} className="flex gap-3">
+                        <span className="text-brand-brown font-semibold">•</span>
+                        <span>{instruction}</span>
+                      </li>
+                    ))}
+                  </ul>
                 ) : (
-                  <p className="text-primary-600 italic">
-                    Care instructions not available for this product.
-                  </p>
+                  <p className="text-primary-600">No care instructions available for this product.</p>
                 )}
               </div>
             )}
