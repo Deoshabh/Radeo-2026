@@ -17,16 +17,27 @@ const productSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    // Additional product detail sections
+    // Product specifications
     specifications: {
-      type: String,
-      default: "",
+      material: {
+        type: String,
+        default: "",
+      },
+      sole: {
+        type: String,
+        default: "",
+      },
+      construction: {
+        type: String,
+        default: "",
+      },
+      madeIn: {
+        type: String,
+        default: "India",
+      },
     },
-    materialAndCare: {
-      type: String,
-      default: "",
-    },
-    shippingAndReturns: {
+    // Care instructions
+    careInstructions: {
       type: String,
       default: "",
     },

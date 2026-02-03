@@ -38,6 +38,13 @@ function ProductFormContent() {
     tags: '',
     isActive: true,
     isFeatured: false,
+    specifications: {
+      material: '',
+      sole: '',
+      construction: '',
+      madeIn: 'India',
+    },
+    careInstructions: '',
   });
 
   useEffect(() => {
@@ -74,6 +81,13 @@ function ProductFormContent() {
         tags: product.tags?.join(', ') || '',
         isActive: product.isActive !== undefined ? product.isActive : true,
         isFeatured: product.featured || false,
+        specifications: {
+          material: product.specifications?.material || '',
+          sole: product.specifications?.sole || '',
+          construction: product.specifications?.construction || '',
+          madeIn: product.specifications?.madeIn || 'India',
+        },
+        careInstructions: product.careInstructions || '',
       });
       
       // Set existing images
@@ -110,6 +124,16 @@ function ProductFormContent() {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '');
       setFormData({ ...formData, name: value, slug });
+    } else if (name.startsWith('specifications.')) {
+      // Handle nested specification fields
+      const specField = name.split('.')[1];
+      setFormData({
+        ...formData,
+        specifications: {
+          ...formData.specifications,
+          [specField]: value,
+        },
+      });
     } else {
       setFormData({
         ...formData,
@@ -291,6 +315,14 @@ function ProductFormContent() {
       
       if (formData.tags) {
         productData.tags = formData.tags.split(',').map(t => t.trim()).filter(Boolean);
+      }
+      
+      // Add specifications
+      productData.specifications = formData.specifications;
+      
+      // Add care instructions
+      if (formData.careInstructions) {
+        productData.careInstructions = formData.careInstructions;
       }
       
       productData.isActive = formData.isActive;
@@ -562,6 +594,86 @@ function ProductFormContent() {
                   selectedColors={formData.colors}
                   onChange={handleColorChange}
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* Specifications */}
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+            <h2 className="text-lg font-semibold text-primary-900 mb-4">Product Specifications</h2>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-primary-900 mb-2">
+                  Material
+                </label>
+                <input
+                  type="text"
+                  name="specifications.material"
+                  value={formData.specifications.material}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
+                  placeholder="e.g., Premium Leather, Suede, Canvas"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-primary-900 mb-2">
+                  Sole
+                </label>
+                <input
+                  type="text"
+                  name="specifications.sole"
+                  value={formData.specifications.sole}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
+                  placeholder="e.g., Leather Sole, Rubber Sole"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-primary-900 mb-2">
+                  Construction
+                </label>
+                <input
+                  type="text"
+                  name="specifications.construction"
+                  value={formData.specifications.construction}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
+                  placeholder="e.g., Goodyear Welted, Blake Stitch"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-primary-900 mb-2">
+                  Made In
+                </label>
+                <input
+                  type="text"
+                  name="specifications.madeIn"
+                  value={formData.specifications.madeIn}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
+                  placeholder="e.g., India, Italy"
+                />
+              </div>
+              
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-primary-900 mb-2">
+                  Care Instructions
+                </label>
+                <textarea
+                  name="careInstructions"
+                  value={formData.careInstructions}
+                  onChange={handleChange}
+                  rows="3"
+                  className="w-full px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
+                  placeholder="e.g., Use a soft brush to remove dirt, apply leather conditioner regularly"
+                />
+                <p className="text-xs text-primary-500 mt-1">
+                  Provide care and maintenance instructions for the product
+                </p>
               </div>
             </div>
           </div>

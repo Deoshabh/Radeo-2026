@@ -377,12 +377,30 @@ export default function ProductDetailPage() {
               <div>
                 <h3 className="font-serif text-2xl font-bold mb-4">Specifications</h3>
                 <ul className="space-y-2 text-primary-700">
-                  <li><strong>Material:</strong> Premium Leather</li>
-                  <li><strong>Sole:</strong> Leather Sole</li>
-                  <li><strong>Construction:</strong> Goodyear Welted</li>
-                  <li><strong>Made in:</strong> India</li>
-                  <li><strong>Category:</strong> {product.category?.name}</li>
-                  {product.sizes && <li><strong>Available Sizes:</strong> UK {product.sizes.join(', ')}</li>}
+                  {product.specifications?.material && (
+                    <li><strong>Material:</strong> {product.specifications.material}</li>
+                  )}
+                  {product.specifications?.sole && (
+                    <li><strong>Sole:</strong> {product.specifications.sole}</li>
+                  )}
+                  {product.specifications?.construction && (
+                    <li><strong>Construction:</strong> {product.specifications.construction}</li>
+                  )}
+                  {product.specifications?.madeIn && (
+                    <li><strong>Made in:</strong> {product.specifications.madeIn}</li>
+                  )}
+                  {product.category?.name && (
+                    <li><strong>Category:</strong> {product.category.name}</li>
+                  )}
+                  {product.sizes && product.sizes.length > 0 && (
+                    <li>
+                      <strong>Available Sizes:</strong> UK{' '}
+                      {product.sizes.map(s => typeof s === 'object' ? s.size : s).join(', ')}
+                    </li>
+                  )}
+                  {product.brand && (
+                    <li><strong>Brand:</strong> {product.brand}</li>
+                  )}
                 </ul>
               </div>
             )}
@@ -390,14 +408,20 @@ export default function ProductDetailPage() {
             {activeTab === 'care' && (
               <div>
                 <h3 className="font-serif text-2xl font-bold mb-4">Care Instructions</h3>
-                <ul className="space-y-2 text-primary-700">
-                  <li>• Use a soft brush to remove dirt and dust</li>
-                  <li>• Apply leather conditioner regularly to maintain suppleness</li>
-                  <li>• Store in a cool, dry place away from direct sunlight</li>
-                  <li>• Use shoe trees to maintain shape</li>
-                  <li>• Avoid exposure to water; if wet, let dry naturally</li>
-                  <li>• Professional cleaning recommended for stubborn stains</li>
-                </ul>
+                {product.careInstructions ? (
+                  <div className="text-primary-700 leading-relaxed whitespace-pre-line">
+                    {product.careInstructions}
+                  </div>
+                ) : (
+                  <ul className="space-y-2 text-primary-700">
+                    <li>• Use a soft brush to remove dirt and dust</li>
+                    <li>• Apply leather conditioner regularly to maintain suppleness</li>
+                    <li>• Store in a cool, dry place away from direct sunlight</li>
+                    <li>• Use shoe trees to maintain shape</li>
+                    <li>• Avoid exposure to water; if wet, let dry naturally</li>
+                    <li>• Professional cleaning recommended for stubborn stains</li>
+                  </ul>
+                )}
               </div>
             )}
           </div>
