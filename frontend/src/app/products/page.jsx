@@ -320,6 +320,10 @@ function ProductsContent() {
                       </label>
                     </>
                   )}
+                </div>
+              </div>
+            </div>
+          </aside>
 
           {/* Mobile Filter Modal */}
           {isFilterOpen && (
