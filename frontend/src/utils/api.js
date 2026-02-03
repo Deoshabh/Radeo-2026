@@ -198,12 +198,10 @@ export const adminAPI = {
   deleteCoupon: (id) => api.delete(`/admin/coupons/${id}`),
   toggleCouponStatus: (id) => api.patch(`/admin/coupons/${id}/toggle`),
 
-  // Filters
-  getAllFilters: (params) => api.get("/admin/filters", { params }),
-  createFilter: (data) => api.post("/admin/filters", data),
-  updateFilter: (id, data) => api.patch(`/admin/filters/${id}`, data),
-  deleteFilter: (id) => api.delete(`/admin/filters/${id}`),
-  toggleFilterStatus: (id) => api.patch(`/admin/filters/${id}/toggle`),
+  // Filters - Removed manual filter management (filters now auto-generated from products)
+  // Brand filters: auto-populated from product.brand field
+  // Material filters: auto-extracted from product.materialAndCare field
+  // Price range: dynamically calculated from product prices
 
   // Media
   getUploadUrl: (data) => api.post("/admin/media/upload-url", data),

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { productAPI, categoryAPI, filterAPI } from '@/utils/api';
+import { productAPI, categoryAPI } from '@/utils/api';
 import ProductCard from '@/components/ProductCard';
 import PriceRangeSlider from '@/components/PriceRangeSlider';
 import { FiFilter, FiX } from 'react-icons/fi';
@@ -16,7 +16,6 @@ function ProductsContent() {
   const [brands, setBrands] = useState([]);
   const [materials, setMaterials] = useState([]);
   const [priceRange, setPriceRange] = useState({ min: 0, max: 100000 });
-  const [filters, setFilters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   
@@ -74,22 +73,11 @@ function ProductsContent() {
   };
 
   const fetchFilters = async () => {
-    try {
-      const response = await filterAPI.getFilters();
-      console.log('📦 Filters API response:', response.data);
-      setFilters(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      console.error('Failed to fetch filters:', error);
-    }
-  };
-
   useEffect(() => {
     fetchCategories();
     fetchBrands();
     fetchMaterials();
-    fetchPriceRange();
-    fetchFilters();
-  }, []);
+    fetchPriceRange
 
   const fetchProducts = useCallback(async (category, brands, materials, priceMin, priceMax, sort, search) => {
     try {

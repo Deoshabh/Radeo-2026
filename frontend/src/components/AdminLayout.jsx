@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FiGrid, FiPackage, FiShoppingBag, FiUsers, FiTag, FiPercent, FiFilter } from 'react-icons/fi';
+import { FiGrid, FiPackage, FiShoppingBag, FiUsers, FiTag, FiPercent } from 'react-icons/fi';
 
 export default function AdminLayout({ children }) {
   const pathname = usePathname();
@@ -13,7 +13,6 @@ export default function AdminLayout({ children }) {
     { href: '/admin/orders', icon: FiShoppingBag, label: 'Orders' },
     { href: '/admin/users', icon: FiUsers, label: 'Users' },
     { href: '/admin/categories', icon: FiTag, label: 'Categories' },
-    { href: '/admin/filters', icon: FiFilter, label: 'Filters' },
     { href: '/admin/coupons', icon: FiPercent, label: 'Coupons' },
   ];
   
