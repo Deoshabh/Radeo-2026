@@ -22,12 +22,6 @@ export default function AdminUsersPage() {
     }
   }, [user, isAuthenticated, loading, router]);
 
-  useEffect(() => {
-    if (isAuthenticated && user?.role === 'admin') {
-      fetchUsers();
-    }
-  }, [isAuthenticated, user]);
-
   const fetchUsers = async () => {
     try {
       setLoadingUsers(true);
@@ -42,6 +36,12 @@ export default function AdminUsersPage() {
       setLoadingUsers(false);
     }
   };
+
+  useEffect(() => {
+    if (isAuthenticated && user?.role === 'admin') {
+      fetchUsers();
+    }
+  }, [isAuthenticated, user]);
 
   const handleUpdateRole = async (userId, newRole) => {
     if (!confirm(`Are you sure you want to change this user's role to ${newRole}?`)) return;

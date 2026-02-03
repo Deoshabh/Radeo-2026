@@ -30,14 +30,6 @@ export default function CouponsPage() {
     isActive: true,
   });
 
-  useEffect(() => {
-    if (!user || user.role !== 'admin') {
-      router.push('/');
-      return;
-    }
-    fetchCoupons();
-  }, [user, router]);
-
   const fetchCoupons = async () => {
     try {
       setLoading(true);
@@ -53,6 +45,14 @@ export default function CouponsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!user || user.role !== 'admin') {
+      router.push('/');
+      return;
+    }
+    fetchCoupons();
+  }, [user, router]);
 
   const handleOpenModal = (coupon = null) => {
     if (coupon) {

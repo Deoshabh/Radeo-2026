@@ -37,14 +37,6 @@ export default function FiltersPage() {
     { value: 'priceRange', label: 'Price Range' },
   ];
 
-  useEffect(() => {
-    if (!user || user.role !== 'admin') {
-      router.push('/');
-      return;
-    }
-    fetchFilters();
-  }, [user, router, filterType]);
-
   const fetchFilters = async () => {
     try {
       setLoading(true);
@@ -59,6 +51,14 @@ export default function FiltersPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!user || user.role !== 'admin') {
+      router.push('/');
+      return;
+    }
+    fetchFilters();
+  }, [user, router, filterType]);
 
   const handleOpenModal = (filter = null) => {
     if (filter) {

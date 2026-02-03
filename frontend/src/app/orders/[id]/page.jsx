@@ -23,12 +23,6 @@ export default function OrderDetailPage() {
     }
   }, [isAuthenticated, loading, router]);
 
-  useEffect(() => {
-    if (isAuthenticated && params.id) {
-      fetchOrder();
-    }
-  }, [isAuthenticated, params.id, fetchOrder]);
-
   const fetchOrder = useCallback(async () => {
     try {
       setLoadingOrder(true);
@@ -42,6 +36,12 @@ export default function OrderDetailPage() {
       setLoadingOrder(false);
     }
   }, [params.id]);
+
+  useEffect(() => {
+    if (isAuthenticated && params.id) {
+      fetchOrder();
+    }
+  }, [isAuthenticated, params.id, fetchOrder]);
 
   const handleCancelOrder = async () => {
     if (!window.confirm('Are you sure you want to cancel this order?')) {

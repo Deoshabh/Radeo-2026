@@ -23,12 +23,6 @@ export default function AdminOrdersPage() {
     }
   }, [user, isAuthenticated, loading, router]);
 
-  useEffect(() => {
-    if (isAuthenticated && user?.role === 'admin') {
-      fetchOrders();
-    }
-  }, [isAuthenticated, user]);
-
   const fetchOrders = async () => {
     try {
       setLoadingOrders(true);
@@ -43,6 +37,12 @@ export default function AdminOrdersPage() {
       setLoadingOrders(false);
     }
   };
+
+  useEffect(() => {
+    if (isAuthenticated && user?.role === 'admin') {
+      fetchOrders();
+    }
+  }, [isAuthenticated, user]);
 
   const handleUpdateStatus = async (orderId, newStatus) => {
     try {

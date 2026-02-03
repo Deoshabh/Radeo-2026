@@ -18,23 +18,6 @@ export default function AdminDashboard() {
     totalRevenue: 0,
   });
 
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push('/auth/login');
-      return;
-    }
-
-    if (!loading && user?.role !== 'admin') {
-      router.push('/');
-      return;
-    }
-
-    // Fetch real stats from backend (only on client side to prevent SSR 404)
-    if (typeof window !== 'undefined' && isAuthenticated && user?.role === 'admin') {
-      fetchStats();
-    }
-  }, [user, isAuthenticated, loading, router]);
-
   const fetchStats = async () => {
     try {
       const response = await adminAPI.getStats();
@@ -56,6 +39,23 @@ export default function AdminDashboard() {
       });
     }
   };
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      router.push('/auth/login');
+      return;
+    }
+
+    if (!loading && user?.role !== 'admin') {
+      router.push('/');
+      return;
+    }
+
+    // Fetch real stats from backend (only on client side to prevent SSR 404)
+    if (typeof window !== 'undefined' && isAuthenticated && user?.role === 'admin') {
+      fetchStats();
+    }
+  }, [user, isAuthenticated, loading, router]);
 
   if (loading) {
     return (

@@ -27,14 +27,6 @@ export default function CategoriesPage() {
     isActive: true,
   });
 
-  useEffect(() => {
-    if (!user || user.role !== 'admin') {
-      router.push('/');
-      return;
-    }
-    fetchCategories();
-  }, [user, router]);
-
   const fetchCategories = async () => {
     try {
       setLoading(true);
@@ -49,6 +41,14 @@ export default function CategoriesPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!user || user.role !== 'admin') {
+      router.push('/');
+      return;
+    }
+    fetchCategories();
+  }, [user, router]);
 
   const handleOpenModal = (category = null) => {
     if (category) {

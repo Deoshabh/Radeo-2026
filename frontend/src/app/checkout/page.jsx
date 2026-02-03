@@ -40,16 +40,6 @@ export default function CheckoutPage() {
     }
   }, [isAuthenticated, loading, router]);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchAddresses();
-      if (cartCount === 0) {
-        toast.error('Your cart is empty');
-        router.push('/cart');
-      }
-    }
-  }, [isAuthenticated, cartCount, router]);
-
   const fetchAddresses = async () => {
     try {
       const response = await addressAPI.getAddresses();
@@ -63,6 +53,16 @@ export default function CheckoutPage() {
       console.error('Failed to fetch addresses:', error);
     }
   };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchAddresses();
+      if (cartCount === 0) {
+        toast.error('Your cart is empty');
+        router.push('/cart');
+      }
+    }
+  }, [isAuthenticated, cartCount, router]);
 
   const handleAddAddress = async (e) => {
     e.preventDefault();

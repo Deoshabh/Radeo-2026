@@ -23,12 +23,6 @@ export default function AdminProductsPage() {
     }
   }, [user, isAuthenticated, loading, router]);
 
-  useEffect(() => {
-    if (isAuthenticated && user?.role === 'admin') {
-      fetchProducts();
-    }
-  }, [isAuthenticated, user]);
-
   const fetchProducts = async () => {
     try {
       setLoadingProducts(true);
@@ -45,6 +39,12 @@ export default function AdminProductsPage() {
       setLoadingProducts(false);
     }
   };
+
+  useEffect(() => {
+    if (isAuthenticated && user?.role === 'admin') {
+      fetchProducts();
+    }
+  }, [isAuthenticated, user]);
 
   const handleToggleStatus = async (productId, currentStatus) => {
     try {

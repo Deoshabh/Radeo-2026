@@ -15,12 +15,6 @@ export default function CategoryDetailPage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (slug) {
-      fetchData();
-    }
-  }, [slug]);
-
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -43,6 +37,12 @@ export default function CategoryDetailPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (slug) {
+      fetchData();
+    }
+  }, [slug]);
 
   if (loading) {
     return (
