@@ -590,17 +590,6 @@ function ProductsContent() {
                     </div>
                   </div>
                 )}
-                            type="checkbox"
-                            checked={selectedMaterials.includes(material)}
-                            onChange={() => handleMaterialToggle(material)}
-                            className="w-4 h-4 text-brand-brown focus:ring-brand-brown rounded"
-                          />
-                          <span className="text-sm">{material}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 <button onClick={clearFilters} className="w-full btn btn-secondary mb-4">
                   Clear All Filters
