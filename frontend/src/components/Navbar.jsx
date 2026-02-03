@@ -319,14 +319,14 @@ export default function Navbar() {
               <Link href="/" className="px-4 py-2 hover:bg-primary-50 rounded transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
                 Home
               </Link>
-              <Lin<Link
-                    href="/categories"
-                    className="py-1 font-semibold text-brand-brown hover:text-brand-brown/80 transition-colors"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    All Categories
-                  </Link>
-                  k href="/products" className="px-4 py-2 hover:bg-primary-50 rounded transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
+              <Link
+                href="/categories"
+                className="px-4 py-2 hover:bg-primary-50 rounded transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                All Categories
+              </Link>
+              <Link href="/products" className="px-4 py-2 hover:bg-primary-50 rounded transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
                 Products
               </Link>
               <div className="px-4 py-2">

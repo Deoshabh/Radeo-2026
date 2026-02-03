@@ -81,12 +81,13 @@ export default function CategoriesPage() {
     setShowModal(false);
     setEditMode(false);
     setSelectedCategory(null);
-    seshowInNavbar: true,
-      displayOrder: 0,
-      tFormData({
+    setFormData({
       name: '',
       slug: '',
       description: '',
+      image: '',
+      showInNavbar: true,
+      displayOrder: 0,
       isActive: true,
     });
   };
