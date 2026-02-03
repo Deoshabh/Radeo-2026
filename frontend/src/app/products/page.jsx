@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { productAPI, categoryAPI } from '@/utils/api';
+import { productAPI, categoryAPI, filterAPI } from '@/utils/api';
 import ProductCard from '@/components/ProductCard';
 import { FiFilter, FiX } from 'react-icons/fi';
 
@@ -12,6 +12,7 @@ function ProductsContent() {
   
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [filters, setFilters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   
@@ -23,6 +24,7 @@ function ProductsContent() {
 
   useEffect(() => {
     fetchCategories();
+    fetchFilters();
   }, []);
 
   useEffect(() => {
@@ -50,6 +52,16 @@ function ProductsContent() {
     }
   };
 
+  const fetchFilters = async () => {
+    try {
+      const response = await filterAPI.getFilters();
+      console.log('📦 Filters API response:', response.data);
+      setFilters(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Failed to fetch filters:', error);
+    }
+  };
+
   const fetchProducts = async (category, price, sort, search) => {
     try {
       setLoading(true);
@@ -58,19 +70,33 @@ function ProductsContent() {
       if (category) params.category = category;
       if (search) params.search = search;
       
-      // Price range filter
+      // Price range filter - use dynamic filters if available
       if (price) {
-        const ranges = {
-          'under-5000': { max: 5000 },
-          '5000-10000': { min: 5000, max: 10000 },
-          '10000-15000': { min: 10000, max: 15000 },
-          '15000-20000': { min: 15000, max: 20000 },
-          'above-20000': { min: 20000 },
-        };
+        // Check if this is a filter from backend
+        const priceFilter = filters.find(
+          (f) => f.type === 'priceRange' && f.value === price
+        );
         
-        if (ranges[price]) {
-          if (ranges[price].min) params.minPrice = ranges[price].min;
-          if (ranges[price].max) params.maxPrice = ranges[price].max;
+        if (priceFilter) {
+          // Use dynamic filter values
+          if (priceFilter.minPrice !== undefined) params.minPrice = priceFilter.minPrice;
+          if (priceFilter.maxPrice !== undefined && priceFilter.maxPrice !== null) {
+            params.maxPrice = priceFilter.maxPrice;
+          }
+        } else {
+          // Fallback to hardcoded ranges (for backward compatibility)
+          const ranges = {
+            'under-5000': { max: 5000 },
+            '5000-10000': { min: 5000, max: 10000 },
+            '10000-15000': { min: 10000, max: 15000 },
+            '15000-20000': { min: 15000, max: 20000 },
+            'above-20000': { min: 20000 },
+          };
+          
+          if (ranges[price]) {
+            if (ranges[price].min) params.minPrice = ranges[price].min;
+            if (ranges[price].max) params.maxPrice = ranges[price].max;
+          }
         }
       }
       
@@ -226,60 +252,74 @@ function ProductsContent() {
                     />
                     <span className="text-sm">All Prices</span>
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="price"
-                      checked={priceRange === 'under-5000'}
-                      onChange={() => updateFilters('price', 'under-5000')}
-                      className="w-4 h-4 text-brand-brown focus:ring-brand-brown"
-                    />
-                    <span className="text-sm">Under ₹5,000</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="price"
-                      checked={priceRange === '5000-10000'}
-                      onChange={() => updateFilters('price', '5000-10000')}
-                      className="w-4 h-4 text-brand-brown focus:ring-brand-brown"
-                    />
-                    <span className="text-sm">₹5,000 - ₹10,000</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="price"
-                      checked={priceRange === '10000-15000'}
-                      onChange={() => updateFilters('price', '10000-15000')}
-                      className="w-4 h-4 text-brand-brown focus:ring-brand-brown"
-                    />
-                    <span className="text-sm">₹10,000 - ₹15,000</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="price"
-                      checked={priceRange === '15000-20000'}
-                      onChange={() => updateFilters('price', '15000-20000')}
-                      className="w-4 h-4 text-brand-brown focus:ring-brand-brown"
-                    />
-                    <span className="text-sm">₹15,000 - ₹20,000</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="price"
-                      checked={priceRange === 'above-20000'}
-                      onChange={() => updateFilters('price', 'above-20000')}
-                      className="w-4 h-4 text-brand-brown focus:ring-brand-brown"
-                    />
-                    <span className="text-sm">Above ₹20,000</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-          </aside>
+                  {filters
+                    .filter((f) => f.type === 'priceRange')
+                    .map((filter) => (
+                      <label key={filter._id} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="price"
+                          checked={priceRange === filter.value}
+                          onChange={() => updateFilters('price', filter.value)}
+                          className="w-4 h-4 text-brand-brown focus:ring-brand-brown"
+                        />
+                        <span className="text-sm">{filter.name}</span>
+                      </label>
+                    ))}
+                  {filters.filter((f) => f.type === 'priceRange').length === 0 && (
+                    <>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="price"
+                          checked={priceRange === 'under-5000'}
+                          onChange={() => updateFilters('price', 'under-5000')}
+                          className="w-4 h-4 text-brand-brown focus:ring-brand-brown"
+                        />
+                        <span className="text-sm">Under ₹5,000</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="price"
+                          checked={priceRange === '5000-10000'}
+                          onChange={() => updateFilters('price', '5000-10000')}
+                          className="w-4 h-4 text-brand-brown focus:ring-brand-brown"
+                        />
+                        <span className="text-sm">₹5,000 - ₹10,000</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="price"
+                          checked={priceRange === '10000-15000'}
+                          onChange={() => updateFilters('price', '10000-15000')}
+                          className="w-4 h-4 text-brand-brown focus:ring-brand-brown"
+                        />
+                        <span className="text-sm">₹10,000 - ₹15,000</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="price"
+                          checked={priceRange === '15000-20000'}
+                          onChange={() => updateFilters('price', '15000-20000')}
+                          className="w-4 h-4 text-brand-brown focus:ring-brand-brown"
+                        />
+                        <span className="text-sm">₹15,000 - ₹20,000</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="price"
+                          checked={priceRange === 'above-20000'}
+                          onChange={() => updateFilters('price', 'above-20000')}
+                          className="w-4 h-4 text-brand-brown focus:ring-brand-brown"
+                        />
+                        <span className="text-sm">Above ₹20,000</span>
+                      </label>
+                    </>
+                  )}
 
           {/* Mobile Filter Modal */}
           {isFilterOpen && (
@@ -332,27 +372,60 @@ function ProductsContent() {
                 <div className="mb-6">
                   <h4 className="font-medium mb-3">Price Range</h4>
                   <div className="space-y-2">
-                    {['', 'under-5000', '5000-10000', '10000-15000', '15000-20000', 'above-20000'].map((range, idx) => (
-                      <label key={range} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="price-mobile"
-                          checked={priceRange === range}
-                          onChange={() => {
-                            updateFilters('price', range);
-                            setIsFilterOpen(false);
-                          }}
-                          className="w-4 h-4 text-brand-brown focus:ring-brand-brown"
-                        />
-                        <span className="text-sm">
-                          {idx === 0 ? 'All Prices' : 
-                           idx === 1 ? 'Under ₹5,000' :
-                           idx === 2 ? '₹5,000 - ₹10,000' :
-                           idx === 3 ? '₹10,000 - ₹15,000' :
-                           idx === 4 ? '₹15,000 - ₹20,000' : 'Above ₹20,000'}
-                        </span>
-                      </label>
-                    ))}
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="price-mobile"
+                        checked={!priceRange}
+                        onChange={() => {
+                          updateFilters('price', '');
+                          setIsFilterOpen(false);
+                        }}
+                        className="w-4 h-4 text-brand-brown focus:ring-brand-brown"
+                      />
+                      <span className="text-sm">All Prices</span>
+                    </label>
+                    {filters
+                      .filter((f) => f.type === 'priceRange')
+                      .map((filter) => (
+                        <label key={filter._id} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="price-mobile"
+                            checked={priceRange === filter.value}
+                            onChange={() => {
+                              updateFilters('price', filter.value);
+                              setIsFilterOpen(false);
+                            }}
+                            className="w-4 h-4 text-brand-brown focus:ring-brand-brown"
+                          />
+                          <span className="text-sm">{filter.name}</span>
+                        </label>
+                      ))}
+                    {filters.filter((f) => f.type === 'priceRange').length === 0 && (
+                      <>
+                        {['under-5000', '5000-10000', '10000-15000', '15000-20000', 'above-20000'].map((range, idx) => (
+                          <label key={range} className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="price-mobile"
+                              checked={priceRange === range}
+                              onChange={() => {
+                                updateFilters('price', range);
+                                setIsFilterOpen(false);
+                              }}
+                              className="w-4 h-4 text-brand-brown focus:ring-brand-brown"
+                            />
+                            <span className="text-sm">
+                              {idx === 0 ? 'Under ₹5,000' :
+                               idx === 1 ? '₹5,000 - ₹10,000' :
+                               idx === 2 ? '₹10,000 - ₹15,000' :
+                               idx === 3 ? '₹15,000 - ₹20,000' : 'Above ₹20,000'}
+                            </span>
+                          </label>
+                        ))}
+                      </>
+                    )}
                   </div>
                 </div>
 

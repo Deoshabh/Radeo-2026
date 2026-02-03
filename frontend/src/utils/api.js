@@ -53,11 +53,23 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed, clear tokens and redirect to login
+        // Refresh failed - only redirect if on a protected page
+        // Don't redirect if user is just browsing products
         Cookies.remove("accessToken");
         Cookies.remove("refreshToken");
+
         if (typeof window !== "undefined") {
-          window.location.href = "/auth/login";
+          const isProtectedRoute = [
+            "/cart",
+            "/checkout",
+            "/orders",
+            "/profile",
+            "/admin",
+          ].some((route) => window.location.pathname.startsWith(route));
+
+          if (isProtectedRoute) {
+            window.location.href = "/auth/login";
+          }
         }
         return Promise.reject(refreshError);
       }
@@ -184,6 +196,7 @@ export const adminAPI = {
   createFilter: (data) => api.post("/admin/filters", data),
   updateFilter: (id, data) => api.patch(`/admin/filters/${id}`, data),
   deleteFilter: (id) => api.delete(`/admin/filters/${id}`),
+  toggleFilterStatus: (id) => api.patch(`/admin/filters/${id}/toggle`),
 
   // Media
   getUploadUrl: (data) => api.post("/admin/media/upload-url", data),
