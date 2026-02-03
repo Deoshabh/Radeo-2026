@@ -447,15 +447,6 @@ function ProductsContent() {
                   </div>
                 </div>
               )}
-                          onChange={() => handleMaterialToggle(material)}
-                          className="w-4 h-4 text-brand-brown focus:ring-brand-brown rounded"
-                        />
-                        <span className="text-sm">{material}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </aside>
 
