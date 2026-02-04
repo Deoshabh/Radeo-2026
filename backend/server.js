@@ -94,6 +94,7 @@ app.use("/api/v1/admin/users", require("./routes/adminUserRoutes"));
 app.use("/api/v1/admin/media", require("./routes/adminMediaRoutes"));
 app.use("/api/v1/admin/filters", require("./routes/adminFilterRoutes"));
 app.use("/api/v1/admin/shiprocket", require("./routes/shiprocketRoutes"));
+app.use("/api/v1/admin/shipping", require("./routes/shiprocketRoutes")); // Webhook-friendly path
 
 app.use("/api/v1/coupons", require("./routes/couponRoutes"));
 app.use("/api/v1/categories", require("./routes/categoryRoutes"));
