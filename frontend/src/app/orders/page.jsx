@@ -176,6 +176,32 @@ export default function OrdersPage() {
                       </Link>
                     </div>
                   </div>
+                  
+                  {/* Shipping Info - NEW */}
+                  {order.shipping?.awb_code && (
+                    <div className="mt-3 pt-3 border-t border-primary-200">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-xs sm:text-sm">
+                        <div className="flex items-center gap-2 text-blue-700">
+                          <FiTruck className="w-4 h-4" />
+                          <span className="font-medium">{order.shipping.courier_name || order.shipping.courier}</span>
+                        </div>
+                        <div className="hidden sm:block h-4 w-px bg-blue-300"></div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-primary-600">AWB:</span>
+                          <span className="font-mono font-semibold text-primary-900">{order.shipping.awb_code}</span>
+                        </div>
+                        {order.shipping.current_status && (
+                          <>
+                            <div className="hidden sm:block h-4 w-px bg-blue-300"></div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-primary-600">Status:</span>
+                              <span className="font-semibold text-green-700">{order.shipping.current_status}</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Order Items */}

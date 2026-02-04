@@ -6,8 +6,9 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { adminAPI } from '@/utils/api';
 import AdminLayout from '@/components/AdminLayout';
+import ShiprocketShipmentModal from '@/components/ShiprocketShipmentModal';
 import toast from 'react-hot-toast';
-import { FiPackage, FiTruck, FiCheck, FiClock, FiEye, FiSearch } from 'react-icons/fi';
+import { FiPackage, FiTruck, FiCheck, FiClock, FiEye, FiSearch, FiDownload, FiMapPin, FiX } from 'react-icons/fi';
 
 export default function AdminOrdersPage() {
   const router = useRouter();
@@ -16,6 +17,10 @@ export default function AdminOrdersPage() {
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showShipmentModal, setShowShipmentModal] = useState(false);
+  const [trackingData, setTrackingData] = useState(null);
+  const [showTrackingModal, setShowTrackingModal] = useState(false);
 
   useEffect(() => {
     if (!loading && (!isAuthenticated || user?.role !== 'admin')) {
@@ -51,6 +56,47 @@ export default function AdminOrdersPage() {
       fetchOrders();
     } catch (error) {
       toast.error('Failed to update order status');
+    }
+  };
+
+  const handleCreateShipment = (order) => {
+    setSelectedOrder(order);
+    setShowShipmentModal(true);
+  };
+
+  const handleTrackShipment = async (order) => {
+    try {
+      const response = await adminAPI.trackShipment(order._id);
+      setTrackingData(response.data.data);
+      setSelectedOrder(order);
+      setShowTrackingModal(true);
+    } catch (error) {
+      toast.error('Failed to track shipment');
+    }
+  };
+
+  const handleGenerateLabel = async (orderId) => {
+    try {
+      const response = await adminAPI.generateLabel(orderId);
+      if (response.data.data?.label_url) {
+        window.open(response.data.data.label_url, '_blank');
+        toast.success('Label generated successfully');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to generate label');
+    }
+  };
+
+  const handleCancelShipment = async (orderId) => {
+    if (!confirm('Are you sure you want to cancel this shipment?')) {
+      return;
+    }
+    try {
+      await adminAPI.cancelShipment(orderId);
+      toast.success('Shipment cancelled successfully');
+      fetchOrders();
+    } catch (error) {
+      toast.error('Failed to cancel shipment');
     }
   };
 
@@ -147,6 +193,7 @@ export default function AdminOrdersPage() {
                   <th className="px-6 py-4 text-left text-sm font-semibold text-primary-900">Customer</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-primary-900">Date</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-primary-900">Amount</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-primary-900">Shipping</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-primary-900">Status</th>
                   <th className="px-6 py-4 text-center text-sm font-semibold text-primary-900">Actions</th>
                 </tr>
@@ -154,7 +201,7 @@ export default function AdminOrdersPage() {
               <tbody className="divide-y divide-primary-200">
                 {filteredOrders.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center text-primary-600">
+                    <td colSpan="7" className="px-6 py-12 text-center text-primary-600">
                       No orders found
                     </td>
                   </tr>
@@ -175,6 +222,19 @@ export default function AdminOrdersPage() {
                         ₹{(order.totalAmount || order.total || 0).toLocaleString('en-IN')}
                       </td>
                       <td className="px-6 py-4">
+                        {order.shipping?.awb_code ? (
+                          <div className="text-sm">
+                            <p className="font-medium text-blue-600">{order.shipping.courier_name}</p>
+                            <p className="text-xs text-gray-600">AWB: {order.shipping.awb_code}</p>
+                            {order.shipping.current_status && (
+                              <p className="text-xs text-green-600">{order.shipping.current_status}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-400">Not shipped</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
                         <select
                           value={order.status}
                           onChange={(e) => handleUpdateStatus(order._id, e.target.value)}
@@ -188,7 +248,7 @@ export default function AdminOrdersPage() {
                         </select>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center justify-center">
+                        <div className="flex items-center justify-center gap-2">
                           <Link
                             href={`/orders/${order._id}`}
                             className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -196,6 +256,42 @@ export default function AdminOrdersPage() {
                           >
                             <FiEye />
                           </Link>
+                          
+                          {!order.shipping?.awb_code ? (
+                            <button
+                              onClick={() => handleCreateShipment(order)}
+                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                              title="Create Shipment"
+                            >
+                              <FiTruck />
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => handleTrackShipment(order)}
+                                className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                                title="Track Shipment"
+                              >
+                                <FiMapPin />
+                              </button>
+                              {order.shipping.label_url && (
+                                <button
+                                  onClick={() => window.open(order.shipping.label_url, '_blank')}
+                                  className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                                  title="Download Label"
+                                >
+                                  <FiDownload />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleCancelShipment(order._id)}
+                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Cancel Shipment"
+                              >
+                                <FiX />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -216,6 +312,70 @@ export default function AdminOrdersPage() {
             </div>
           ))}
         </div>
+
+        {/* Shiprocket Shipment Modal */}
+        {selectedOrder && (
+          <ShiprocketShipmentModal
+            order={selectedOrder}
+            isOpen={showShipmentModal}
+            onClose={() => {
+              setShowShipmentModal(false);
+              setSelectedOrder(null);
+            }}
+            onSuccess={fetchOrders}
+          />
+        )}
+
+        {/* Tracking Modal */}
+        {showTrackingModal && trackingData && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Track Shipment - {selectedOrder.orderId}
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowTrackingModal(false);
+                    setTrackingData(null);
+                    setSelectedOrder(null);
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <FiX className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="p-6">
+                <div className="mb-4 p-4 bg-blue-50 rounded-lg">
+                  <p className="font-semibold">AWB: {trackingData.tracking_data?.awb_code}</p>
+                  <p className="text-sm">Courier: {trackingData.tracking_data?.courier_name}</p>
+                  <p className="text-sm font-medium text-blue-600 mt-2">
+                    Status: {trackingData.tracking_data?.shipment_status}
+                  </p>
+                </div>
+                
+                {trackingData.tracking_data?.shipment_track?.length > 0 && (
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-lg">Tracking History</h3>
+                    <div className="space-y-3">
+                      {trackingData.tracking_data.shipment_track.map((track, idx) => (
+                        <div key={idx} className="flex gap-4 border-l-2 border-blue-400 pl-4 pb-4">
+                          <div className="flex-1">
+                            <p className="font-medium">{track.current_status}</p>
+                            <p className="text-sm text-gray-600">{track.location || 'N/A'}</p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {new Date(track.date).toLocaleString('en-IN')}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
     </AdminLayout>

@@ -180,6 +180,21 @@ export const adminAPI = {
   updateOrderStatus: (id, status) =>
     api.patch(`/admin/orders/${id}`, { status }),
 
+  // Shiprocket
+  getShippingRates: (data) => api.post("/admin/shiprocket/rates", data),
+  createShipment: (orderId, data) =>
+    api.post(`/admin/shiprocket/create-shipment/${orderId}`, data),
+  generateLabel: (orderId) => api.post(`/admin/shiprocket/label/${orderId}`),
+  trackShipment: (orderId) => api.get(`/admin/shiprocket/track/${orderId}`),
+  cancelShipment: (orderId) => api.post(`/admin/shiprocket/cancel/${orderId}`),
+  schedulePickup: (orderId, data) =>
+    api.post(`/admin/shiprocket/schedule-pickup/${orderId}`, data),
+  generateManifest: (orderId) =>
+    api.post(`/admin/shiprocket/manifest/${orderId}`),
+  markAsShipped: (orderId) =>
+    api.post(`/admin/shiprocket/mark-shipped/${orderId}`),
+  getPickupAddresses: () => api.get("/admin/shiprocket/pickup-addresses"),
+
   // Users
   getAllUsers: (params) => api.get("/admin/users", { params }),
   getUserById: (id) => api.get(`/admin/users/${id}`),

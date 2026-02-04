@@ -197,6 +197,44 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
+          {/* Shipping Information - NEW */}
+          {order.shipping?.awb_code && !isCancelled && (
+            <div className="pt-6 border-t border-primary-200">
+              <h3 className="font-semibold text-primary-900 mb-4">Shipping Details</h3>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-blue-600 mb-1">Courier Partner</p>
+                    <p className="font-semibold text-blue-900">{order.shipping.courier_name || order.shipping.courier}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-blue-600 mb-1">Tracking Number (AWB)</p>
+                    <p className="font-mono font-semibold text-blue-900">{order.shipping.awb_code || order.shipping.trackingId}</p>
+                  </div>
+                  {order.shipping.current_status && (
+                    <div className="md:col-span-2">
+                      <p className="text-sm text-blue-600 mb-1">Current Status</p>
+                      <p className="font-semibold text-blue-900">{order.shipping.current_status}</p>
+                      {order.shipping.last_tracking_update && (
+                        <p className="text-xs text-blue-600 mt-1">
+                          Last updated: {new Date(order.shipping.last_tracking_update).toLocaleString('en-IN')}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {order.shipping.estimated_delivery_date && (
+                    <div className="md:col-span-2">
+                      <p className="text-sm text-blue-600 mb-1">Estimated Delivery</p>
+                      <p className="font-semibold text-blue-900">
+                        {new Date(order.shipping.estimated_delivery_date).toLocaleDateString('en-IN')}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Order Tracking */}
           {!isCancelled && (
             <div className="pt-6 border-t border-primary-200">
