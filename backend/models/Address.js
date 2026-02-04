@@ -48,6 +48,13 @@ const addressSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      validate: {
+        validator: function (v) {
+          // Indian PIN codes are 6 digits
+          return /^[0-9]{6}$/.test(v);
+        },
+        message: (props) => `${props.value} is not a valid 6-digit PIN code!`,
+      },
     },
     country: {
       type: String,
@@ -59,7 +66,7 @@ const addressSchema = new mongoose.Schema(
       default: false,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Ensure only one default address per user
@@ -69,7 +76,7 @@ addressSchema.pre("save", async function () {
       .model("Address")
       .updateMany(
         { user: this.user, _id: { $ne: this._id } },
-        { isDefault: false }
+        { isDefault: false },
       );
   }
 });

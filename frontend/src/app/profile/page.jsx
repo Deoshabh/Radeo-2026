@@ -296,10 +296,13 @@ export default function ProfilePage() {
                 <input
                   type="text"
                   placeholder="Pin Code"
-                  value={addressForm.pinCode}
-                  onChange={(e) => setAddressForm({ ...addressForm, pinCode: e.target.value })}
+                  value={addressForm.postalCode}
+                  onChange={(e) => setAddressForm({ ...addressForm, postalCode: e.target.value })}
                   className="px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
                   required
+                  maxLength="6"
+                  pattern="[0-9]{6}"
+                  title="Please enter a valid 6-digit PIN code"
                 />
                 <label className="flex items-center gap-2">
                   <input
@@ -349,7 +352,7 @@ export default function ProfilePage() {
                       <p className="text-primary-700">{address.addressLine1}</p>
                       {address.addressLine2 && <p className="text-primary-700">{address.addressLine2}</p>}
                       <p className="text-primary-700">
-                        {address.city}, {address.state} - {address.pinCode}
+                        {address.city}, {address.state} - {address.postalCode}
                       </p>
                       <p className="text-primary-600 text-sm mt-1">Phone: {address.phone}</p>
                     </div>
