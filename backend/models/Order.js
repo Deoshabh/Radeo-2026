@@ -84,6 +84,19 @@ const orderSchema = new mongoose.Schema(
     shipping: {
       trackingId: String,
       courier: String,
+      // Shiprocket fields
+      shiprocket_order_id: Number,
+      shipment_id: Number,
+      awb_code: String,
+      courier_name: String,
+      courier_id: Number,
+      label_url: String,
+      manifest_url: String,
+      pickup_scheduled_date: String,
+      estimated_delivery_date: String,
+      tracking_url: String,
+      current_status: String,
+      last_tracking_update: Date,
     },
 
     status: {
