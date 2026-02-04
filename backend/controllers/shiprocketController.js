@@ -459,6 +459,18 @@ exports.markAsShipped = async (req, res) => {
  */
 exports.handleWebhook = async (req, res) => {
   try {
+    // Verify webhook security token (if configured)
+    if (process.env.SHIPROCKET_WEBHOOK_SECRET) {
+      const receivedToken = req.headers["x-api-key"];
+      if (receivedToken !== process.env.SHIPROCKET_WEBHOOK_SECRET) {
+        console.log("⚠️ Webhook unauthorized: Invalid security token");
+        return res.status(401).json({
+          success: false,
+          message: "Unauthorized: Invalid security token",
+        });
+      }
+    }
+
     const webhookData = req.body;
 
     console.log("📦 Shiprocket webhook received:", webhookData);
