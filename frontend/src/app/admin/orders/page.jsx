@@ -1,32 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { useAuth } from '@/context/AuthContext';
-import { adminAPI } from '@/utils/api';
-import AdminLayout from '@/components/AdminLayout';
-import ShiprocketShipmentModal from '@/components/ShiprocketShipmentModal';
-import toast from 'react-hot-toast';
-import { FiPackage, FiTruck, FiCheck, FiClock, FiEye, FiSearch, FiDownload, FiMapPin, FiX } from 'react-icons/fi';
+/**
+ * Admin Orders Page - Enhanced Version
+ * Redirects to the enhanced orders dashboard with all features
+ */
 
-export default function AdminOrdersPage() {
-  const router = useRouter();
-  const { user, isAuthenticated, loading } = useAuth();
-  const [orders, setOrders] = useState([]);
-  const [loadingOrders, setLoadingOrders] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [showShipmentModal, setShowShipmentModal] = useState(false);
-  const [trackingData, setTrackingData] = useState(null);
-  const [showTrackingModal, setShowTrackingModal] = useState(false);
-
-  useEffect(() => {
-    if (!loading && (!isAuthenticated || user?.role !== 'admin')) {
-      router.push('/');
-    }
-  }, [user, isAuthenticated, loading, router]);
+export { default } from './page-enhanced';
 
   const fetchOrders = async () => {
     try {

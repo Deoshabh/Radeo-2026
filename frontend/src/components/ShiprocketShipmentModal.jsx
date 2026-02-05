@@ -34,17 +34,32 @@ export default function ShiprocketShipmentModal({ order, isOpen, onClose, onSucc
     try {
       setLoading(true);
       
-      // Get pickup postcode from selected pickup address or use default
-      let pickupPostcode = '201301'; // Default Noida PIN code (update with your actual warehouse PIN)
+      // Get pickup postcode from Shiprocket pickup addresses
+      let pickupPostcode = null;
       
-      // If pickup addresses are loaded, find the selected one
-      if (pickupAddresses.length > 0) {
-        const selectedPickup = pickupAddresses.find(
-          addr => addr.pickup_location === pickupLocation
-        );
-        if (selectedPickup && selectedPickup.pin_code) {
-          pickupPostcode = selectedPickup.pin_code;
-        }
+      if (pickupAddresses.length === 0) {
+        toast.error('No pickup locations configured in Shiprocket. Please add a pickup address first.');
+        setLoading(false);
+        return;
+      }
+      
+      // Find the selected pickup location
+      const selectedPickup = pickupAddresses.find(
+        addr => addr.pickup_location === pickupLocation
+      );
+      
+      if (selectedPickup && selectedPickup.pin_code) {
+        pickupPostcode = selectedPickup.pin_code;
+      } else {
+        // Use the first available pickup address if selected location not found
+        pickupPostcode = pickupAddresses[0].pin_code;
+        setPickupLocation(pickupAddresses[0].pickup_location);
+      }
+      
+      if (!pickupPostcode) {
+        toast.error('Invalid pickup location configuration. Please check Shiprocket settings.');
+        setLoading(false);
+        return;
       }
       
       const response = await adminAPI.getShippingRates({
