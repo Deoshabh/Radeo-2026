@@ -1,7 +1,6 @@
 const Order = require("../models/Order");
 const User = require("../models/User");
 const { analyzeOrderRisks } = require("../utils/riskDetection");
-const shiprocketService = require("../services/shiprocketService");
 
 exports.getAllOrders = async (req, res) => {
   try {
