@@ -16,8 +16,8 @@ const soketi = new Pusher({
   cluster: process.env.SOKETI_CLUSTER || "mt1",
   host:
     process.env.SOKETI_HOST || "adobot-soketi-dbe669-157-173-218-96.traefik.me",
-  port: process.env.SOKETI_PORT || 6001,
-  useTLS: process.env.SOKETI_USE_TLS === "false",
+  port: parseInt(process.env.SOKETI_PORT) || 6001,
+  useTLS: process.env.SOKETI_USE_TLS === "true",
 });
 
 /**
