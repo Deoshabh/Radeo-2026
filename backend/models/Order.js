@@ -107,6 +107,27 @@ const orderSchema = new mongoose.Schema(
           scanType: String,
         },
       ],
+      // Shiprocket lifecycle status
+      lifecycle_status: {
+        type: String,
+        enum: [
+          "ready_to_ship",
+          "shipment_created",
+          "pickup_scheduled",
+          "picked_up",
+          "in_transit",
+          "out_for_delivery",
+          "delivered",
+          "failed_delivery",
+          "rto_initiated",
+          "rto_delivered",
+          "cancelled",
+        ],
+        default: "ready_to_ship",
+      },
+      // Duplicate prevention
+      shipment_creation_attempted: { type: Boolean, default: false },
+      shipment_created_at: Date,
     },
 
     status: {

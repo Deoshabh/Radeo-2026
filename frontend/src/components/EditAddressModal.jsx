@@ -109,9 +109,9 @@ export default function EditAddressModal({ order, onClose, onSuccess }) {
               value={formData.addressLine1}
               onChange={handleChange}
               required
+              placeholder="House/Flat No., Building Name"
               disabled={Boolean(order.shipping?.shipment_id)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
           </div>
 
@@ -125,9 +125,9 @@ export default function EditAddressModal({ order, onClose, onSuccess }) {
               name="addressLine2"
               value={formData.addressLine2}
               onChange={handleChange}
+              placeholder="Street, Locality, Landmark"
               disabled={Boolean(order.shipping?.shipment_id)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
           </div>
 
@@ -142,6 +142,7 @@ export default function EditAddressModal({ order, onClose, onSuccess }) {
                 name="city"
                 value={formData.city}
                 onChange={handleChange}
+                required
                 disabled={Boolean(order.shipping?.shipment_id)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
               />
@@ -175,8 +176,7 @@ export default function EditAddressModal({ order, onClose, onSuccess }) {
                 maxLength="6"
                 pattern="[0-9]{6}"
                 disabled={Boolean(order.shipping?.shipment_id)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
               />
             </div>
           </div>

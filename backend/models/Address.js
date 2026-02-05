@@ -65,6 +65,18 @@ const addressSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // Serviceability flags (Amazon/Flipkart style)
+    verifiedDelivery: {
+      type: Boolean,
+      default: false,
+    },
+    codAvailable: {
+      type: Boolean,
+      default: false,
+    },
+    lastVerified: {
+      type: Date,
+    },
   },
   { timestamps: true },
 );

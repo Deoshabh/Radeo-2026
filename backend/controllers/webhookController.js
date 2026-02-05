@@ -31,6 +31,27 @@ const STATUS_MAPPING = {
 };
 
 /**
+ * Lifecycle status mapping: Shiprocket status → Lifecycle status
+ */
+const LIFECYCLE_MAPPING = {
+  "ORDER PLACED": "ready_to_ship",
+  "AWB GENERATED": "shipment_created",
+  "AWB ASSIGNED": "shipment_created",
+  "PICKUP SCHEDULED": "pickup_scheduled",
+  "PICKED UP": "picked_up",
+  "IN TRANSIT": "in_transit",
+  SHIPPED: "in_transit",
+  "OUT FOR DELIVERY": "out_for_delivery",
+  DELIVERED: "delivered",
+  "FAILED DELIVERY": "failed_delivery",
+  "RTO INITIATED": "rto_initiated",
+  "RTO DELIVERED": "rto_delivered",
+  "RTO IN TRANSIT": "rto_initiated",
+  RTO: "rto_initiated",
+  CANCELLED: "cancelled",
+};
+
+/**
  * Generate unique event ID for idempotency
  * @param {Object} payload - Webhook payload
  * @returns {String} - Unique event identifier
@@ -85,8 +106,15 @@ const processWebhookAsync = async (webhookLog) => {
 
     // Update order shipping status
     const oldStatus = order.shipping.current_status;
+    const oldLifecycleStatus = order.shipping.lifecycle_status;
     order.shipping.current_status = currentStatus;
     order.shipping.last_tracking_update = new Date();
+
+    // Update lifecycle status
+    const newLifecycleStatus = LIFECYCLE_MAPPING[currentStatus?.toUpperCase()];
+    if (newLifecycleStatus) {
+      order.shipping.lifecycle_status = newLifecycleStatus;
+    }
 
     // Add to tracking history
     if (!order.shipping.trackingHistory) {
@@ -119,6 +147,13 @@ const processWebhookAsync = async (webhookLog) => {
         `📦 Order ${order.orderId}: Status ${order.status} → ${newOrderStatus}`,
       );
       order.status = newOrderStatus;
+    }
+
+    // Log lifecycle transition
+    if (oldLifecycleStatus !== newLifecycleStatus) {
+      console.log(
+        `🔄 Order ${order.orderId}: Lifecycle ${oldLifecycleStatus} → ${newLifecycleStatus}`,
+      );
     }
 
     // Update estimated delivery date if provided

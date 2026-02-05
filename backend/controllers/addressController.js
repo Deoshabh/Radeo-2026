@@ -1,4 +1,83 @@
 const Address = require("../models/Address");
+const { validateAddress } = require("../utils/addressValidator");
+
+/**
+ * Validate address with serviceability check
+ * POST /api/v1/address/validate
+ */
+exports.validateAddressAPI = async (req, res) => {
+  try {
+    const { name, phone, pincode, house, street, landmark, city, state } =
+      req.body;
+
+    // Validate input
+    if (!name || !phone || !pincode || !house || !street) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required address fields",
+        required: ["name", "phone", "pincode", "house", "street"],
+      });
+    }
+
+    // Perform validation
+    const result = await validateAddress(
+      {
+        name,
+        phone,
+        pincode,
+        house,
+        street,
+        landmark: landmark || "",
+        city: city || "",
+        state: state || "",
+      },
+      true, // Check serviceability
+    );
+
+    res.json({
+      success: result.valid,
+      ...result,
+    });
+  } catch (error) {
+    console.error("Address validation error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Address validation failed",
+    });
+  }
+};
+
+/**
+ * Quick PIN code serviceability check
+ * GET /api/v1/address/check-pincode/:pincode
+ */
+exports.checkPincodeServiceability = async (req, res) => {
+  try {
+    const { pincode } = req.params;
+    const { checkServiceability } = require("../utils/addressValidator");
+
+    if (!/^\d{6}$/.test(pincode)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid PIN code format",
+      });
+    }
+
+    const result = await checkServiceability(pincode);
+
+    res.json({
+      success: true,
+      pincode,
+      ...result,
+    });
+  } catch (error) {
+    console.error("PIN code check error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to check PIN code serviceability",
+    });
+  }
+};
 
 // @desc    Get all addresses for logged-in user
 // @route   GET /api/v1/addresses

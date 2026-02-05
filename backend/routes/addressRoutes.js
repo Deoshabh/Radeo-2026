@@ -6,11 +6,19 @@ const {
   updateAddress,
   deleteAddress,
   setDefaultAddress,
+  validateAddressAPI,
+  checkPincodeServiceability,
 } = require("../controllers/addressController");
 const { authenticate } = require("../middleware/auth");
 
-// All routes require authentication
+// Public endpoint for PIN code check
+router.get("/check-pincode/:pincode", checkPincodeServiceability);
+
+// All other routes require authentication
 router.use(authenticate);
+
+// @route   POST /api/v1/addresses/validate
+router.post("/validate", validateAddressAPI);
 
 // @route   GET /api/v1/addresses
 router.get("/", getAddresses);
