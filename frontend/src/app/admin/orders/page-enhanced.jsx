@@ -14,6 +14,7 @@ import ShiprocketShipmentModal from '@/components/ShiprocketShipmentModal';
 import OrderTimelinePanel from '@/components/OrderTimelinePanel';
 import EditAddressModal from '@/components/EditAddressModal';
 import BulkActionsBar from '@/components/BulkActionsBar';
+import OrderDetailsModal from '@/components/OrderDetailsModal';
 import toast from 'react-hot-toast';
 import {
   FiPackage,
@@ -43,6 +44,7 @@ export default function AdminOrdersDashboard() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showShipmentModal, setShowShipmentModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [expandedRow, setExpandedRow] = useState(null);
   const [showEditAddressModal, setShowEditAddressModal] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState([]);
@@ -178,6 +180,11 @@ export default function AdminOrdersDashboard() {
   };
 
   // Action handlers
+  const handleViewDetails = (order) => {
+    setSelectedOrder(order);
+    setShowDetailsModal(true);
+  };
+
   const handleCreateShipment = (order) => {
     setSelectedOrder(order);
     setShowShipmentModal(true);
@@ -506,6 +513,18 @@ export default function AdminOrdersDashboard() {
                       {/* Actions */}
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-2">
+                          {/* View Details */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewDetails(order);
+                            }}
+                            className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            title="View Details"
+                          >
+                            <FiEye className="w-4 h-4" />
+                          </button>
+
                           {/* Create Shipment */}
                           {!order.shipping?.awb_code && order.status === 'confirmed' && (
                             <button
@@ -612,6 +631,17 @@ export default function AdminOrdersDashboard() {
             setSelectedOrder(null);
           }}
           onSuccess={fetchOrders}
+        />
+      )}
+
+      {showDetailsModal && selectedOrder && (
+        <OrderDetailsModal
+          order={selectedOrder}
+          isOpen={showDetailsModal}
+          onClose={() => {
+            setShowDetailsModal(false);
+            setSelectedOrder(null);
+          }}
         />
       )}
     </AdminLayout>

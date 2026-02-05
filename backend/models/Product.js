@@ -53,6 +53,17 @@ const productSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    gstPercentage: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
+    averageDeliveryCost: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     comparePrice: {
       type: Number,
     },

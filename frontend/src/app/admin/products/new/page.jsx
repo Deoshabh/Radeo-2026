@@ -28,6 +28,8 @@ function ProductFormContent() {
     slug: '',
     description: '',
     price: '',
+    gstPercentage: '',
+    averageDeliveryCost: '',
     comparePrice: '',
     category: '',
     brand: '',
@@ -71,6 +73,8 @@ function ProductFormContent() {
         slug: product.slug || '',
         description: product.description || '',
         price: product.price || '',
+        gstPercentage: product.gstPercentage || '',
+        averageDeliveryCost: product.averageDeliveryCost || '',
         comparePrice: product.comparePrice || '',
         category: product.category || '',
         brand: product.brand || '',
@@ -506,6 +510,45 @@ function ProductFormContent() {
               
               <div>
                 <label className="block text-sm font-medium text-primary-900 mb-2">
+                  GST Percentage (%)
+                </label>
+                <input
+                  type="number"
+                  name="gstPercentage"
+                  value={formData.gstPercentage}
+                  onChange={handleChange}
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  className="w-full px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
+                  placeholder="e.g., 18"
+                />
+                <p className="text-xs text-primary-500 mt-1">
+                  Optional - GST will be added to final customer price
+                </p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-primary-900 mb-2">
+                  Average Delivery Cost (₹)
+                </label>
+                <input
+                  type="number"
+                  name="averageDeliveryCost"
+                  value={formData.averageDeliveryCost}
+                  onChange={handleChange}
+                  min="0"
+                  step="0.01"
+                  className="w-full px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
+                  placeholder="e.g., 100"
+                />
+                <p className="text-xs text-primary-500 mt-1">
+                  Optional - Delivery cost added to customer price
+                </p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-primary-900 mb-2">
                   Compare Price (₹)
                 </label>
                 <input
@@ -522,6 +565,41 @@ function ProductFormContent() {
                   Original price for discount display
                 </p>
               </div>
+              
+              {/* Final Price Preview */}
+              {formData.price && (
+                <div className="sm:col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-blue-900 mb-2">Final Customer Price Preview</h4>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-blue-700">Base Price:</span>
+                      <span className="font-medium text-blue-900">₹{parseFloat(formData.price || 0).toLocaleString('en-IN')}</span>
+                    </div>
+                    {formData.gstPercentage > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-blue-700">GST ({formData.gstPercentage}%):</span>
+                        <span className="font-medium text-blue-900">₹{(parseFloat(formData.price || 0) * parseFloat(formData.gstPercentage || 0) / 100).toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
+                    {formData.averageDeliveryCost > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-blue-700">Delivery Cost:</span>
+                        <span className="font-medium text-blue-900">₹{parseFloat(formData.averageDeliveryCost || 0).toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between pt-2 border-t border-blue-300">
+                      <span className="text-blue-900 font-semibold">Total Customer Price:</span>
+                      <span className="font-bold text-blue-900 text-lg">
+                        ₹{(
+                          parseFloat(formData.price || 0) +
+                          (parseFloat(formData.price || 0) * parseFloat(formData.gstPercentage || 0) / 100) +
+                          parseFloat(formData.averageDeliveryCost || 0)
+                        ).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               <div>
                 <label className="block text-sm font-medium text-primary-900 mb-2">
