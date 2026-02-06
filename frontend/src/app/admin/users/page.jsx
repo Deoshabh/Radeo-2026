@@ -203,7 +203,6 @@ export default function AdminUsersPage() {
                         >
                           <option value="customer">Customer</option>
                           <option value="admin">Admin</option>
-                          <option value="staff">Staff</option>
                         </select>
                       </td>
                       <td className="px-6 py-4 text-center">

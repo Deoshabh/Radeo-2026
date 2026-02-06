@@ -16,6 +16,7 @@ import OrderTimelinePanel from '@/components/OrderTimelinePanel';
 import ViewContactModal from '@/components/ViewContactModal';
 import BulkActionsBar from '@/components/BulkActionsBar';
 import OrderDetailsModal from '@/components/OrderDetailsModal';
+import UserHistoryModal from '@/components/UserHistoryModal';
 import toast from 'react-hot-toast';
 import {
   FiPackage,
@@ -27,7 +28,6 @@ import {
   FiMapPin,
   FiPrinter,
   FiEdit2,
-  FiPhone,
   FiAlertTriangle,
   FiAlertCircle,
   FiDollarSign,
@@ -51,6 +51,8 @@ export default function AdminOrdersDashboard() {
   const [showContactModal, setShowContactModal] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [showBulkActions, setShowBulkActions] = useState(false);
+  const [showUserHistory, setShowUserHistory] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
 
   useEffect(() => {
     if (!loading && (!isAuthenticated || user?.role !== 'admin')) {
@@ -178,9 +180,16 @@ export default function AdminOrdersDashboard() {
     setShowContactModal(true);
   };
 
-  const handleContactCustomer = (order) => {
-    setSelectedOrder(order);
-    setShowContactModal(true);
+  const handleViewUserHistory = (order) => {
+    if (order.user?._id && order.shippingAddress?.fullName) {
+      setSelectedUser({
+        id: order.user._id,
+        name: order.shippingAddress.fullName
+      });
+      setShowUserHistory(true);
+    } else {
+      toast.error('User information not available');
+    }
   };
 
   // CSV Export handler
@@ -404,9 +413,13 @@ export default function AdminOrdersDashboard() {
                       {/* Customer */}
                       <td className="px-4 py-4">
                         <div>
-                          <div className="font-medium text-gray-900">
+                          <button
+                            onClick={() => handleViewUserHistory(order)}
+                            className="font-medium text-primary-700 hover:text-primary-900 hover:underline text-left transition-colors"
+                            title="View User History"
+                          >
                             {order.shippingAddress?.fullName}
-                          </div>
+                          </button>
                           <div className="text-xs text-gray-500">
                             {order.shippingAddress?.phone}
                           </div>
@@ -532,15 +545,6 @@ export default function AdminOrdersDashboard() {
                           >
                             <FiMapPin />
                           </button>
-
-                          {/* View Contact Info */}
-                          <button
-                            onClick={() => handleContactCustomer(order)}
-                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
-                            title="View Contact Info"
-                          >
-                            <FiPhone />
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -605,6 +609,18 @@ export default function AdminOrdersDashboard() {
           onClose={() => {
             setShowDetailsModal(false);
             setSelectedOrder(null);
+          }}
+        />
+      )}
+
+      {/* User History Modal */}
+      {showUserHistory && selectedUser && (
+        <UserHistoryModal
+          userId={selectedUser.id}
+          userName={selectedUser.name}
+          onClose={() => {
+            setShowUserHistory(false);
+            setSelectedUser(null);
           }}
         />
       )}

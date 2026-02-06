@@ -51,16 +51,16 @@ export default function UserContactModal({ user, onClose }) {
             </div>
 
             {/* Phone */}
-            {user.phone && (
+            {user.addresses && user.addresses.length > 0 && user.addresses[0].phone && (
               <div className="flex items-start gap-3 p-4 bg-primary-50 rounded-lg">
                 <FiPhone className="w-5 h-5 text-primary-700 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-primary-900 mb-1">Phone Number</p>
                   <a 
-                    href={`tel:+91${user.phone}`}
+                    href={`tel:+91${user.addresses[0].phone}`}
                     className="text-primary-700 hover:text-primary-900 hover:underline"
                   >
-                    +91 {user.phone}
+                    +91 {user.addresses[0].phone}
                   </a>
                 </div>
               </div>
@@ -102,17 +102,23 @@ export default function UserContactModal({ user, onClose }) {
                     )}
                     <p className="text-sm text-primary-700">{address.country || 'India'}</p>
                   </div>
-                ))}
-              </div>
+                ))}              </div>
             )}
 
-            {!user.phone && (!user.addresses || user.addresses.length === 0) && (
+            {/* Warning messages */}
+            {!user.addresses || user.addresses.length === 0 ? (
               <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-sm text-yellow-800">
-                  No additional contact information available for this user.
+                  No address information available for this user.
                 </p>
               </div>
-            )}
+            ) : !user.addresses[0].phone ? (
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  No phone number available for this user.
+                </p>
+              </div>
+            ) : null}
           </div>
         </div>
 
