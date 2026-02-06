@@ -1,143 +1,90 @@
-'use client';
-
 import { useState, useEffect } from 'react';
-import {
-  FiX,
-  FiShoppingBag,
-  FiHeart,
-  FiShoppingCart,
-  FiTag,
-  FiTrendingUp,
-  FiPackage,
-  FiCreditCard,
-  FiDollarSign,
-  FiCalendar,
-  FiExternalLink,
-} from 'react-icons/fi';
+import { FiX, FiShoppingBag, FiHeart, FiShoppingCart, FiTag, FiPackage, FiTrendingUp } from 'react-icons/fi';
+import { adminAPI } from '@/utils/api';
+import toast from 'react-hot-toast';
 
-export default function UserHistoryModal({ userId, onClose, fetchHistory }) {
+export default function UserHistoryModal({ userId, userName, onClose }) {
   const [loading, setLoading] = useState(true);
-  const [history, setHistory] = useState(null);
-  const [activeTab, setActiveTab] = useState('orders');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [historyData, setHistoryData] = useState(null);
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
-    loadHistory();
-  }, [userId, currentPage]);
+    if (!userId) return;
+    fetchUserHistory();
+  }, [userId]);
 
-  const loadHistory = async () => {
+  const fetchUserHistory = async () => {
+    if (!userId) return;
     try {
       setLoading(true);
-      const data = await fetchHistory(userId, currentPage);
-      setHistory(data);
+      const response = await adminAPI.getUserHistory(userId);
+      setHistoryData(response.data.data);
     } catch (error) {
-      console.error('Failed to load history:', error);
+      toast.error('Failed to fetch user history');
+      console.error('Failed to fetch user history:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const getPaymentModeColor = (mode) => {
-    switch (mode?.toUpperCase()) {
-      case 'COD':
-        return 'bg-amber-100 text-amber-800';
-      case 'RAZORPAY':
-      case 'STRIPE':
-        return 'bg-blue-100 text-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  if (!userId) return null;
 
-  const getPaymentStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'paid':
-        return 'bg-green-100 text-green-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'failed':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'delivered':
-        return 'bg-green-100 text-green-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'processing':
-        return 'bg-blue-100 text-blue-800';
-      case 'shipped':
-        return 'bg-purple-100 text-purple-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: FiTrendingUp },
+    { id: 'orders', label: 'Orders', icon: FiShoppingBag },
+    { id: 'wishlist', label: 'Wishlist', icon: FiHeart },
+    { id: 'cart', label: 'Cart', icon: FiShoppingCart },
+    { id: 'coupons', label: 'Coupons', icon: FiTag },
+  ];
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
       maximumFractionDigits: 0,
-    }).format(amount || 0);
+    }).format(amount);
   };
 
-  const tabs = [
-    { id: 'orders', label: 'Orders', icon: FiShoppingBag },
-    { id: 'wishlist', label: 'Wishlist', icon: FiHeart },
-    { id: 'cart', label: 'Cart', icon: FiShoppingCart },
-    { id: 'coupons', label: 'Coupons', icon: FiTag },
-    { id: 'summary', label: 'Summary', icon: FiTrendingUp },
-  ];
-
-  if (loading && !history) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-900 mx-auto"></div>
-          <p className="text-primary-700 mt-4">Loading history...</p>
-        </div>
-      </div>
-    );
-  }
+  const getStatusColor = (status) => {
+    const colors = {
+      'Pending': 'bg-yellow-100 text-yellow-800',
+      'Processing': 'bg-blue-100 text-blue-800',
+      'Shipped': 'bg-purple-100 text-purple-800',
+      'Delivered': 'bg-green-100 text-green-800',
+      'Cancelled': 'bg-red-100 text-red-800',
+      'Refunded': 'bg-gray-100 text-gray-800',
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
+  };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="border-b border-primary-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary-100 rounded-lg">
-              <FiTrendingUp className="w-5 h-5 text-primary-700" />
-            </div>
-            <h2 className="text-xl font-bold text-primary-900">User Activity History</h2>
-          </div>
+        <div className="flex items-center justify-between p-6 border-b border-primary-200">
+          <h3 className="text-xl font-semibold text-primary-900">
+            User Activity History - {userName}
+          </h3>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-primary-100 rounded-lg transition-colors"
-            aria-label="Close modal"
+            className="text-primary-500 hover:text-primary-700 transition-colors"
           >
-            <FiX className="w-5 h-5 text-primary-600" />
+            <FiX className="w-6 h-6" />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="border-b border-primary-200 px-6 flex gap-2 overflow-x-auto flex-shrink-0">
+        <div className="flex border-b border-primary-200 px-6 overflow-x-auto">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap ${
+                className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors whitespace-nowrap ${
                   activeTab === tab.id
-                    ? 'border-primary-900 text-primary-900 font-semibold'
-                    : 'border-transparent text-primary-600 hover:text-primary-900'
+                    ? 'text-primary-900 border-b-2 border-primary-900'
+                    : 'text-primary-600 hover:text-primary-900'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -149,380 +96,269 @@ export default function UserHistoryModal({ userId, onClose, fetchHistory }) {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
-          {/* Orders Tab */}
-          {activeTab === 'orders' && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-primary-900 flex items-center gap-2">
-                <FiShoppingBag className="w-5 h-5" />
-                Order History
-                {history?.orders?.pagination?.totalOrders > 0 && (
-                  <span className="text-sm font-normal text-primary-600">
-                    ({history.orders.pagination.totalOrders} total)
-                  </span>
-                )}
-              </h3>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-900"></div>
+            </div>
+          ) : historyData ? (
+            <>
+              {/* Overview Tab */}
+              {activeTab === 'overview' && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-blue-700 font-medium">Total Orders</p>
+                          <p className="text-2xl font-bold text-blue-900 mt-1">
+                            {historyData.statistics.totalOrders}
+                          </p>
+                        </div>
+                        <FiShoppingBag className="w-8 h-8 text-blue-600" />
+                      </div>
+                    </div>
+                    <div className="bg-green-50 p-4 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-green-700 font-medium">Total Spent</p>
+                          <p className="text-2xl font-bold text-green-900 mt-1">
+                            {formatCurrency(historyData.statistics.totalSpent)}
+                          </p>
+                        </div>
+                        <FiTrendingUp className="w-8 h-8 text-green-600" />
+                      </div>
+                    </div>
+                    <div className="bg-purple-50 p-4 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-purple-700 font-medium">Completed</p>
+                          <p className="text-2xl font-bold text-purple-900 mt-1">
+                            {historyData.statistics.completedOrders}
+                          </p>
+                        </div>
+                        <FiPackage className="w-8 h-8 text-purple-600" />
+                      </div>
+                    </div>
+                  </div>
 
-              {history?.orders?.data?.length > 0 ? (
-                <>
-                  <div className="space-y-3">
-                    {history.orders.data.map((order) => (
-                      <div
-                        key={order.orderId}
-                        className="border border-primary-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                      >
-                        <div className="flex flex-wrap items-start justify-between gap-4">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-3 mb-2">
-                              <span className="font-semibold text-primary-900">
-                                #{order.orderId}
-                              </span>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                                {order.status}
-                              </span>
-                            </div>
-                            
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                              <div>
-                                <p className="text-primary-500 mb-1">Date</p>
-                                <p className="text-primary-900 font-medium">
-                                  {new Date(order.date).toLocaleDateString('en-IN')}
-                                </p>
-                              </div>
-                              
-                              <div>
-                                <p className="text-primary-500 mb-1">Items</p>
-                                <p className="text-primary-900 font-medium flex items-center gap-1">
-                                  <FiPackage className="w-3 h-3" />
-                                  {order.items}
-                                </p>
-                              </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-pink-50 p-4 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-pink-700 font-medium">Wishlist Items</p>
+                          <p className="text-2xl font-bold text-pink-900 mt-1">
+                            {historyData.statistics.wishlistItems}
+                          </p>
+                        </div>
+                        <FiHeart className="w-8 h-8 text-pink-600" />
+                      </div>
+                    </div>
+                    <div className="bg-orange-50 p-4 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-orange-700 font-medium">Cart Items</p>
+                          <p className="text-2xl font-bold text-orange-900 mt-1">
+                            {historyData.statistics.cartItems}
+                          </p>
+                        </div>
+                        <FiShoppingCart className="w-8 h-8 text-orange-600" />
+                      </div>
+                    </div>
+                    <div className="bg-yellow-50 p-4 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-yellow-700 font-medium">Coupons Used</p>
+                          <p className="text-2xl font-bold text-yellow-900 mt-1">
+                            {historyData.statistics.couponsUsed}
+                          </p>
+                        </div>
+                        <FiTag className="w-8 h-8 text-yellow-600" />
+                      </div>
+                    </div>
+                  </div>
 
-                              <div>
-                                <p className="text-primary-500 mb-1">Payment Mode</p>
-                                <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getPaymentModeColor(order.paymentMode)}`}>
-                                  <FiCreditCard className="w-3 h-3 mr-1" />
-                                  {order.paymentMode}
-                                </span>
-                              </div>
+                  {historyData.statistics.totalOrders === 0 && (
+                    <div className="bg-gray-50 p-8 rounded-lg text-center">
+                      <p className="text-gray-600">This user hasn't made any purchases yet.</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
-                              <div>
-                                <p className="text-primary-500 mb-1">Payment Status</p>
-                                <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(order.paymentStatus)}`}>
-                                  {order.paymentStatus}
-                                </span>
-                              </div>
-                            </div>
-
-                            {order.coupon && (
-                              <div className="mt-2 flex items-center gap-2 text-sm">
-                                <FiTag className="w-3 h-3 text-green-600" />
-                                <span className="text-green-700">
-                                  Coupon: {order.coupon} (Saved {formatCurrency(order.discount)})
-                                </span>
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="text-right">
-                            <p className="text-2xl font-bold text-primary-900">
-                              {formatCurrency(order.amount)}
+              {/* Orders Tab */}
+              {activeTab === 'orders' && (
+                <div className="space-y-4">
+                  {historyData.orders.length === 0 ? (
+                    <div className="bg-gray-50 p-8 rounded-lg text-center">
+                      <FiShoppingBag className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-600">No orders found</p>
+                    </div>
+                  ) : (
+                    historyData.orders.map((order) => (
+                      <div key={order._id} className="border border-primary-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <p className="font-semibold text-primary-900">Order #{order.orderId}</p>
+                            <p className="text-sm text-primary-600">
+                              {new Date(order.createdAt).toLocaleDateString('en-IN', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                              })}
                             </p>
                           </div>
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(order.status)}`}>
+                            {order.status}
+                          </span>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Pagination */}
-                  {history.orders.pagination.totalPages > 1 && (
-                    <div className="flex items-center justify-center gap-2 mt-6">
-                      <button
-                        onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                        disabled={currentPage === 1}
-                        className="px-4 py-2 border border-primary-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-50"
-                      >
-                        Previous
-                      </button>
-                      <span className="text-primary-700">
-                        Page {currentPage} of {history.orders.pagination.totalPages}
-                      </span>
-                      <button
-                        onClick={() =>
-                          setCurrentPage((prev) =>
-                            Math.min(history.orders.pagination.totalPages, prev + 1)
-                          )
-                        }
-                        disabled={!history.orders.pagination.hasMore}
-                        className="px-4 py-2 border border-primary-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-50"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="text-center py-12 bg-primary-50 rounded-lg">
-                  <FiShoppingBag className="w-12 h-12 text-primary-400 mx-auto mb-3" />
-                  <p className="text-primary-600">No orders found</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Wishlist Tab */}
-          {activeTab === 'wishlist' && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-primary-900 flex items-center gap-2">
-                <FiHeart className="w-5 h-5" />
-                Wishlist Activity
-                {history?.wishlist?.length > 0 && (
-                  <span className="text-sm font-normal text-primary-600">
-                    ({history.wishlist.length} items)
-                  </span>
-                )}
-              </h3>
-
-              {history?.wishlist?.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {history.wishlist.map((item) => (
-                    <div
-                      key={item.productId}
-                      className="border border-primary-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                    >
-                      {item.image && (
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-full h-40 object-cover rounded-lg mb-3"
-                        />
-                      )}
-                      <h4 className="font-medium text-primary-900 mb-2">{item.name}</h4>
-                      <p className="text-lg font-bold text-primary-700">
-                        {formatCurrency(item.price)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 bg-primary-50 rounded-lg">
-                  <FiHeart className="w-12 h-12 text-primary-400 mx-auto mb-3" />
-                  <p className="text-primary-600">No items in wishlist</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Cart Tab */}
-          {activeTab === 'cart' && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-primary-900 flex items-center gap-2">
-                <FiShoppingCart className="w-5 h-5" />
-                Current Cart
-                {history?.cart?.currentItems?.length > 0 && (
-                  <span className="text-sm font-normal text-primary-600">
-                    ({history.cart.currentItems.length} items)
-                  </span>
-                )}
-              </h3>
-
-              {history?.cart?.currentItems?.length > 0 ? (
-                <>
-                  <div className="space-y-3">
-                    {history.cart.currentItems.map((item, index) => (
-                      <div
-                        key={index}
-                        className="border border-primary-200 rounded-lg p-4 flex gap-4"
-                      >
-                        {item.image && (
-                          <img
-                            src={item.image}
-                            alt={item.name}
-                            className="w-20 h-20 object-cover rounded-lg"
-                          />
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-primary-700">
+                            {order.itemCount} {order.itemCount === 1 ? 'item' : 'items'}
+                          </p>
+                          <p className="font-semibold text-primary-900">{formatCurrency(order.total)}</p>
+                        </div>
+                        {order.coupon && (
+                          <div className="mt-2 flex items-center gap-2 text-sm">
+                            <FiTag className="w-4 h-4 text-green-600" />
+                            <span className="text-green-700">
+                              Coupon: <strong>{order.coupon.code}</strong> - Saved {formatCurrency(order.coupon.discount)}
+                            </span>
+                          </div>
                         )}
-                        <div className="flex-1">
-                          <h4 className="font-medium text-primary-900">{item.name}</h4>
-                          <p className="text-sm text-primary-600 mt-1">
-                            Size: {item.size} | Qty: {item.quantity}
-                          </p>
-                          <p className="text-lg font-bold text-primary-700 mt-2">
-                            {formatCurrency(item.price * item.quantity)}
-                          </p>
-                        </div>
                       </div>
-                    ))}
-                  </div>
-                  {history.cart.updatedAt && (
-                    <p className="text-sm text-primary-600 text-center">
-                      Last updated: {new Date(history.cart.updatedAt).toLocaleString('en-IN')}
-                    </p>
+                    ))
                   )}
-                </>
-              ) : (
-                <div className="text-center py-12 bg-primary-50 rounded-lg">
-                  <FiShoppingCart className="w-12 h-12 text-primary-400 mx-auto mb-3" />
-                  <p className="text-primary-600">Cart is empty</p>
                 </div>
               )}
-            </div>
-          )}
 
-          {/* Coupons Tab */}
-          {activeTab === 'coupons' && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-primary-900 flex items-center gap-2">
-                <FiTag className="w-5 h-5" />
-                Coupon Usage History
-                {history?.coupons?.length > 0 && (
-                  <span className="text-sm font-normal text-primary-600">
-                    ({history.coupons.length} used)
-                  </span>
-                )}
-              </h3>
-
-              {history?.coupons?.length > 0 ? (
-                <div className="space-y-3">
-                  {history.coupons.map((coupon, index) => (
-                    <div
-                      key={index}
-                      className="border border-primary-200 rounded-lg p-4 flex items-center justify-between"
-                    >
-                      <div>
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full font-mono font-semibold">
-                            {coupon.code}
-                          </span>
-                          <span className="text-sm text-primary-600">
-                            {new Date(coupon.dateUsed).toLocaleDateString('en-IN')}
-                          </span>
+              {/* Wishlist Tab */}
+              {activeTab === 'wishlist' && (
+                <div className="space-y-4">
+                  {historyData.wishlist.count === 0 ? (
+                    <div className="bg-gray-50 p-8 rounded-lg text-center">
+                      <FiHeart className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-600">Wishlist is empty</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {historyData.wishlist.products.map((product) => (
+                        <div key={product._id} className="border border-primary-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                          {product.images && product.images.length > 0 && (
+                            <img
+                              src={product.images[0]}
+                              alt={product.name}
+                              className="w-full h-40 object-cover rounded-md mb-3"
+                            />
+                          )}
+                          <p className="font-medium text-primary-900 mb-1">{product.name}</p>
+                          <p className="text-primary-700 font-semibold">{formatCurrency(product.price)}</p>
                         </div>
-                        <p className="text-sm text-primary-700">
-                          Order Value: {formatCurrency(coupon.orderValue)}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-primary-500">Discount</p>
-                        <p className="text-xl font-bold text-green-600">
-                          {formatCurrency(coupon.discount)}
-                        </p>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 bg-primary-50 rounded-lg">
-                  <FiTag className="w-12 h-12 text-primary-400 mx-auto mb-3" />
-                  <p className="text-primary-600">No coupons used yet</p>
+                  )}
                 </div>
               )}
-            </div>
-          )}
 
-          {/* Summary Tab */}
-          {activeTab === 'summary' && history?.summary && (
-            <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-primary-900 flex items-center gap-2">
-                <FiTrendingUp className="w-5 h-5" />
-                User Insights
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Total Spend */}
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-6">
-                  <div className="flex items-center gap-3 mb-2">
-                    <FiDollarSign className="w-6 h-6 text-blue-600" />
-                    <p className="text-sm text-blue-700 font-medium">Total Spend</p>
-                  </div>
-                  <p className="text-3xl font-bold text-blue-900">
-                    {formatCurrency(history.summary.totalSpend)}
-                  </p>
-                </div>
-
-                {/* Total Orders */}
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-lg p-6">
-                  <div className="flex items-center gap-3 mb-2">
-                    <FiShoppingBag className="w-6 h-6 text-purple-600" />
-                    <p className="text-sm text-purple-700 font-medium">Total Orders</p>
-                  </div>
-                  <p className="text-3xl font-bold text-purple-900">
-                    {history.summary.totalOrders}
-                  </p>
-                </div>
-
-                {/* Average Order Value */}
-                <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-lg p-6">
-                  <div className="flex items-center gap-3 mb-2">
-                    <FiTrendingUp className="w-6 h-6 text-green-600" />
-                    <p className="text-sm text-green-700 font-medium">Avg Order Value</p>
-                  </div>
-                  <p className="text-3xl font-bold text-green-900">
-                    {formatCurrency(history.summary.averageOrderValue)}
-                  </p>
-                </div>
-
-                {/* Completed Orders */}
-                <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200 rounded-lg p-6">
-                  <div className="flex items-center gap-3 mb-2">
-                    <FiPackage className="w-6 h-6 text-emerald-600" />
-                    <p className="text-sm text-emerald-700 font-medium">Completed</p>
-                  </div>
-                  <p className="text-3xl font-bold text-emerald-900">
-                    {history.summary.completedOrders}
-                  </p>
-                </div>
-
-                {/* Pending Orders */}
-                <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200 rounded-lg p-6">
-                  <div className="flex items-center gap-3 mb-2">
-                    <FiPackage className="w-6 h-6 text-yellow-600" />
-                    <p className="text-sm text-yellow-700 font-medium">Pending</p>
-                  </div>
-                  <p className="text-3xl font-bold text-yellow-900">
-                    {history.summary.pendingOrders}
-                  </p>
-                </div>
-
-                {/* Cancelled Orders */}
-                <div className="bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-lg p-6">
-                  <div className="flex items-center gap-3 mb-2">
-                    <FiX className="w-6 h-6 text-red-600" />
-                    <p className="text-sm text-red-700 font-medium">Cancelled</p>
-                  </div>
-                  <p className="text-3xl font-bold text-red-900">
-                    {history.summary.cancelledOrders}
-                  </p>
-                </div>
-
-                {/* Total Coupon Savings */}
-                <div className="bg-gradient-to-br from-pink-50 to-pink-100 border border-pink-200 rounded-lg p-6">
-                  <div className="flex items-center gap-3 mb-2">
-                    <FiTag className="w-6 h-6 text-pink-600" />
-                    <p className="text-sm text-pink-700 font-medium">Coupon Savings</p>
-                  </div>
-                  <p className="text-3xl font-bold text-pink-900">
-                    {formatCurrency(history.summary.totalCouponSavings)}
-                  </p>
-                </div>
-
-                {/* Last Purchase */}
-                {history.summary.lastPurchaseDate && (
-                  <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 border border-indigo-200 rounded-lg p-6 md:col-span-2">
-                    <div className="flex items-center gap-3 mb-2">
-                      <FiCalendar className="w-6 h-6 text-indigo-600" />
-                      <p className="text-sm text-indigo-700 font-medium">Last Purchase</p>
+              {/* Cart Tab */}
+              {activeTab === 'cart' && (
+                <div className="space-y-4">
+                  {historyData.cart.itemCount === 0 ? (
+                    <div className="bg-gray-50 p-8 rounded-lg text-center">
+                      <FiShoppingCart className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-600">Cart is empty</p>
                     </div>
-                    <p className="text-2xl font-bold text-indigo-900">
-                      {new Date(history.summary.lastPurchaseDate).toLocaleDateString('en-IN', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })}
-                    </p>
-                  </div>
-                )}
-              </div>
+                  ) : (
+                    <>
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <p className="text-yellow-800">
+                          <strong>Active Cart:</strong> This user has {historyData.cart.itemCount} item(s) in their cart that haven't been purchased yet.
+                        </p>
+                      </div>
+                      {historyData.cart.items.map((item, index) => (
+                        <div key={index} className="border border-primary-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                          <div className="flex items-start gap-4">
+                            {item.product?.images && item.product.images.length > 0 && (
+                              <img
+                                src={item.product.images[0]}
+                                alt={item.product.name}
+                                className="w-20 h-20 object-cover rounded-md"
+                              />
+                            )}
+                            <div className="flex-1">
+                              <p className="font-medium text-primary-900">{item.product?.name || 'Product'}</p>
+                              <p className="text-sm text-primary-600 mt-1">
+                                Size: {item.size} | Quantity: {item.quantity}
+                              </p>
+                              {item.product?.price && (
+                                <p className="text-primary-700 font-semibold mt-1">
+                                  {formatCurrency(item.product.price * item.quantity)}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Coupons Tab */}
+              {activeTab === 'coupons' && (
+                <div className="space-y-4">
+                  {historyData.couponsUsed.length === 0 ? (
+                    <div className="bg-gray-50 p-8 rounded-lg text-center">
+                      <FiTag className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-600">No coupons used yet</p>
+                    </div>
+                  ) : (
+                    historyData.couponsUsed.map((coupon, index) => (
+                      <div key={index} className="border border-primary-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3">
+                            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                              <FiTag className="w-6 h-6 text-green-600" />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-primary-900 text-lg">{coupon.code}</p>
+                              <p className="text-sm text-primary-600 mt-1">
+                                Used on {new Date(coupon.date).toLocaleDateString('en-IN', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                })}
+                              </p>
+                              <p className="text-sm text-primary-600 mt-1">
+                                Order: #{coupon.orderId}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-primary-600">Discount</p>
+                            <p className="text-xl font-bold text-green-600">{formatCurrency(coupon.discount)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="bg-red-50 p-4 rounded-lg">
+              <p className="text-red-800">Failed to load user history</p>
             </div>
           )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-3 p-6 border-t border-primary-200">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-primary-900 text-white rounded-lg hover:bg-primary-800 transition-colors"
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>

@@ -22,7 +22,6 @@ export default function AdminUsersPage() {
   const [showContactModal, setShowContactModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [contactData, setContactData] = useState(null);
 
   const adminCount = users.filter(u => u.role === 'admin').length;
   const maxAdmins = 5;
@@ -74,31 +73,14 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleViewContact = async (user) => {
-    try {
-      setSelectedUser(user);
-      const response = await adminAPI.getUserContact(user._id);
-      setContactData(response.data.contact);
-      setShowContactModal(true);
-    } catch (error) {
-      toast.error('Failed to fetch contact information');
-      console.error('Failed to fetch contact:', error);
-    }
+  const handleViewContact = (user) => {
+    setSelectedUser(user);
+    setShowContactModal(true);
   };
 
   const handleViewHistory = (user) => {
     setSelectedUser(user);
     setShowHistoryModal(true);
-  };
-
-  const fetchUserHistory = async (userId, page = 1) => {
-    try {
-      const response = await adminAPI.getUserHistory(userId, page, 10);
-      return response.data.history;
-    } catch (error) {
-      toast.error('Failed to fetch user history');
-      throw error;
-    }
   };
 
   const filteredUsers = users.filter((u) => {
@@ -172,11 +154,11 @@ export default function AdminUsersPage() {
               <thead className="bg-primary-50 border-b border-primary-200">
                 <tr>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-primary-900">User</th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-primary-900">Contact</th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-primary-900">History</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-primary-900">Contact</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-primary-900">Joined</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-primary-900">Role</th>
                   <th className="px-6 py-4 text-center text-sm font-semibold text-primary-900">Status</th>
+                  <th className="px-6 py-4 text-center text-sm font-semibold text-primary-900">History</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-primary-200">
@@ -196,28 +178,18 @@ export default function AdminUsersPage() {
                           </div>
                           <div>
                             <p className="font-medium text-primary-900">{u.name}</p>
-                            <p className="text-sm text-primary-600">ID: {u._id.slice(-6)}</p>
+                            <p className="text-sm text-primary-600">{u.email}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-6 py-4">
                         <button
                           onClick={() => handleViewContact(u)}
-                          className="inline-flex items-center gap-2 px-3 py-2 bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
-                          title="View Contact Information"
+                          className="flex items-center gap-2 px-3 py-2 bg-primary-100 text-primary-900 rounded-lg hover:bg-primary-200 transition-colors"
+                          title="View Contact Details"
                         >
                           <FiEye className="w-4 h-4" />
-                          View Contact
-                        </button>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <button
-                          onClick={() => handleViewHistory(u)}
-                          className="inline-flex items-center gap-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
-                          title="View User History"
-                        >
-                          <FiActivity className="w-4 h-4" />
-                          View History
+                          View
                         </button>
                       </td>
                       <td className="px-6 py-4 text-primary-700">
@@ -244,6 +216,16 @@ export default function AdminUsersPage() {
                           }`}
                         >
                           {u.isActive ? 'Active' : 'Inactive'}
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          onClick={() => handleViewHistory(u)}
+                          className="flex items-center gap-2 px-3 py-2 bg-blue-100 text-blue-900 rounded-lg hover:bg-blue-200 transition-colors mx-auto"
+                          title="View User Activity"
+                        >
+                          <FiActivity className="w-4 h-4" />
+                          View
                         </button>
                       </td>
                     </tr>
@@ -287,13 +269,11 @@ export default function AdminUsersPage() {
     />
 
     {/* Contact Modal */}
-    {showContactModal && contactData && (
+    {showContactModal && selectedUser && (
       <UserContactModal
         user={selectedUser}
-        contact={contactData}
         onClose={() => {
           setShowContactModal(false);
-          setContactData(null);
           setSelectedUser(null);
         }}
       />
@@ -303,11 +283,11 @@ export default function AdminUsersPage() {
     {showHistoryModal && selectedUser && (
       <UserHistoryModal
         userId={selectedUser._id}
+        userName={selectedUser.name}
         onClose={() => {
           setShowHistoryModal(false);
           setSelectedUser(null);
         }}
-        fetchHistory={fetchUserHistory}
       />
     )}
     </AdminLayout>
