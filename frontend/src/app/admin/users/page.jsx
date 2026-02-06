@@ -130,21 +130,21 @@ export default function AdminUsersPage() {
                 className="w-full pl-10 pr-4 py-2 text-sm sm:text-base border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
               />
             </div>
-            <div className="flex gap-2">
-              {['all', 'user', 'admin'].map((role) => (
-                <button
-                  key={role}
-                  onClick={() => setFilterRole(role)}
+              <div className="flex gap-2">
+                {['all', 'customer', 'admin'].map((role) => (
+                  <button
+                    key={role}
+                    onClick={() => setFilterRole(role)}
                   className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-sm transition-colors touch-manipulation ${
                     filterRole === role
                       ? 'bg-primary-900 text-white'
                       : 'bg-primary-100 text-primary-700 hover:bg-primary-200'
                   }`}
                 >
-                  {role.charAt(0).toUpperCase() + role.slice(1)}
-                </button>
-              ))}
-            </div>
+                    {role.charAt(0).toUpperCase() + role.slice(1)}
+                  </button>
+                ))}
+              </div>
           </div>
         </div>
 

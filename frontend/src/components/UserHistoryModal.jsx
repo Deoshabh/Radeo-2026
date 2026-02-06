@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { useState, useEffect, useCallback } from 'react';
 import { FiX, FiShoppingBag, FiHeart, FiShoppingCart, FiTag, FiPackage, FiTrendingUp } from 'react-icons/fi';
 import { adminAPI } from '@/utils/api';
@@ -47,14 +48,21 @@ export default function UserHistoryModal({ userId, userName, onClose }) {
 
   const getStatusColor = (status) => {
     const colors = {
-      'Pending': 'bg-yellow-100 text-yellow-800',
-      'Processing': 'bg-blue-100 text-blue-800',
-      'Shipped': 'bg-purple-100 text-purple-800',
-      'Delivered': 'bg-green-100 text-green-800',
-      'Cancelled': 'bg-red-100 text-red-800',
-      'Refunded': 'bg-gray-100 text-gray-800',
+      pending: 'bg-yellow-100 text-yellow-800',
+      processing: 'bg-blue-100 text-blue-800',
+      shipped: 'bg-purple-100 text-purple-800',
+      delivered: 'bg-green-100 text-green-800',
+      cancelled: 'bg-red-100 text-red-800',
+      refunded: 'bg-gray-100 text-gray-800',
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return colors[String(status || '').toLowerCase()] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getImageUrl = (images) => {
+    const firstImage = images?.[0];
+    if (!firstImage) return null;
+    if (typeof firstImage === 'string') return firstImage;
+    return firstImage.url || null;
   };
 
   return (
@@ -243,9 +251,9 @@ export default function UserHistoryModal({ userId, userName, onClose }) {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {historyData.wishlist.products.map((product) => (
                         <div key={product._id} className="border border-primary-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                          {product.images && product.images.length > 0 && (
+                          {getImageUrl(product.images) && (
                             <img
-                              src={product.images[0]}
+                              src={getImageUrl(product.images)}
                               alt={product.name}
                               className="w-full h-40 object-cover rounded-md mb-3"
                             />
@@ -277,9 +285,9 @@ export default function UserHistoryModal({ userId, userName, onClose }) {
                       {historyData.cart.items.map((item, index) => (
                         <div key={index} className="border border-primary-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                           <div className="flex items-start gap-4">
-                            {item.product?.images && item.product.images.length > 0 && (
+                            {getImageUrl(item.product?.images) && (
                               <img
-                                src={item.product.images[0]}
+                                src={getImageUrl(item.product?.images)}
                                 alt={item.product.name}
                                 className="w-20 h-20 object-cover rounded-md"
                               />

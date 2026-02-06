@@ -263,7 +263,7 @@ export const JsonLd = ({ data }) => {
   );
 };
 
-export default {
+const seoUtils = {
   generateMetadata,
   generateProductMetadata,
   generateCategoryMetadata,
@@ -273,3 +273,5 @@ export default {
   generateWebsiteJsonLd,
   JsonLd,
 };
+
+export default seoUtils;

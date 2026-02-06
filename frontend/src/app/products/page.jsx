@@ -48,20 +48,18 @@ function ProductsContent() {
     }
   };
 
-  const fetchPriceRange = async () => {
+  const fetchPriceRange = useCallback(async () => {
     try {
       const response = await productAPI.getPriceRange();
       console.log('📦 Price Range API response:', response.data);
       if (response.data) {
         setPriceRange(response.data);
-        if (!selectedPriceRange) {
-          setSelectedPriceRange(response.data);
-        }
+        setSelectedPriceRange((prev) => prev || response.data);
       }
     } catch (error) {
       console.error('Failed to fetch price range:', error);
     }
-  };
+  }, []);
 
   const fetchColors = async () => {
     try {
@@ -90,7 +88,7 @@ function ProductsContent() {
     fetchPriceRange();
     fetchColors();
     fetchSizes();
-  }, []);
+  }, [fetchPriceRange]);
 
   const fetchProducts = useCallback(async (category, materials, colors, sizes, priceMin, priceMax, sort, search) => {
     try {

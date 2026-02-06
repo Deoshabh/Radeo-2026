@@ -1,10 +1,18 @@
 'use client';
+/* eslint-disable @next/next/no-img-element */
 
 import React from 'react';
 import { FiX, FiPackage, FiUser, FiMapPin, FiCreditCard, FiTruck, FiPhone, FiMail, FiCalendar } from 'react-icons/fi';
 
 export default function OrderDetailsModal({ order, isOpen, onClose }) {
   if (!isOpen || !order) return null;
+
+  // Debug logging
+  console.log('Order data in modal:', {
+    orderId: order.orderId,
+    shippingAddress: order.shippingAddress,
+    user: order.user
+  });
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -87,7 +95,7 @@ export default function OrderDetailsModal({ order, isOpen, onClose }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <div className="text-sm text-gray-600">Name</div>
-                <div className="font-medium text-gray-900 mt-1">{order.user?.name || 'N/A'}</div>
+                <div className="font-medium text-gray-900 mt-1">{order.shippingAddress?.fullName || order.user?.name || 'N/A'}</div>
               </div>
               <div>
                 <div className="text-sm text-gray-600">Email</div>
@@ -100,7 +108,7 @@ export default function OrderDetailsModal({ order, isOpen, onClose }) {
                 <div className="text-sm text-gray-600">Phone</div>
                 <div className="font-medium text-gray-900 mt-1 flex items-center gap-2">
                   <FiPhone className="text-gray-400 text-sm" />
-                  {order.user?.phone || 'N/A'}
+                  {order.shippingAddress?.phone || 'N/A'}
                 </div>
               </div>
             </div>
@@ -114,11 +122,15 @@ export default function OrderDetailsModal({ order, isOpen, onClose }) {
             </h3>
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="space-y-2">
-                <div className="font-medium text-gray-900">{order.shippingAddress?.name}</div>
-                <div className="text-gray-700">{order.shippingAddress?.address}</div>
+                <div className="font-medium text-gray-900">{order.shippingAddress?.fullName}</div>
+                <div className="text-gray-700">{order.shippingAddress?.addressLine1}</div>
+                {order.shippingAddress?.addressLine2 && (
+                  <div className="text-gray-700">{order.shippingAddress?.addressLine2}</div>
+                )}
                 <div className="text-gray-700">
-                  {order.shippingAddress?.city}, {order.shippingAddress?.state} - {order.shippingAddress?.pincode}
+                  {order.shippingAddress?.city}, {order.shippingAddress?.state} - {order.shippingAddress?.postalCode}
                 </div>
+                <div className="text-gray-700">{order.shippingAddress?.country}</div>
                 <div className="text-gray-700 flex items-center gap-2">
                   <FiPhone className="text-gray-400 text-sm" />
                   {order.shippingAddress?.phone}

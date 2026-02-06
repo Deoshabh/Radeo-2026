@@ -7,6 +7,9 @@ export default async function sitemap() {
     const response = await fetch(`${API_URL}/products`, {
       next: { revalidate: 3600 }, // Revalidate every hour
     });
+    if (!response.ok) {
+      throw new Error(`Products fetch failed with status ${response.status}`);
+    }
     const products = await response.json();
     const productsData = Array.isArray(products)
       ? products
@@ -52,7 +55,9 @@ export default async function sitemap() {
 
     return [...staticPages, ...productUrls];
   } catch (error) {
-    console.error("Error generating sitemap:", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("Error generating sitemap:", error);
+    }
     // Return basic sitemap if fetch fails
     return [
       {

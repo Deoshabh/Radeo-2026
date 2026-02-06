@@ -63,7 +63,15 @@ app.use(
 // Middleware
 // ===============================
 app.use(logger); // HTTP request logging
-app.use(express.json());
+app.use(
+  express.json({
+    verify: (req, _res, buf) => {
+      if (req.originalUrl.startsWith("/api/webhooks/")) {
+        req.rawBody = buf.toString("utf8");
+      }
+    },
+  }),
+);
 app.use(cookieParser());
 
 app.use(
@@ -97,7 +105,6 @@ app.use("/api/v1/admin/users", require("./routes/adminUserRoutes"));
 app.use("/api/v1/admin/media", require("./routes/adminMediaRoutes"));
 app.use("/api/v1/admin/filters", require("./routes/adminFilterRoutes"));
 app.use("/api/v1/admin/shiprocket", require("./routes/shiprocketRoutes"));
-app.use("/api/v1/admin/shipping", require("./routes/shiprocketRoutes")); // Webhook-friendly path
 
 app.use("/api/v1/coupons", require("./routes/couponRoutes"));
 app.use("/api/v1/categories", require("./routes/categoryRoutes"));

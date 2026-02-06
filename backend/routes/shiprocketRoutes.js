@@ -12,11 +12,7 @@ const {
   schedulePickup,
   generateManifest,
   markAsShipped,
-  handleWebhook,
 } = require('../controllers/shiprocketController');
-
-// Public webhook endpoint (no auth required)
-router.post('/webhook', handleWebhook);
 
 // Protect all other routes with authentication and admin check
 router.use(authenticate);

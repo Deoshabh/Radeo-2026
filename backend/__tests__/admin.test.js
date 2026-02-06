@@ -73,14 +73,14 @@ describe("Admin API Integration Tests", () => {
         .set("Authorization", `Bearer ${adminToken}`);
 
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty("totalOrders");
-      expect(res.body).toHaveProperty("totalProducts");
-      expect(res.body).toHaveProperty("totalUsers");
-      expect(res.body).toHaveProperty("totalRevenue");
-      expect(typeof res.body.totalOrders).toBe("number");
-      expect(typeof res.body.totalProducts).toBe("number");
-      expect(typeof res.body.totalUsers).toBe("number");
-      expect(typeof res.body.totalRevenue).toBe("number");
+      expect(res.body).toHaveProperty("orders.total");
+      expect(res.body).toHaveProperty("products.total");
+      expect(res.body).toHaveProperty("users.customers");
+      expect(res.body).toHaveProperty("revenue.total");
+      expect(typeof res.body.orders.total).toBe("number");
+      expect(typeof res.body.products.total).toBe("number");
+      expect(typeof res.body.users.customers).toBe("number");
+      expect(typeof res.body.revenue.total).toBe("number");
     });
 
     it("should return 401 without authentication", async () => {
@@ -144,7 +144,7 @@ describe("Admin API Integration Tests", () => {
         .patch("/api/v1/admin/users/invalid-id/toggle-block")
         .set("Authorization", `Bearer ${adminToken}`);
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(400);
     });
 
     it("should return 401 without authentication", async () => {
@@ -183,6 +183,7 @@ describe("Admin API Integration Tests", () => {
       expect(res.status).toBe(200);
       res.body.users.forEach((user) => {
         expect(user).not.toHaveProperty("password");
+        expect(user).not.toHaveProperty("passwordHash");
       });
     });
   });

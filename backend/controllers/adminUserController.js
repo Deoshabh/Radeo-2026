@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
+const mongoose = require("mongoose");
 
 // @desc    Get all users
 // @route   GET /api/v1/admin/users
@@ -7,7 +8,9 @@ const bcrypt = require("bcrypt");
 exports.getAllUsers = async (req, res) => {
   try {
     const Order = require("../models/Order");
-    const users = await User.find().select("-password").sort({ createdAt: -1 });
+    const users = await User.find()
+      .select("-passwordHash -resetPasswordToken -resetPasswordExpires")
+      .sort({ createdAt: -1 });
 
     // Map users to include isActive and collect all addresses from profile and orders
     const usersWithStatus = await Promise.all(
@@ -78,8 +81,14 @@ exports.getAllUsers = async (req, res) => {
 // @access  Private/Admin
 exports.getUserById = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+
     const Order = require("../models/Order");
-    const user = await User.findById(req.params.id).select("-password");
+    const user = await User.findById(req.params.id).select(
+      "-passwordHash -resetPasswordToken -resetPasswordExpires",
+    );
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -145,6 +154,13 @@ exports.updateUserRole = async (req, res) => {
   try {
     const { id } = req.params;
     const { role } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user ID",
+      });
+    }
 
     if (!role || !["customer", "admin"].includes(role)) {
       return res.status(400).json({
@@ -218,6 +234,10 @@ exports.toggleUserBlock = async (req, res) => {
       requesterId: req.user?.id || req.user?._id,
       requesterRole: req.user?.role,
     });
+
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
 
     const user = await User.findById(req.params.id);
 
@@ -351,6 +371,13 @@ exports.createAdmin = async (req, res) => {
 exports.getUserHistory = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user ID",
+      });
+    }
+
     const Order = require("../models/Order");
     const Wishlist = require("../models/Wishlist");
     const Cart = require("../models/Cart");
@@ -428,7 +455,7 @@ exports.getUserHistory = async (req, res) => {
       0,
     );
     const completedOrders = orders.filter(
-      (o) => o.status === "Delivered",
+      (o) => String(o.status).toLowerCase() === "delivered",
     ).length;
     const couponsUsed = orders
       .filter((o) => o.coupon?.code)

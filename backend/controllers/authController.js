@@ -7,7 +7,8 @@ const jwt = require("jsonwebtoken");
    Helpers
 ===================== */
 const generateAccessToken = (user) => {
-  return jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
+  const accessSecret = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET;
+  return jwt.sign({ id: user._id, role: user.role }, accessSecret, {
     expiresIn: process.env.JWT_ACCESS_EXPIRATION || "15m",
   });
 };
@@ -35,6 +36,12 @@ const generateRefreshToken = async (user, ip) => {
 exports.register = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res
+        .status(400)
+        .json({ message: "Name, email, and password are required" });
+    }
 
     const exists = await User.findOne({ email });
     if (exists) {
@@ -269,16 +276,14 @@ exports.forgotPassword = async (req, res, next) => {
     user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
     await user.save();
 
-    // Log token to console (in production, send via email)
-    console.log("=".repeat(50));
-    console.log("PASSWORD RESET TOKEN");
-    console.log("=".repeat(50));
-    console.log(`Email: ${email}`);
-    console.log(`Reset Token: ${resetToken}`);
-    console.log(
-      `Expires: ${new Date(user.resetPasswordExpires).toLocaleString()}`
-    );
-    console.log("=".repeat(50));
+    // In production, send this token via email provider. Never log plaintext tokens.
+    if (process.env.NODE_ENV !== "production") {
+      console.log(
+        `Password reset requested for ${email}. Token expires at ${new Date(
+          user.resetPasswordExpires
+        ).toISOString()}`
+      );
+    }
 
     res.json({ message: "If that email exists, a reset link has been sent" });
   } catch (err) {

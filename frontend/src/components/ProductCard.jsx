@@ -15,10 +15,15 @@ export default function ProductCard({ product }) {
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { isAuthenticated } = useAuth();
 
+  const categoryLabel =
+    typeof product.category === 'object'
+      ? product.category?.name
+      : product.category;
+
   const handleAddToCart = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (!isAuthenticated) {
       toast.error('Please login to add items to cart');
       router.push('/auth/login');
@@ -31,7 +36,8 @@ export default function ProductCard({ product }) {
     }
 
     // Add first available size - handle both string and object formats
-    const firstSize = typeof product.sizes[0] === 'object' ? product.sizes[0].size : product.sizes[0];
+    const firstSize =
+      typeof product.sizes[0] === 'object' ? product.sizes[0].size : product.sizes[0];
     const result = await addToCart(product._id, firstSize);
     return result.success;
   };
@@ -39,7 +45,7 @@ export default function ProductCard({ product }) {
   const handleToggleWishlist = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (!isAuthenticated) {
       toast.error('Please login to add items to wishlist');
       router.push('/auth/login');
@@ -63,7 +69,7 @@ export default function ProductCard({ product }) {
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             className="object-cover group-hover:scale-110 transition-transform duration-500"
           />
-          
+
           {/* Wishlist Button */}
           <button
             onClick={handleToggleWishlist}
@@ -93,7 +99,6 @@ export default function ProductCard({ product }) {
                     e.stopPropagation();
                     const result = await handleAddToCart(e);
                     if (result !== false) {
-                      // Use Next.js router for navigation instead of window.location
                       router.push('/cart');
                     }
                   }}
@@ -125,7 +130,7 @@ export default function ProductCard({ product }) {
         <div className="p-4 sm:p-6 flex-1 flex flex-col">
           {/* Category */}
           <p className="text-[10px] sm:text-xs uppercase tracking-wider text-primary-600 mb-1">
-            {product.category}
+            {categoryLabel || 'Uncategorized'}
           </p>
 
           {/* Name */}
@@ -135,18 +140,16 @@ export default function ProductCard({ product }) {
 
           {/* Description */}
           {product.description && (
-            <p className="text-xs text-primary-600 mb-2 line-clamp-1">
-              {product.description}
-            </p>
+            <p className="text-xs text-primary-600 mb-2 line-clamp-1">{product.description}</p>
           )}
 
           {/* Price */}
           <div className="mt-auto">
             <div className="flex items-center justify-between">
               <p className="text-base sm:text-lg font-bold text-primary-800">
-                ₹{product.price?.toLocaleString()}
+                {`\u20B9${(product.price ?? 0).toLocaleString('en-IN')}`}
               </p>
-              
+
               {/* Sizes Available */}
               {product.sizes && product.sizes.length > 0 && (
                 <p className="text-[10px] sm:text-xs text-primary-600">

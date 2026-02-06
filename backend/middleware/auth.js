@@ -3,8 +3,7 @@ const jwt = require("jsonwebtoken");
 // Authenticate JWT token
 exports.authenticate = async (req, res, next) => {
   try {
-    // ✅ CORS Fix: Bypass OPTIONS preflight requests
-    // Traefik handles preflight at proxy level, auth not needed
+    // Bypass preflight requests
     if (req.method === "OPTIONS") {
       return next();
     }
@@ -18,10 +17,13 @@ exports.authenticate = async (req, res, next) => {
     const token = authHeader.split(" ")[1];
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+    const accessSecret = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET;
+    if (!accessSecret) {
+      return res.status(500).json({ message: "JWT secret not configured" });
+    }
+    const decoded = jwt.verify(token, accessSecret);
 
-    // Attach user id to request (compatible with existing controllers)
-    // Handle both token formats: { id: ... } from authController and { userId: ... } from utils
+    // Handle both token formats: { id: ... } and { userId: ... }
     const userId = decoded.userId || decoded.id;
     req.userId = userId;
 
@@ -33,8 +35,7 @@ exports.authenticate = async (req, res, next) => {
       return res.status(401).json({ message: "User not found" });
     }
 
-    req.user = { id: userId, role: user.role };
-
+    req.user = { id: userId, _id: userId, role: user.role };
     next();
   } catch (error) {
     if (error.name === "TokenExpiredError") {
@@ -43,7 +44,7 @@ exports.authenticate = async (req, res, next) => {
     if (error.name === "JsonWebTokenError") {
       return res.status(401).json({ message: "Invalid token" });
     }
-    res.status(500).json({ message: "Server error", error: error.message });
+    return res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -51,8 +52,7 @@ exports.authenticate = async (req, res, next) => {
 exports.authorize = (...roles) => {
   return async (req, res, next) => {
     try {
-      // ✅ CORS Fix: Bypass OPTIONS preflight requests
-      // Traefik handles preflight at proxy level, auth not needed
+      // Bypass preflight requests
       if (req.method === "OPTIONS") {
         return next();
       }
@@ -68,9 +68,9 @@ exports.authorize = (...roles) => {
         return res.status(403).json({ message: "Access denied" });
       }
 
-      next();
+      return next();
     } catch (error) {
-      res.status(500).json({ message: "Server error", error: error.message });
+      return res.status(500).json({ message: "Server error", error: error.message });
     }
   };
 };
