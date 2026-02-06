@@ -48,9 +48,14 @@ export default function AdminUsersPage() {
   }, [isAuthenticated, user]);
 
   const handleUpdateRole = async (userId, newRole) => {
-    // Role editing disabled - admins can only be created via Create Admin button
-    toast.error('Role editing has been disabled. Use "Create Admin" button to add new admins.');
-    return;
+    try {
+      await adminAPI.updateUserRole(userId, newRole);
+      toast.success('User role updated successfully');
+      fetchUsers();
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Failed to update user role';
+      toast.error(errorMessage);
+    }
   };
 
   const handleToggleStatus = async (userId) => {
@@ -177,15 +182,15 @@ export default function AdminUsersPage() {
                         {new Date(u.createdAt).toLocaleDateString('en-IN')}
                       </td>
                       <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
-                            u.role === 'admin'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-blue-100 text-blue-800'
-                          }`}
+                        <select
+                          value={u.role}
+                          onChange={(e) => handleUpdateRole(u._id, e.target.value)}
+                          className="px-3 py-1 rounded-lg border border-primary-300 bg-white text-primary-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer"
                         >
-                          {u.role.charAt(0).toUpperCase() + u.role.slice(1)}
-                        </span>
+                          <option value="customer">Customer</option>
+                          <option value="admin">Admin</option>
+                          <option value="staff">Staff</option>
+                        </select>
                       </td>
                       <td className="px-6 py-4 text-center">
                         <button

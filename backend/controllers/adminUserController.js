@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const bcrypt = require("bcrypt");
 
 // @desc    Get all users
 // @route   GET /api/v1/admin/users
@@ -43,12 +44,64 @@ exports.getUserById = async (req, res) => {
 // @access  Private/Admin
 exports.updateUserRole = async (req, res) => {
   try {
-    // Role editing has been disabled
-    // Admins can only be created via the Create Admin endpoint
-    return res.status(403).json({
-      success: false,
-      message:
-        "Role editing has been disabled. Use the Create Admin function to add new admin accounts.",
+    const { id } = req.params;
+    const { role } = req.body;
+
+    if (!role || !["customer", "admin", "staff"].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid role. Must be customer, admin, or staff",
+      });
+    }
+
+    // Check if promoting to admin
+    if (role === "admin") {
+      const adminCount = await User.countDocuments({ role: "admin" });
+      const MAX_ADMINS = 5;
+
+      // Check current user's role
+      const currentUser = await User.findById(id);
+      if (!currentUser) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
+
+      // If user is not already an admin, check the limit
+      if (currentUser.role !== "admin" && adminCount >= MAX_ADMINS) {
+        return res.status(400).json({
+          success: false,
+          message: `Admin limit reached. Maximum ${MAX_ADMINS} admin accounts allowed. Currently: ${adminCount} admins.`,
+        });
+      }
+    }
+
+    const user = await User.findByIdAndUpdate(
+      id,
+      { role },
+      { new: true, runValidators: true },
+    ).select("-passwordHash");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "User role updated successfully",
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isBlocked: user.isBlocked,
+        isActive: !user.isBlocked,
+        createdAt: user.createdAt,
+      },
     });
   } catch (error) {
     console.error("Update user role error:", error);
@@ -157,11 +210,14 @@ exports.createAdmin = async (req, res) => {
       });
     }
 
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 12);
+
     // Create admin user
     const adminUser = await User.create({
       name,
       email: email.toLowerCase(),
-      password, // Will be hashed by User model pre-save hook
+      passwordHash,
       role: "admin",
       isBlocked: false,
     });
