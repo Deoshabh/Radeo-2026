@@ -347,6 +347,7 @@ export default function CategoriesPage() {
                 </button>
               </div>
             </div>
+          </div>
           ))}
         </div>
 
