@@ -6,6 +6,8 @@ const {
   updateUserRole,
   toggleUserBlock,
   createAdmin,
+  getUserContact,
+  getUserHistory,
 } = require("../controllers/adminUserController");
 const { authenticate } = require("../middleware/auth");
 const admin = require("../middleware/admin");
@@ -22,6 +24,12 @@ router.post("/create-admin", createAdmin);
 
 // @route   GET /api/v1/admin/users/:id
 router.get("/:id", getUserById);
+
+// @route   GET /api/v1/admin/users/:id/contact
+router.get("/:id/contact", getUserContact);
+
+// @route   GET /api/v1/admin/users/:id/history
+router.get("/:id/history", getUserHistory);
 
 // @route   PATCH /api/v1/admin/users/:id/role
 router.patch("/:id/role", updateUserRole);

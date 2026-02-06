@@ -208,6 +208,9 @@ export const adminAPI = {
   // Users
   getAllUsers: (params) => api.get("/admin/users", { params }),
   getUserById: (id) => api.get(`/admin/users/${id}`),
+  getUserContact: (id) => api.get(`/admin/users/${id}/contact`),
+  getUserHistory: (id, page = 1, limit = 10) =>
+    api.get(`/admin/users/${id}/history`, { params: { page, limit } }),
   updateUserRole: (id, role) => api.patch(`/admin/users/${id}/role`, { role }),
   toggleUserBlock: (id) => api.patch(`/admin/users/${id}/toggle-block`),
   createAdmin: (data) => api.post("/admin/users/create-admin", data),
