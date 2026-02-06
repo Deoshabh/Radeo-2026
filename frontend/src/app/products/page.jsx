@@ -12,7 +12,7 @@ function ProductsContent() {
   const searchParams = useSearchParams();
   
   const [products, setProducts] = useState([]);
-  const [brands, setBrands] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [materials, setMaterials] = useState([]);
   const [colors, setColors] = useState([]);
   const [sizes, setSizes] = useState([]);
@@ -21,7 +21,7 @@ function ProductsContent() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   
   // Filter states
-  const [selectedBrands, setSelectedBrands] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedMaterials, setSelectedMaterials] = useState([]);
   const [selectedColors, setSelectedColors] = useState([]);
   const [selectedSizes, setSelectedSizes] = useState([]);
@@ -29,13 +29,12 @@ function ProductsContent() {
   const [sortBy, setSortBy] = useState('featured');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const fetchBrands = async () => {
+  const fetchCategories = async () => {
     try {
-      const response = await productAPI.getBrands();
-      console.log('📦 Brands API response:', response.data);
-      setBrands(Array.isArray(response.data) ? response.data : []);
+      const response = await categoryAPI.getAllCategories();
+      setCategories(Array.isArray(response.data) ? response.data : (response.data.categories || []));
     } catch (error) {
-      console.error('Failed to fetch brands:', error);
+      console.error('Failed to fetch categories:', error);
     }
   };
 
@@ -86,21 +85,20 @@ function ProductsContent() {
 
   // Fetch initial data
   useEffect(() => {
-    fetchBrands();
+    fetchCategories();
     fetchMaterials();
     fetchPriceRange();
     fetchColors();
     fetchSizes();
   }, []);
 
-  const fetchProducts = useCallback(async (category, brands, materials, colors, sizes, priceMin, priceMax, sort, search) => {
+  const fetchProducts = useCallback(async (category, materials, colors, sizes, priceMin, priceMax, sort, search) => {
     try {
       setLoading(true);
       const params = {};
       
       if (category) params.category = category;
       if (search) params.search = search;
-      if (brands && brands.length > 0) params.brand = brands[0]; // Backend supports single brand for now
       if (materials && materials.length > 0) params.material = materials[0]; // Backend supports single material for now
       if (colors && colors.length > 0) params.color = colors[0]; // Backend supports single color for now
       if (sizes && sizes.length > 0) params.size = sizes[0]; // Backend supports single size for now
@@ -143,7 +141,7 @@ function ProductsContent() {
 
   useEffect(() => {
     // Get filters from URL
-    const brandsParam = searchParams.get('brands') || '';
+    const category = searchParams.get('category') || '';
     const materialsParam = searchParams.get('materials') || '';
     const colorsParam = searchParams.get('colors') || '';
     const sizesParam = searchParams.get('sizes') || '';
@@ -152,7 +150,7 @@ function ProductsContent() {
     const sort = searchParams.get('sort') || 'featured';
     const search = searchParams.get('search') || '';
 
-    setSelectedBrands(brandsParam ? brandsParam.split(',') : []);
+    setSelectedCategory(category);
     setSelectedMaterials(materialsParam ? materialsParam.split(',') : []);
     setSelectedColors(colorsParam ? colorsParam.split(',') : []);
     setSelectedSizes(sizesParam ? sizesParam.split(',') : []);
@@ -168,8 +166,7 @@ function ProductsContent() {
     }
 
     fetchProducts(
-      '', 
-      brandsParam ? brandsParam.split(',') : [], 
+      category, 
       materialsParam ? materialsParam.split(',') : [],
       colorsParam ? colorsParam.split(',') : [],
       sizesParam ? sizesParam.split(',') : [],
@@ -204,14 +201,6 @@ function ProductsContent() {
     router.push(`/products?${params.toString()}`);
   };
 
-  const handleBrandToggle = (brand) => {
-    const newBrands = selectedBrands.includes(brand)
-      ? selectedBrands.filter(b => b !== brand)
-      : [...selectedBrands, brand];
-    setSelectedBrands(newBrands);
-    updateFilters('brands', newBrands);
-  };
-
   const handleMaterialToggle = (material) => {
     const newMaterials = selectedMaterials.includes(material)
       ? selectedMaterials.filter(m => m !== material)
@@ -241,8 +230,8 @@ function ProductsContent() {
   };
 
   const activeFilterCount = [
+    selectedCategory,
     searchQuery,
-    selectedBrands.length > 0,
     selectedMaterials.length > 0,
     selectedColors.length > 0,
     selectedSizes.length > 0,
@@ -312,6 +301,35 @@ function ProductsContent() {
                 )}
               </div>
 
+              {/* Category Filter */}
+              <div className="mb-6">
+                <h4 className="font-medium mb-3">Category</h4>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="category"
+                      checked={!selectedCategory}
+                      onChange={() => updateFilters('category', '')}
+                      className="w-4 h-4 text-brand-brown focus:ring-brand-brown"
+                    />
+                    <span className="text-sm">All Products</span>
+                  </label>
+                  {categories.map((category) => (
+                    <label key={category._id} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="category"
+                        checked={selectedCategory === category.slug}
+                        onChange={() => updateFilters('category', category.slug)}
+                        className="w-4 h-4 text-brand-brown focus:ring-brand-brown"
+                      />
+                      <span className="text-sm">{category.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
               {/* Price Range Filter */}
               <div className="mb-6">
                 <h4 className="font-medium mb-3">Price Range</h4>
@@ -322,26 +340,6 @@ function ProductsContent() {
                   onChange={handlePriceChange}
                 />
               </div>
-
-              {/* Brand Filter */}
-              {brands.length > 0 && (
-                <div className="mb-6">
-                  <h4 className="font-medium mb-3">Brand</h4>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {brands.map((brand) => (
-                      <label key={brand} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedBrands.includes(brand)}
-                          onChange={() => handleBrandToggle(brand)}
-                          className="w-4 h-4 text-brand-brown focus:ring-brand-brown rounded"
-                        />
-                        <span className="text-sm">{brand}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Material Filter */}
               {materials.length > 0 && (
@@ -417,6 +415,41 @@ function ProductsContent() {
                 </div>
 
                 {/* Same filter content as desktop */}
+                {/* Category Filter */}
+                <div className="mb-6">
+                  <h4 className="font-medium mb-3">Category</h4>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="category-mobile"
+                        checked={!selectedCategory}
+                        onChange={() => {
+                          updateFilters('category', '');
+                          setIsFilterOpen(false);
+                        }}
+                        className="w-4 h-4 text-brand-brown focus:ring-brand-brown"
+                      />
+                      <span className="text-sm">All Products</span>
+                    </label>
+                    {categories.map((category) => (
+                      <label key={category._id} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="category-mobile"
+                          checked={selectedCategory === category.slug}
+                          onChange={() => {
+                            updateFilters('category', category.slug);
+                            setIsFilterOpen(false);
+                          }}
+                          className="w-4 h-4 text-brand-brown focus:ring-brand-brown"
+                        />
+                        <span className="text-sm">{category.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Price Range Filter */}
                 <div className="mb-6">
                   <h4 className="font-medium mb-3">Price Range</h4>
@@ -430,26 +463,6 @@ function ProductsContent() {
                     }}
                   />
                 </div>
-
-                {/* Brand Filter */}
-                {brands.length > 0 && (
-                  <div className="mb-6">
-                    <h4 className="font-medium mb-3">Brand</h4>
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {brands.map((brand) => (
-                        <label key={brand} className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={selectedBrands.includes(brand)}
-                            onChange={() => handleBrandToggle(brand)}
-                            className="w-4 h-4 text-brand-brown focus:ring-brand-brown rounded"
-                          />
-                          <span className="text-sm">{brand}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 {/* Material Filter */}
                 {materials.length > 0 && (

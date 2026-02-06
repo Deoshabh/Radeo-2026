@@ -149,7 +149,7 @@ export default function Navbar() {
                   {categories.map((category) => (
                     <Link
                       key={category._id}
-                      href={`/category/${category.slug}`}
+                      href={`/products?category=${category.slug}`}
                       className="flex items-center gap-3 px-4 py-3 hover:bg-primary-50 transition-colors group/item"
                     >
                       {category.image?.url ? (
@@ -363,7 +363,7 @@ export default function Navbar() {
                   {categories.map((category) => (
                     <Link
                       key={category._id}
-                      href={`/category/${category.slug}`}
+                      href={`/products?category=${category.slug}`}
                       className="flex items-center gap-3 py-2 hover:bg-primary-50 rounded transition-colors"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
