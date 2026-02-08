@@ -141,9 +141,9 @@ app.get("/health", (req, res) => {
 // ===============================
 async function startServer() {
   try {
-    // 🔴 CRITICAL: wait for MinIO
+    // 🔴 CRITICAL: wait for S3 storage initialization
     await initializeBucket();
-    log.success("MinIO initialized — starting server");
+    log.success("S3 storage initialized — starting server");
 
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, "0.0.0.0", () => {

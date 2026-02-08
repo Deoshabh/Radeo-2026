@@ -2,10 +2,13 @@ const Minio = require("minio");
 
 /**
  * ===============================
- * MinIO Configuration (STRICT)
+ * S3-Compatible Object Storage Configuration
  * ===============================
+ * Supports: RustFS, MinIO, AWS S3, or any S3-compatible storage
  * Uses ONLY environment variables
  * No silent fallbacks in production
+ * 
+ * Note: Despite using "MINIO_*" env var names, this works with ANY S3-compatible storage
  */
 const {
   MINIO_ENDPOINT,
@@ -24,7 +27,7 @@ if (
   !MINIO_SECRET_KEY ||
   !MINIO_BUCKET
 ) {
-  throw new Error("❌ Missing required MinIO environment variables");
+  throw new Error("❌ Missing required S3 storage environment variables (MINIO_*)");
 }
 
 const REGION = MINIO_REGION || "us-east-1";
@@ -34,18 +37,22 @@ let minioClient = null;
 let isInitialized = false;
 
 /**
- * Initialize MinIO bucket and policy
+ * Initialize S3 bucket and policy
+ * Works with RustFS, MinIO, AWS S3, or any S3-compatible storage
  * MUST be called before server starts
  */
 async function initializeBucket() {
   if (isInitialized) return;
 
   try {
-    console.log("🪣 Initializing MinIO client...");
+    console.log("🪣 Initializing S3-compatible storage client...");
     console.log("📡 Endpoint:", MINIO_ENDPOINT);
     console.log("🔐 Port:", MINIO_PORT);
     console.log("🔐 SSL:", MINIO_USE_SSL);
-    console.log("🔑 Access Key:", MINIO_ACCESS_KEY ? "***" + MINIO_ACCESS_KEY.slice(-4) : "NOT SET");
+    console.log(
+      "🔑 Access Key:",
+      MINIO_ACCESS_KEY ? "***" + MINIO_ACCESS_KEY.slice(-4) : "NOT SET",
+    );
 
     minioClient = new Minio.Client({
       endPoint: MINIO_ENDPOINT,
@@ -55,7 +62,9 @@ async function initializeBucket() {
       secretKey: MINIO_SECRET_KEY,
     });
 
-    console.log(`🔍 Testing connection to ${MINIO_USE_SSL === "true" ? "https" : "http"}://${MINIO_ENDPOINT}:${MINIO_PORT}`);
+    console.log(
+      `🔍 Testing connection to ${MINIO_USE_SSL === "true" ? "https" : "http"}://${MINIO_ENDPOINT}:${MINIO_PORT}`,
+    );
 
     // Check bucket
     const exists = await minioClient.bucketExists(MINIO_BUCKET);
@@ -82,10 +91,10 @@ async function initializeBucket() {
 
     await minioClient.setBucketPolicy(MINIO_BUCKET, JSON.stringify(policy));
 
-    console.log("✅ MinIO bucket policy set (public read)");
+    console.log("✅ Storage bucket policy set (public read)");
     isInitialized = true;
   } catch (error) {
-    console.error("❌ MinIO initialization failed:");
+    console.error("❌ S3 storage initialization failed:");
     console.error("  Error Code:", error.code);
     console.error("  Error Message:", error.message);
     console.error("  Status Code:", error.statusCode);

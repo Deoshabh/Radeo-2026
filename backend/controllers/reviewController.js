@@ -148,7 +148,7 @@ exports.createReview = async (req, res) => {
       status: { $in: ["delivered", "completed"] },
     });
 
-    // Upload photos to MinIO if provided
+    // Upload photos to S3 storage if provided
     const photoUrls = [];
     if (files && files.length > 0) {
       for (const file of files) {
@@ -232,7 +232,7 @@ exports.updateReview = async (req, res) => {
     if (title) review.title = title;
     if (comment) review.comment = comment;
 
-    // Upload new photos to MinIO if provided
+    // Upload new photos to S3 storage if provided
     if (files && files.length > 0) {
       const newPhotoUrls = [];
       for (const file of files) {
@@ -282,7 +282,7 @@ exports.deleteReview = async (req, res) => {
         .json({ message: "You can only delete your own reviews" });
     }
 
-    // Optional: Delete photos from MinIO if they exist
+    // Optional: Delete photos from S3 storage if they exist
     if (review.photos && review.photos.length > 0) {
       for (const photoUrl of review.photos) {
         try {
@@ -291,7 +291,7 @@ exports.deleteReview = async (req, res) => {
           const key = urlParts.slice(4).join("/"); // Get everything after bucket name
           await deleteObject(key);
         } catch (err) {
-          console.error("Error deleting photo from MinIO:", err);
+          console.error("Error deleting photo from S3 storage:", err);
           // Continue even if photo deletion fails
         }
       }
