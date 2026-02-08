@@ -11,6 +11,7 @@ import { FiHeart, FiShoppingCart, FiAward, FiTruck, FiShield, FiCheck } from 're
 import toast from 'react-hot-toast';
 import ProductMetadata from '@/components/ProductMetadata';
 import { PageLoader } from '@/components/LoadingSpinner';
+import ReviewSection from '@/components/ReviewSection';
 
 export default function ProductDetailPage() {
   const router = useRouter();
@@ -360,6 +361,16 @@ export default function ProductDetailPage() {
               >
                 Care Instructions
               </button>
+              <button
+                onClick={() => setActiveTab('reviews')}
+                className={`pb-4 font-medium transition-colors ${
+                  activeTab === 'reviews'
+                    ? 'border-b-2 border-brand-brown text-brand-brown'
+                    : 'text-primary-600 hover:text-primary-900'
+                }`}
+              >
+                Reviews
+              </button>
             </div>
           </div>
 
@@ -412,6 +423,12 @@ export default function ProductDetailPage() {
                   <ul className="space-y-2 text-primary-700">
                     {product.careInstructions.map((instruction, index) => (
                       <li key={index} className="flex gap-3">
+
+            {activeTab === 'reviews' && (
+              <div>
+                <ReviewSection productId={product._id} />
+              </div>
+            )}
                         <span className="text-brand-brown font-semibold">•</span>
                         <span>{instruction}</span>
                       </li>

@@ -93,6 +93,9 @@ app.use("/api/v1/cart", require("./routes/cartRoutes"));
 app.use("/api/v1/orders", require("./routes/orderRoutes"));
 app.use("/api/v1/filters", require("./routes/filterRoutes"));
 
+// Review routes
+app.use("/api/v1", require("./routes/reviewRoutes"));
+
 // Webhook routes (must be before other middleware that might interfere)
 app.use("/api/webhooks", require("./routes/webhookRoutes"));
 
@@ -105,6 +108,7 @@ app.use("/api/v1/admin/users", require("./routes/adminUserRoutes"));
 app.use("/api/v1/admin/media", require("./routes/adminMediaRoutes"));
 app.use("/api/v1/admin/filters", require("./routes/adminFilterRoutes"));
 app.use("/api/v1/admin/shiprocket", require("./routes/shiprocketRoutes"));
+app.use("/api/v1/admin/reviews", require("./routes/adminReviewRoutes"));
 
 app.use("/api/v1/coupons", require("./routes/couponRoutes"));
 app.use("/api/v1/categories", require("./routes/categoryRoutes"));

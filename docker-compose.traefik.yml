@@ -62,9 +62,11 @@ services:
       - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
       - MINIO_ENDPOINT=${MINIO_ENDPOINT}
       - MINIO_PORT=${MINIO_PORT}
+      - MINIO_USE_SSL=${MINIO_USE_SSL:-true}
       - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
       - MINIO_BUCKET=${MINIO_BUCKET}
+      - MINIO_REGION=${MINIO_REGION:-us-east-1}
 
     # Expose port (no need to publish, Traefik will route)
     expose:
@@ -167,6 +169,74 @@ services:
       - "traefik.http.services.frontend.loadbalancer.server.port=3000"
 
   # ============================================
+  # MINIO OBJECT STORAGE
+  # ============================================
+  minio:
+    image: minio/minio:latest
+    container_name: minio-storage
+    restart: unless-stopped
+
+    # Persistent data storage
+    volumes:
+      - minio-data:/data
+
+    # Environment variables
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
+      - MINIO_BROWSER_REDIRECT_URL=https://minio-console.radeo.in
+      - MINIO_SERVER_URL=https://minio.radeo.in
+
+    # Start MinIO server with console
+    command: server /data --console-address ":9001"
+
+    # Expose ports (internal only)
+    expose:
+      - "9000"
+      - "9001"
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 10s
+
+    # Network
+    networks:
+      - traefik-network
+
+    # Traefik labels for routing
+    labels:
+      # Enable Traefik for this service
+      - "traefik.enable=true"
+
+      # ====== MinIO API Router (port 9000) ======
+      - "traefik.http.routers.minio-api.rule=Host(`minio.radeo.in`)"
+      - "traefik.http.routers.minio-api.entrypoints=websecure"
+      - "traefik.http.routers.minio-api.tls=true"
+      - "traefik.http.routers.minio-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.minio-api.service=minio-api"
+      - "traefik.http.services.minio-api.loadbalancer.server.port=9000"
+
+      # ====== MinIO Console Router (port 9001) ======
+      - "traefik.http.routers.minio-console.rule=Host(`minio-console.radeo.in`)"
+      - "traefik.http.routers.minio-console.entrypoints=websecure"
+      - "traefik.http.routers.minio-console.tls=true"
+      - "traefik.http.routers.minio-console.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.minio-console.service=minio-console"
+      - "traefik.http.services.minio-console.loadbalancer.server.port=9001"
+
+      # ====== CORS Middleware for MinIO API ======
+      - "traefik.http.middlewares.minio-cors.headers.accesscontrolalloworiginlist=https://radeo.in,https://www.radeo.in"
+      - "traefik.http.middlewares.minio-cors.headers.accesscontrolallowmethods=GET,POST,PUT,DELETE,OPTIONS,HEAD"
+      - "traefik.http.middlewares.minio-cors.headers.accesscontrolallowheaders=*"
+      - "traefik.http.middlewares.minio-cors.headers.accesscontrolallowcredentials=true"
+      - "traefik.http.middlewares.minio-cors.headers.addvaryheader=true"
+      - "traefik.http.routers.minio-api.middlewares=minio-cors"
+
+  # ============================================
   # HTTP to HTTPS REDIRECT MIDDLEWARE (Global)
   # ============================================
   # This is applied globally to redirect all HTTP traffic to HTTPS
@@ -177,6 +247,8 @@ services:
 # ============================================
 volumes:
   letsencrypt:
+    driver: local
+  minio-data:
     driver: local
 
 # ============================================

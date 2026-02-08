@@ -138,10 +138,42 @@ function getPublicUrl(key) {
   return `https://${MINIO_ENDPOINT}/${MINIO_BUCKET}/${key}`;
 }
 
+/**
+ * Upload buffer directly to MinIO
+ * @param {Buffer} buffer - File buffer
+ * @param {string} key - Object key/path
+ * @param {string} contentType - MIME type
+ * @returns {Promise<string>} - Public URL
+ */
+async function uploadBuffer(buffer, key, contentType) {
+  requireInitialized();
+
+  const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+  if (!allowedTypes.includes(contentType.toLowerCase())) {
+    throw new Error(
+      "Invalid file type. Only JPEG, PNG, and WebP images are allowed.",
+    );
+  }
+
+  const metadata = {
+    "Content-Type": contentType,
+  };
+
+  await minioClient.putObject(
+    MINIO_BUCKET,
+    key,
+    buffer,
+    buffer.length,
+    metadata,
+  );
+  return getPublicUrl(key);
+}
+
 module.exports = {
   initializeBucket,
   generateSignedUploadUrl,
   deleteObject,
   deleteObjects,
   getPublicUrl,
+  uploadBuffer,
 };
