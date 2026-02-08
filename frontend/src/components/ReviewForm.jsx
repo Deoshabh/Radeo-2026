@@ -233,10 +233,6 @@ export default function ReviewForm({ productId, onReviewSubmitted, onCancel }) {
         </div>
         <p className="text-xs text-primary-500 mt-1">
           Upload up to 2 photos of the product (JPEG, PNG, or WebP - max 5MB each)
-          )}
-        </div>
-        <p className="text-xs text-primary-500 mt-1">
-          Upload up to 5 photos to help others see how the product looks
         </p>
       </div>
 
