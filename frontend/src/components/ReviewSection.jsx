@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FiStar, FiEdit } from 'react-icons/fi';
 import ReviewItem from './ReviewItem';
 import ReviewForm from './ReviewForm';
@@ -17,7 +17,7 @@ export default function ReviewSection({ productId }) {
   const [hasMore, setHasMore] = useState(false);
   const [sortBy, setSortBy] = useState('createdAt');
 
-  const fetchReviews = async (pageNum = 1, sort = 'createdAt') => {
+  const fetchReviews = useCallback(async (pageNum = 1, sort = 'createdAt') => {
     try {
       setLoading(true);
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -49,13 +49,13 @@ export default function ReviewSection({ productId }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [productId]);
 
   useEffect(() => {
     if (productId) {
       fetchReviews(1, sortBy);
     }
-  }, [productId, sortBy]);
+  }, [productId, sortBy, fetchReviews]);
 
   const handleReviewSubmitted = (newReview) => {
     setReviews((prev) => [newReview, ...prev]);

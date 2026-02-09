@@ -9,7 +9,7 @@ import AdminLayout from '@/components/AdminLayout';
 import ColorPicker from '@/components/ColorPicker';
 import ImageUploadWithEditor from '@/components/ImageUploadWithEditor';
 import toast from 'react-hot-toast';
-import { FiPlus, FiMinus } from 'react-icons/fi';
+import { FiPlus, FiX } from 'react-icons/fi';
 
 function ProductFormContent() {
   const router = useRouter();

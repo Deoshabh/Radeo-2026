@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { FiStar, FiEye, FiEyeOff, FiTrash2, FiSearch, FiFilter, FiCheck, FiX } from 'react-icons/fi';
@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 export default function AdminReviewsPage() {
   const { isAuthenticated, user } = useAuth();
   const router = useRouter();
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
   
   const [reviews, setReviews] = useState([]);
   const [stats, setStats] = useState(null);
@@ -24,6 +25,16 @@ export default function AdminReviewsPage() {
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('desc');
   const [selectedReviews, setSelectedReviews] = useState([]);
+  const searchRef = useRef(search);
+  const filtersRef = useRef(filters);
+
+  useEffect(() => {
+    searchRef.current = search;
+  }, [search]);
+
+  useEffect(() => {
+    filtersRef.current = filters;
+  }, [filters]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -37,22 +48,27 @@ export default function AdminReviewsPage() {
     }
   }, [isAuthenticated, user, router]);
 
-  const fetchReviews = async () => {
+  const fetchReviews = useCallback(async (overrides = {}) => {
+    const pageToLoad = overrides.page ?? page;
+    const searchToLoad = overrides.search ?? searchRef.current;
+    const filtersToLoad = overrides.filters ?? filtersRef.current;
+    const sortByToLoad = overrides.sortBy ?? sortBy;
+    const sortOrderToLoad = overrides.sortOrder ?? sortOrder;
+
     try {
       setLoading(true);
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
       
       const params = new URLSearchParams({
-        page: page.toString(),
+        page: pageToLoad.toString(),
         limit: '20',
-        sort: sortBy,
-        order: sortOrder,
+        sort: sortByToLoad,
+        order: sortOrderToLoad,
       });
 
-      if (search) params.append('search', search);
-      if (filters.rating) params.append('rating', filters.rating);
-      if (filters.isHidden) params.append('isHidden', filters.isHidden);
-      if (filters.verifiedPurchase) params.append('verifiedPurchase', filters.verifiedPurchase);
+      if (searchToLoad) params.append('search', searchToLoad);
+      if (filtersToLoad.rating) params.append('rating', filtersToLoad.rating);
+      if (filtersToLoad.isHidden) params.append('isHidden', filtersToLoad.isHidden);
+      if (filtersToLoad.verifiedPurchase) params.append('verifiedPurchase', filtersToLoad.verifiedPurchase);
 
       const response = await fetch(`${API_URL}/api/v1/admin/reviews?${params}`, {
         credentials: 'include',
@@ -73,18 +89,23 @@ export default function AdminReviewsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL, page, sortBy, sortOrder]);
 
   useEffect(() => {
     if (isAuthenticated && user?.role === 'admin') {
       fetchReviews();
     }
-  }, [page, sortBy, sortOrder, isAuthenticated, user]);
+  }, [isAuthenticated, user, fetchReviews]);
 
   const handleSearch = (e) => {
     e.preventDefault();
-    setPage(1);
-    fetchReviews();
+
+    if (page !== 1) {
+      setPage(1);
+      return;
+    }
+
+    fetchReviews({ page: 1, search, filters });
   };
 
   const handleToggleHidden = async (reviewId, currentHiddenState) => {
@@ -336,10 +357,16 @@ export default function AdminReviewsPage() {
             <button
               type="button"
               onClick={() => {
+                const clearedFilters = { rating: '', isHidden: '', verifiedPurchase: '' };
                 setSearch('');
-                setFilters({ rating: '', isHidden: '', verifiedPurchase: '' });
-                setPage(1);
-                fetchReviews();
+                setFilters(clearedFilters);
+
+                if (page !== 1) {
+                  setPage(1);
+                  return;
+                }
+
+                fetchReviews({ page: 1, search: '', filters: clearedFilters });
               }}
               className="text-sm text-brand-brown hover:underline"
             >

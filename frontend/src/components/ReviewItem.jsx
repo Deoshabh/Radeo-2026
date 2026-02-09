@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { FiStar, FiThumbsUp, FiCheck } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
@@ -90,10 +91,12 @@ export default function ReviewItem({ review, onHelpfulClick }) {
           <div className="grid grid-cols-3 gap-2 mb-2">
             {displayPhotos.map((photo, index) => (
               <div key={index} className="aspect-square relative overflow-hidden rounded-lg">
-                <img
+                <Image
                   src={photo}
                   alt={`Review photo ${index + 1}`}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer"
+                  fill
+                  sizes="(max-width: 768px) 33vw, 180px"
+                  className="object-cover hover:scale-105 transition-transform cursor-pointer"
                 />
               </div>
             ))}

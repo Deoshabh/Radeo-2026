@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { FiStar, FiCamera, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
@@ -198,10 +199,13 @@ export default function ReviewForm({ productId, onReviewSubmitted, onCancel }) {
             <div className="grid grid-cols-2 gap-2">
               {photoPreviews.map((preview, index) => (
                 <div key={index} className="relative aspect-square">
-                  <img
+                  <Image
                     src={preview}
                     alt={`Preview ${index + 1}`}
-                    className="w-full h-full object-cover rounded-lg"
+                    fill
+                    sizes="(max-width: 768px) 50vw, 200px"
+                    unoptimized
+                    className="object-cover rounded-lg"
                   />
                   <button
                     type="button"
