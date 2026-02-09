@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { FiRotateCw, FiZoomIn, FiZoomOut, FiCrop, FiCheck, FiX, FiMaximize } from 'react-icons/fi';
 
 const ImageEditor = ({ image, onSave, onCancel }) => {
@@ -17,9 +17,9 @@ const ImageEditor = ({ image, onSave, onCancel }) => {
   const aspectRatios = [
     { label: 'Free', value: 'free', ratio: null },
     { label: 'Square (1:1)', value: 'square', ratio: 1 },
-    { label: 'Portrait (3:4)', value: 'portrait', ratio: 3/4 },
-    { label: 'Landscape (4:3)', value: 'landscape', ratio: 4/3 },
-    { label: 'Wide (16:9)', value: 'wide', ratio: 16/9 },
+    { label: 'Portrait (3:4)', value: 'portrait', ratio: 3 / 4 },
+    { label: 'Landscape (4:3)', value: 'landscape', ratio: 4 / 3 },
+    { label: 'Wide (16:9)', value: 'wide', ratio: 16 / 9 },
   ];
 
   // Apply image transformations
@@ -30,16 +30,16 @@ const ImageEditor = ({ image, onSave, onCancel }) => {
     const ctx = canvas.getContext('2d');
     const img = new Image();
     img.crossOrigin = 'anonymous'; // Handle CORS
-    
+
     img.onload = () => {
       // Calculate dimensions based on rotation
       const radians = (rotation * Math.PI) / 180;
       const sin = Math.abs(Math.sin(radians));
       const cos = Math.abs(Math.cos(radians));
-      
+
       const newWidth = img.width * cos + img.height * sin;
       const newHeight = img.width * sin + img.height * cos;
-      
+
       // Set canvas size
       canvas.width = newWidth * zoom;
       canvas.height = newHeight * zoom;
@@ -54,10 +54,10 @@ const ImageEditor = ({ image, onSave, onCancel }) => {
       ctx.translate(canvas.width / 2, canvas.height / 2);
       ctx.rotate(radians);
       ctx.scale(zoom, zoom);
-      
+
       // Apply filters
       ctx.filter = `brightness(${brightness}%) contrast(${contrast}%)`;
-      
+
       // Draw image centered
       ctx.drawImage(img, -img.width / 2, -img.height / 2, img.width, img.height);
 
@@ -104,7 +104,7 @@ const ImageEditor = ({ image, onSave, onCancel }) => {
   const handleAspectRatioChange = (value) => {
     setAspectRatio(value);
     const ratio = aspectRatios.find(ar => ar.value === value)?.ratio;
-    
+
     if (ratio && cropMode) {
       // Adjust crop area to match aspect ratio
       const newHeight = cropArea.width / ratio;
@@ -165,9 +165,8 @@ const ImageEditor = ({ image, onSave, onCancel }) => {
                 <button
                   type="button"
                   onClick={() => setCropMode(!cropMode)}
-                  className={`px-3 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm ${
-                    cropMode ? 'bg-primary-900 text-white' : 'bg-gray-100 hover:bg-gray-200'
-                  }`}
+                  className={`px-3 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm ${cropMode ? 'bg-primary-900 text-white' : 'bg-gray-100 hover:bg-gray-200'
+                    }`}
                 >
                   <FiCrop className="w-4 h-4" />
                   {cropMode ? 'Exit Crop' : 'Crop'}
@@ -202,11 +201,10 @@ const ImageEditor = ({ image, onSave, onCancel }) => {
                       key={ar.value}
                       type="button"
                       onClick={() => handleAspectRatioChange(ar.value)}
-                      className={`px-3 py-2 rounded-lg text-sm transition-colors ${
-                        aspectRatio === ar.value
+                      className={`px-3 py-2 rounded-lg text-sm transition-colors ${aspectRatio === ar.value
                           ? 'bg-primary-900 text-white'
                           : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                      }`}
+                        }`}
                     >
                       {ar.label}
                     </button>

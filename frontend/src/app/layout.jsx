@@ -12,13 +12,13 @@ import AnnouncementBar from '@/components/AnnouncementBar';
 import MaintenanceModeGate from '@/components/MaintenanceModeGate';
 import { generateMetadata as generateSEOMetadata } from '@/utils/seo';
 
-const inter = Inter({ 
+const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
   display: 'swap',
 });
 
-const playfair = Playfair_Display({ 
+const playfair = Playfair_Display({
   subsets: ['latin'],
   variable: '--font-playfair',
   display: 'swap',
@@ -34,6 +34,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
       <head>
+        <link rel="preconnect" href="https://api.radeo.in" />
         <script src="https://www.google.com/recaptcha/enterprise.js?render=6LcbjmUsAAAAAHVeGta063p2ii-OlYGQqOBPfmQl" async defer></script>
       </head>
       <body className="antialiased">
@@ -48,35 +49,35 @@ export default function RootLayout({ children }) {
                     <MaintenanceModeGate>{children}</MaintenanceModeGate>
                   </main>
                   <Footer />
-                  <Toaster 
-                  position="top-right"
-                  toastOptions={{
-                    duration: 3000,
-                    style: {
-                      background: '#363636',
-                      color: '#fff',
-                    },
-                    success: {
+                  <Toaster
+                    position="top-right"
+                    toastOptions={{
                       duration: 3000,
-                      iconTheme: {
-                        primary: '#10b981',
-                        secondary: '#fff',
+                      style: {
+                        background: '#363636',
+                        color: '#fff',
                       },
-                    },
-                    error: {
-                      duration: 4000,
-                      iconTheme: {
-                        primary: '#ef4444',
-                        secondary: '#fff',
+                      success: {
+                        duration: 3000,
+                        iconTheme: {
+                          primary: '#10b981',
+                          secondary: '#fff',
+                        },
                       },
-                    },
-                  }}
-                />
-              </WishlistProvider>
-            </CartProvider>
-          </SiteSettingsProvider>
-        </AuthProvider>
-      </ErrorBoundary>
+                      error: {
+                        duration: 4000,
+                        iconTheme: {
+                          primary: '#ef4444',
+                          secondary: '#fff',
+                        },
+                      },
+                    }}
+                  />
+                </WishlistProvider>
+              </CartProvider>
+            </SiteSettingsProvider>
+          </AuthProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

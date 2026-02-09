@@ -73,11 +73,11 @@ export default function ProductCard({ product }) {
           {/* Wishlist Button */}
           <button
             onClick={handleToggleWishlist}
-            className={`absolute top-2 right-2 sm:top-4 sm:right-4 p-2 sm:p-2.5 rounded-full backdrop-blur-sm transition-all shadow-md ${
-              isProductInWishlist
-                ? 'bg-red-500 text-white'
-                : 'bg-white/90 text-primary-900 hover:bg-white active:scale-95'
-            }`}
+            aria-label={isProductInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+            className={`absolute top-2 right-2 sm:top-4 sm:right-4 p-2 sm:p-2.5 rounded-full backdrop-blur-sm transition-all shadow-md ${isProductInWishlist
+              ? 'bg-red-500 text-white'
+              : 'bg-white/90 text-primary-900 hover:bg-white active:scale-95'
+              }`}
           >
             <FiHeart className={`w-4 h-4 sm:w-5 sm:h-5 ${isProductInWishlist ? 'fill-current' : ''}`} />
           </button>
@@ -102,6 +102,7 @@ export default function ProductCard({ product }) {
                       router.push('/cart');
                     }
                   }}
+                  aria-label="Buy now"
                   className="flex-1 btn btn-primary flex items-center justify-center gap-2 text-sm py-2.5"
                 >
                   <FiShoppingCart className="w-4 h-4" />
@@ -109,6 +110,7 @@ export default function ProductCard({ product }) {
                 </button>
                 <button
                   onClick={handleAddToCart}
+                  aria-label="Add to cart"
                   className="flex-1 btn btn-secondary flex items-center justify-center gap-2 text-sm py-2.5"
                 >
                   <FiShoppingCart className="w-4 h-4" />

@@ -49,12 +49,11 @@ export default function Home() {
   const newsletter = settings.homeSections?.newsletter || {};
 
   const activeBanners = useMemo(() => {
-    const allBanners = settings.bannerSystem?.banners || [];
+    const allBanners = settings.banners || [];
     return allBanners
-      .filter((banner) => banner.type === 'homepage')
-      .filter(isBannerActive)
+      .filter((banner) => banner.isActive)
       .sort((a, b) => (a.order || 0) - (b.order || 0));
-  }, [settings.bannerSystem]);
+  }, [settings.banners]);
 
   useEffect(() => {
     const fetchFeaturedProducts = async () => {
@@ -128,8 +127,8 @@ export default function Home() {
                 key={banner.id || banner.title}
                 className="relative rounded-2xl overflow-hidden min-h-[220px] flex items-end p-8 text-white"
                 style={{
-                  backgroundImage: banner.image
-                    ? `linear-gradient(90deg, rgba(17,24,39,0.65), rgba(17,24,39,0.2)), url(${banner.image})`
+                  backgroundImage: (banner.imageUrl || banner.image)
+                    ? `linear-gradient(90deg, rgba(17,24,39,0.65), rgba(17,24,39,0.2)), url(${banner.imageUrl || banner.image})`
                     : 'linear-gradient(135deg, #1f2937, #7c2d12)',
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
@@ -137,13 +136,14 @@ export default function Home() {
               >
                 <div>
                   <h2 className="text-2xl font-bold mb-2">{banner.title}</h2>
-                  {banner.description && <p className="text-white/90 mb-4">{banner.description}</p>}
-                  {banner.buttonText && banner.buttonLink && (
-                    <Link href={banner.buttonLink} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-primary-900 font-semibold hover:bg-primary-100 transition-colors">
-                      {banner.buttonText}
-                      <FiArrowRight className="w-4 h-4" />
-                    </Link>
-                  )}
+                  {banner.subtitle && <p className="text-white/90 mb-4">{banner.subtitle}</p>}
+                  {/* banner.link is the main link, but if buttonText exists we can use it there too */
+                    banner.link && (
+                      <Link href={banner.link} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-primary-900 font-semibold hover:bg-primary-100 transition-colors">
+                        {banner.buttonText || 'Shop Now'}
+                        <FiArrowRight className="w-4 h-4" />
+                      </Link>
+                    )}
                 </div>
               </div>
             ))}

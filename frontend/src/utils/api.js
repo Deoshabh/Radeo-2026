@@ -112,73 +112,17 @@ export const productAPI = {
 };
 
 export const settingsAPI = {
-  getPublicSettings: (keys) =>
-    api.get("/settings", {
-      params: keys?.length ? { keys: keys.join(",") } : undefined,
-    }),
-  getPublicSettingByKey: (key) => api.get(`/settings/${key}`),
-};
-
-export const contactAPI = {
-  submitMessage: (data) => api.post("/contact", data),
-};
-
-export const categoryAPI = {
-  getAllCategories: () => api.get("/categories"),
-  getNavbarCategories: () => api.get("/categories/navbar"),
-  getCategoryBySlug: (slug) => api.get(`/categories/${slug}`),
-};
-
-export const cartAPI = {
-  getCart: () => api.get("/cart"),
-  addToCart: (data) => api.post("/cart", data),
-  removeFromCart: (productId, size) => api.delete(`/cart/${productId}/${size}`),
-  clearCart: () => api.delete("/cart"),
-};
-
-export const wishlistAPI = {
-  getWishlist: () => api.get("/wishlist"),
-  toggleWishlist: (productId) => api.post("/wishlist/toggle", { productId }),
-  // Deprecated but kept for backward compatibility
-  addToWishlist: (productId) => api.post("/wishlist/toggle", { productId }),
-  removeFromWishlist: (productId) =>
-    api.post("/wishlist/toggle", { productId }),
-  clearWishlist: () => api.delete("/wishlist"),
-};
-
-export const orderAPI = {
-  createOrder: (data) => api.post("/orders", data),
-  getMyOrders: () => api.get("/orders/my"),
-  getOrderById: (id) => api.get(`/orders/${id}`),
-  cancelOrder: (id) => api.patch(`/orders/${id}/cancel`),
-  createRazorpayOrder: (orderId) => api.post(`/orders/${orderId}/razorpay`),
-  verifyRazorpayPayment: (orderId, data) =>
-    api.post(`/orders/${orderId}/razorpay/verify`, data),
-};
-
-export const addressAPI = {
-  getAddresses: () => api.get("/addresses"),
-  addAddress: (data) => api.post("/addresses", data),
-  updateAddress: (id, data) => api.patch(`/addresses/${id}`, data),
-  deleteAddress: (id) => api.delete(`/addresses/${id}`),
-  setDefaultAddress: (id) => api.patch(`/addresses/${id}/default`),
-};
-
-export const userAPI = {
-  getProfile: () => api.get("/user/profile"),
-  updateProfile: (data) => api.patch("/user/profile", data),
-};
-
-export const couponAPI = {
-  validateCoupon: (code) => api.post("/coupons/validate", { code }),
-};
-
-export const filterAPI = {
-  getFilters: () => api.get("/filters"),
+  getPublicSettings: () => api.get("/settings/public"),
 };
 
 export const adminAPI = {
-  // Products
+  // ... other admin APIs ...
+
+  // CMS Settings
+  getAllSettings: () => api.get("/settings"), // GET /api/v1/settings (Admin protected)
+  updateSettings: (data) => api.put("/settings", data), // PUT /api/v1/settings (Admin protected)
+  
+  // Products, Orders, etc. (keep existing)
   getAllProducts: (params) => api.get("/admin/products", { params }),
   getProductById: (id) => api.get(`/admin/products/${id}`),
   createProduct: (data) => api.post("/admin/products", data),
@@ -252,28 +196,11 @@ export const adminAPI = {
   bulkHideReviews: (data) => api.post("/admin/reviews/bulk-hide", data),
   bulkDeleteReviews: (data) => api.post("/admin/reviews/bulk-delete", data),
 
-  // Filters - Removed manual filter management (filters now auto-generated from products)
-  // Brand filters: auto-populated from product.brand field
-  // Material filters: auto-extracted from product.materialAndCare field
-  // Price range: dynamically calculated from product prices
-
   // Media
   getUploadUrl: (data) => api.post("/admin/media/upload-url", data),
   deleteMedia: (key) => api.delete("/admin/media", { data: { key } }),
 
   // Stats
   getAdminStats: () => api.get("/admin/stats"),
-  getStats: () => api.get("/admin/stats"), // Alias for backward compatibility
-
-  // CMS Settings
-  getAllSettings: (keys) =>
-    api.get("/admin/settings", {
-      params: keys?.length ? { keys: keys.join(",") } : undefined,
-    }),
-  getSettingByKey: (key) => api.get(`/admin/settings/${key}`),
-  updateSetting: (key, value) => api.put(`/admin/settings/${key}`, { value }),
-  bulkUpdateSettings: (items) => api.post("/admin/settings/bulk", { items }),
-  resetSetting: (key) => api.post(`/admin/settings/${key}/reset`),
-  getSettingHistory: (key, limit = 20) =>
-    api.get(`/admin/settings/${key}/history`, { params: { limit } }),
+  getStats: () => api.get("/admin/stats"),
 };

@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Product = require("../models/Product");
 const Review = require("../models/Review");
+const { getOrSetCache } = require("../utils/cache");
 
 // GET /api/v1/products
 exports.getAllProducts = async (req, res) => {
@@ -17,110 +18,121 @@ exports.getAllProducts = async (req, res) => {
       material,
       ids,
       limit,
+      color,
+      size
     } = req.query;
 
-    const query = { isActive: true };
+    // Create a unique cache key based on query parameters
+    const cacheKey = `products:${JSON.stringify(req.query)}`;
 
-    // Search functionality
-    if (search && search.trim()) {
-      const searchRegex = new RegExp(search.trim(), "i");
-      query.$or = [
-        { name: searchRegex },
-        { description: searchRegex },
-        { brand: searchRegex },
-        { category: searchRegex },
-        { tags: searchRegex },
-      ];
-    }
+    // Cache TTL: 5 minutes for filtered lists, 15 minutes for default list
+    const ttl = Object.keys(req.query).length > 0 ? 300 : 900;
 
-    // Filter by featured if requested
-    if (featured === "true") {
-      query.featured = true;
-    }
+    const products = await getOrSetCache(cacheKey, async () => {
+        const query = { isActive: true };
 
-    // Filter by category if provided
-    if (category) {
-      query.category = category.toLowerCase();
-    }
-
-    // Filter by specific product IDs if provided
-    if (ids) {
-      const idList = String(ids)
-        .split(",")
-        .map((id) => id.trim())
-        .filter(Boolean);
-
-      if (idList.length > 0) {
-        const validIdList = idList.filter((id) =>
-          mongoose.Types.ObjectId.isValid(id),
-        );
-
-        if (validIdList.length === 0) {
-          return res.json([]);
+        // Search functionality
+        if (search && search.trim()) {
+          const searchRegex = new RegExp(search.trim(), "i");
+          query.$or = [
+            { name: searchRegex },
+            { description: searchRegex },
+            { brand: searchRegex },
+            { category: searchRegex },
+            { tags: searchRegex },
+          ];
         }
 
-        if (validIdList.length !== idList.length) {
-          console.warn("Ignoring invalid product ids in ids filter");
+        // Filter by featured if requested
+        if (featured === "true") {
+          query.featured = true;
         }
 
-        query._id = { $in: validIdList };
-      }
-    }
+        // Filter by category if provided
+        if (category) {
+          query.category = category.toLowerCase();
+        }
 
-    // Filter by brand if provided
-    if (brand) {
-      query.brand = new RegExp(`^${brand}$`, "i"); // Case-insensitive exact match
-    }
+        // Filter by specific product IDs if provided
+        if (ids) {
+          const idList = String(ids)
+            .split(",")
+            .map((id) => id.trim())
+            .filter(Boolean);
 
-    // Filter by material if provided
-    if (material) {
-      query.materialAndCare = new RegExp(material, "i"); // Case-insensitive contains
-    }
+          if (idList.length > 0) {
+            const validIdList = idList.filter((id) =>
+              mongoose.Types.ObjectId.isValid(id),
+            );
 
-    // Filter by color if provided
-    if (req.query.color) {
-      query.colors = { $in: [new RegExp(`^${req.query.color}$`, "i")] };
-    }
+            if (validIdList.length === 0) {
+              return [];
+            }
 
-    // Filter by size if provided
-    if (req.query.size) {
-      query["sizes.size"] = new RegExp(`^${req.query.size}$`, "i");
-    }
+            if (validIdList.length !== idList.length) {
+              console.warn("Ignoring invalid product ids in ids filter");
+            }
 
-    // Price range filtering
-    if (minPrice || maxPrice) {
-      query.price = {};
-      if (minPrice) {
-        query.price.$gte = Number(minPrice);
-      }
-      if (maxPrice) {
-        query.price.$lte = Number(maxPrice);
-      }
-    }
+            query._id = { $in: validIdList };
+          }
+        }
 
-    console.log("📦 Fetching products with query:", query);
+        // Filter by brand if provided
+        if (brand) {
+          query.brand = new RegExp(`^${brand}$`, "i"); // Case-insensitive exact match
+        }
 
-    // Build sort options
-    let sortOptions = {};
-    if (sortBy) {
-      const sortOrder = order === "asc" ? 1 : -1;
-      sortOptions[sortBy] = sortOrder;
-    } else {
-      // Default sort
-      sortOptions = { createdAt: -1 };
-    }
+        // Filter by material if provided
+        if (material) {
+          query.materialAndCare = new RegExp(material, "i"); // Case-insensitive contains
+        }
 
-    console.log("📊 Sorting by:", sortOptions);
+        // Filter by color if provided
+        if (color) {
+          query.colors = { $in: [new RegExp(`^${color}$`, "i")] };
+        }
 
-    let mongooseQuery = Product.find(query).sort(sortOptions);
+        // Filter by size if provided
+        if (size) {
+          query["sizes.size"] = new RegExp(`^${size}$`, "i");
+        }
 
-    // Optional limit support for lightweight list views
-    if (limit && Number(limit) > 0) {
-      mongooseQuery = mongooseQuery.limit(Number(limit));
-    }
+        // Price range filtering
+        if (minPrice || maxPrice) {
+          query.price = {};
+          if (minPrice) {
+            query.price.$gte = Number(minPrice);
+          }
+          if (maxPrice) {
+            query.price.$lte = Number(maxPrice);
+          }
+        }
 
-    const products = await mongooseQuery;
-    console.log(`✅ Found ${products.length} products`);
+        console.log("📦 Fetching products with query:", query);
+
+        // Build sort options
+        let sortOptions = {};
+        if (sortBy) {
+          const sortOrder = order === "asc" ? 1 : -1;
+          sortOptions[sortBy] = sortOrder;
+        } else {
+          // Default sort
+          sortOptions = { createdAt: -1 };
+        }
+
+        console.log("📊 Sorting by:", sortOptions);
+
+        let mongooseQuery = Product.find(query).sort(sortOptions);
+
+        // Optional limit support for lightweight list views
+        if (limit && Number(limit) > 0) {
+          mongooseQuery = mongooseQuery.limit(Number(limit));
+        }
+
+        const results = await mongooseQuery;
+        console.log(`✅ Found ${results.length} products`);
+        return results;
+    }, ttl);
 
     res.json(products);
   } catch (error) {
@@ -133,35 +145,38 @@ exports.getAllProducts = async (req, res) => {
 exports.getTopRatedProducts = async (req, res) => {
   try {
     const limit = Math.max(1, Math.min(Number(req.query.limit) || 8, 50));
+    const cacheKey = `products:top-rated:${limit}`;
 
-    const ratingRows = await Review.aggregate([
-      { $match: { isHidden: false } },
-      {
-        $group: {
-          _id: "$product",
-          averageRating: { $avg: "$rating" },
-          reviewCount: { $sum: 1 },
-        },
-      },
-      { $sort: { averageRating: -1, reviewCount: -1 } },
-      { $limit: limit * 3 },
-    ]);
+    const sortedProducts = await getOrSetCache(cacheKey, async () => {
+        const ratingRows = await Review.aggregate([
+          { $match: { isHidden: false } },
+          {
+            $group: {
+              _id: "$product",
+              averageRating: { $avg: "$rating" },
+              reviewCount: { $sum: 1 },
+            },
+          },
+          { $sort: { averageRating: -1, reviewCount: -1 } },
+          { $limit: limit * 3 },
+        ]);
 
-    if (!ratingRows.length) {
-      return res.json([]);
-    }
+        if (!ratingRows.length) {
+          return [];
+        }
 
-    const sortedProductIds = ratingRows.map((row) => row._id);
-    const products = await Product.find({
-      _id: { $in: sortedProductIds },
-      isActive: true,
-    });
+        const sortedProductIds = ratingRows.map((row) => row._id);
+        const products = await Product.find({
+          _id: { $in: sortedProductIds },
+          isActive: true,
+        });
 
-    const productMap = new Map(products.map((product) => [String(product._id), product]));
-    const sortedProducts = sortedProductIds
-      .map((id) => productMap.get(String(id)))
-      .filter(Boolean)
-      .slice(0, limit);
+        const productMap = new Map(products.map((product) => [String(product._id), product]));
+        return sortedProductIds
+          .map((id) => productMap.get(String(id)))
+          .filter(Boolean)
+          .slice(0, limit);
+    }, 1800); // Cache for 30 minutes
 
     return res.json(sortedProducts);
   } catch (error) {
@@ -223,7 +238,10 @@ exports.getProductBySlug = async (req, res) => {
 // GET /api/v1/products/categories
 exports.getCategories = async (req, res) => {
   try {
-    const categories = await Product.distinct("category", { isActive: true });
+    const categories = await getOrSetCache("products:categories", async () => {
+        return await Product.distinct("category", { isActive: true });
+    }, 3600 * 24); // Cache for 24 hours
+
     res.json(categories);
   } catch (error) {
     console.error("Get categories error:", error);
@@ -234,13 +252,16 @@ exports.getCategories = async (req, res) => {
 // GET /api/v1/products/brands
 exports.getBrands = async (req, res) => {
   try {
-    const brands = await Product.distinct("brand", {
-      isActive: true,
-      brand: { $exists: true, $ne: "" },
-    });
-    // Sort brands alphabetically
-    const sortedBrands = brands.filter(Boolean).sort();
-    res.json(sortedBrands);
+    const brands = await getOrSetCache("products:brands", async () => {
+        const brands = await Product.distinct("brand", {
+          isActive: true,
+          brand: { $exists: true, $ne: "" },
+        });
+        // Sort brands alphabetically
+        return brands.filter(Boolean).sort();
+    }, 3600 * 24); // Cache for 24 hours
+
+    res.json(brands);
   } catch (error) {
     console.error("Get brands error:", error);
     res.status(500).json({ message: "Server error" });

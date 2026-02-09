@@ -9,6 +9,7 @@ import { FiShoppingCart, FiHeart, FiUser, FiSearch, FiMenu, FiX, FiLogOut, FiPac
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
+import { useSiteSettings } from '@/context/SiteSettingsContext';
 import { productAPI, categoryAPI } from '@/utils/api';
 
 export default function Navbar() {
@@ -17,7 +18,8 @@ export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const { cartCount } = useCart();
   const { wishlistCount } = useWishlist();
-  
+  const { settings } = useSiteSettings();
+
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -25,7 +27,7 @@ export default function Navbar() {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [categories, setCategories] = useState([]);
-  
+
   const searchRef = useRef(null);
   const userMenuRef = useRef(null);
 
@@ -106,15 +108,28 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? 'glass shadow-lg' : 'bg-transparent'
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'glass shadow-lg' : 'bg-transparent'
+        }`}
     >
       <div className="container-custom">
         <div className="flex items-center justify-between py-4">
           {/* Logo */}
-          <Link href="/" className="text-2xl font-serif font-bold text-primary-900 hover:text-brand-brown transition-colors">
-            Radeo
+          <Link href="/" className="flex items-center gap-2">
+            {settings?.branding?.logo?.url ? (
+              <div className="relative h-10 w-auto aspect-[3/1]">
+                <Image
+                  src={settings.branding.logo.url}
+                  alt={settings.branding.logo.alt || 'Radeo'}
+                  fill
+                  className="object-contain object-left"
+                  priority
+                />
+              </div>
+            ) : (
+              <span className="text-2xl font-serif font-bold text-primary-900 hover:text-brand-brown transition-colors">
+                {settings?.branding?.siteName || 'Radeo'}
+              </span>
+            )}
           </Link>
 
           {/* Desktop Navigation */}
@@ -125,7 +140,7 @@ export default function Navbar() {
             <Link href="/products" className={`hover:text-brand-brown transition-colors ${pathname === '/products' ? 'text-brand-brown font-semibold' : ''}`}>
               Products
             </Link>
-            
+
             {/* Categories Dropdown */}
             <div className="relative group">
               <button className="hover:text-brand-brown transition-colors flex items-center gap-1">
@@ -196,6 +211,7 @@ export default function Navbar() {
                   }}
                   onFocus={() => setIsSearchOpen(true)}
                   className="w-full pl-10 pr-4 py-2 border border-primary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-900 transition-all"
+                  aria-label="Search"
                 />
                 <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-400" />
               </div>
@@ -249,7 +265,7 @@ export default function Navbar() {
           {/* Icons */}
           <div className="flex items-center gap-4">
             {/* Wishlist */}
-            <Link href="/wishlist" className="relative hover:text-brand-brown transition-colors">
+            <Link href="/wishlist" className="relative hover:text-brand-brown transition-colors" aria-label="Wishlist">
               <FiHeart className="w-6 h-6" />
               {wishlistCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-brand-brown text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
@@ -259,7 +275,7 @@ export default function Navbar() {
             </Link>
 
             {/* Cart */}
-            <Link href="/cart" className="relative hover:text-brand-brown transition-colors">
+            <Link href="/cart" className="relative hover:text-brand-brown transition-colors" aria-label="Cart">
               <FiShoppingCart className="w-6 h-6" />
               {cartCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-brand-brown text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
@@ -274,6 +290,7 @@ export default function Navbar() {
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="w-10 h-10 rounded-full bg-primary-900 text-white flex items-center justify-center hover:bg-brand-brown transition-colors"
+                  aria-label="User menu"
                 >
                   {user?.name?.charAt(0).toUpperCase()}
                 </button>
@@ -320,6 +337,7 @@ export default function Navbar() {
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="lg:hidden text-primary-900 hover:text-brand-brown transition-colors"
+              aria-label="Toggle mobile menu"
             >
               {isMobileMenuOpen ? <FiX className="w-6 h-6" /> : <FiMenu className="w-6 h-6" />}
             </button>

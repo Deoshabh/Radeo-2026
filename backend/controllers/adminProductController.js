@@ -1,4 +1,5 @@
 const Product = require("../models/Product");
+const { invalidateCache } = require("../utils/cache");
 
 // @desc    Get all products (admin view)
 // @route   GET /api/admin/products
@@ -223,6 +224,9 @@ exports.createProduct = async (req, res) => {
       category: product.category,
     });
 
+    // Invalidate product cache
+    await invalidateCache("products:*");
+
     res.status(201).json(product);
   } catch (error) {
     console.error("❌ Create product error:", error);
@@ -303,6 +307,9 @@ exports.updateProduct = async (req, res) => {
 
     await product.save();
 
+    // Invalidate product cache
+    await invalidateCache("products:*");
+
     res.json(product);
   } catch (error) {
     console.error("Update product error:", error);
@@ -324,6 +331,9 @@ exports.toggleProductStatus = async (req, res) => {
 
     product.isActive = !product.isActive;
     await product.save();
+
+    // Invalidate product cache
+    await invalidateCache("products:*");
 
     // Return product with status field for frontend compatibility
     const productResponse = {
@@ -352,6 +362,9 @@ exports.toggleProductFeatured = async (req, res) => {
 
     product.featured = !product.featured;
     await product.save();
+
+    // Invalidate product cache
+    await invalidateCache("products:*");
 
     res.json(product);
   } catch (error) {
@@ -382,6 +395,9 @@ exports.updateProductStatus = async (req, res) => {
     }
 
     await product.save();
+
+    // Invalidate product cache
+    await invalidateCache("products:*");
 
     res.json(product);
   } catch (error) {
@@ -444,6 +460,10 @@ exports.deleteProduct = async (req, res) => {
     console.log(
       `✅ Product deleted from database: ${product.name} (ID: ${id})`,
     );
+
+    // Invalidate product cache
+    await invalidateCache("products:*");
+
     res.json({
       message: "Product and associated images deleted successfully",
       deletedProduct: {
