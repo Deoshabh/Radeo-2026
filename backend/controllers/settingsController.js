@@ -1,23 +1,20 @@
 const SiteSettings = require('../models/SiteSettings');
+const {
+  PUBLIC_SETTING_KEYS,
+  isKnownSettingKey,
+  getPublicSettingValue,
+  getSettingsByKeys,
+  upsertSetting,
+  bulkUpsertSettings,
+  resetSettingToDefault,
+  getSettingHistory: getSettingHistoryForKey,
+} = require('../utils/siteSettings');
 
-/* =====================
-   Get Public Settings
-===================== */
-exports.getPublicSettings = async (req, res, next) => {
-  try {
-    const settings = await SiteSettings.getSettings();
-    
-    // Filter out only necessary data for public if needed
-    // For now, return everything as branding and banners are public
-    res.json({
-      settings: {
-        branding: settings.branding,
-        banners: settings.banners.sort((a, b) => a.order - b.order),
-      },
-    });
-  } catch (err) {
-    next(err);
+const forwardError = (res, next, err) => {
+  if (err?.statusCode && res.statusCode === 200) {
+    res.status(err.statusCode);
   }
+  next(err);
 };
 
 /* =====================
@@ -63,5 +60,139 @@ exports.updateSettings = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
+  }
+};
+
+/* =====================
+   Admin Settings APIs (Key-based)
+===================== */
+exports.getAdminSettings = async (req, res, next) => {
+  try {
+    const settings = await getSettingsByKeys(PUBLIC_SETTING_KEYS);
+    res.json({ settings });
+  } catch (err) {
+    forwardError(res, next, err);
+  }
+};
+
+exports.getAdminSettingByKey = async (req, res, next) => {
+  try {
+    const { key } = req.params;
+    if (!isKnownSettingKey(key)) {
+      return res.status(404).json({ message: `Unknown setting key: ${key}` });
+    }
+
+    const settings = await getSettingsByKeys([key]);
+    if (!settings.length) {
+      return res.status(404).json({ message: `Setting not found: ${key}` });
+    }
+
+    res.json(settings[0]);
+  } catch (err) {
+    forwardError(res, next, err);
+  }
+};
+
+exports.updateSetting = async (req, res, next) => {
+  try {
+    const { key } = req.params;
+    const { value } = req.body || {};
+
+    if (value === undefined) {
+      return res.status(400).json({ message: 'value is required' });
+    }
+
+    const saved = await upsertSetting({
+      key,
+      value,
+      updatedBy: req.user?.id || null,
+      metadata: {
+        source: 'admin-settings-api',
+        ip: req.ip,
+        userAgent: req.get('user-agent'),
+      },
+    });
+
+    res.json(saved);
+  } catch (err) {
+    forwardError(res, next, err);
+  }
+};
+
+exports.bulkUpdateSettings = async (req, res, next) => {
+  try {
+    const { items } = req.body || {};
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ message: 'items must be a non-empty array' });
+    }
+
+    const invalidItem = items.find(
+      (item) => !item || typeof item.key !== 'string' || item.value === undefined,
+    );
+    if (invalidItem) {
+      return res.status(400).json({
+        message: 'Each item must include key (string) and value',
+      });
+    }
+
+    const results = await bulkUpsertSettings({
+      items,
+      updatedBy: req.user?.id || null,
+      metadata: {
+        source: 'admin-settings-api',
+        ip: req.ip,
+        userAgent: req.get('user-agent'),
+      },
+    });
+
+    res.json({ message: 'Settings updated successfully', settings: results });
+  } catch (err) {
+    forwardError(res, next, err);
+  }
+};
+
+exports.resetSetting = async (req, res, next) => {
+  try {
+    const { key } = req.params;
+    const saved = await resetSettingToDefault({
+      key,
+      updatedBy: req.user?.id || null,
+    });
+
+    res.json(saved);
+  } catch (err) {
+    forwardError(res, next, err);
+  }
+};
+
+exports.getSettingHistory = async (req, res, next) => {
+  try {
+    const { key } = req.params;
+    const limitParam = parseInt(req.query.limit, 10);
+    const history = await getSettingHistoryForKey({
+      key,
+      limit: Number.isFinite(limitParam) ? limitParam : 20,
+    });
+
+    res.json({ history });
+  } catch (err) {
+    forwardError(res, next, err);
+  }
+};
+
+/* =====================
+   Public Settings (Key-based)
+===================== */
+exports.getPublicSettings = async (req, res, next) => {
+  try {
+    const settings = await getSettingsByKeys(PUBLIC_SETTING_KEYS);
+    const publicSettings = settings.reduce((acc, item) => {
+      acc[item.key] = getPublicSettingValue(item.key, item.value);
+      return acc;
+    }, {});
+
+    res.json({ settings: publicSettings });
+  } catch (err) {
+    forwardError(res, next, err);
   }
 };
