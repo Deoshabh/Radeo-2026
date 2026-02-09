@@ -1,4 +1,6 @@
+const mongoose = require("mongoose");
 const Product = require("../models/Product");
+const Review = require("../models/Review");
 
 // GET /api/v1/products
 exports.getAllProducts = async (req, res) => {
@@ -13,6 +15,8 @@ exports.getAllProducts = async (req, res) => {
       order,
       brand,
       material,
+      ids,
+      limit,
     } = req.query;
 
     const query = { isActive: true };
@@ -37,6 +41,30 @@ exports.getAllProducts = async (req, res) => {
     // Filter by category if provided
     if (category) {
       query.category = category.toLowerCase();
+    }
+
+    // Filter by specific product IDs if provided
+    if (ids) {
+      const idList = String(ids)
+        .split(",")
+        .map((id) => id.trim())
+        .filter(Boolean);
+
+      if (idList.length > 0) {
+        const validIdList = idList.filter((id) =>
+          mongoose.Types.ObjectId.isValid(id),
+        );
+
+        if (validIdList.length === 0) {
+          return res.json([]);
+        }
+
+        if (validIdList.length !== idList.length) {
+          console.warn("Ignoring invalid product ids in ids filter");
+        }
+
+        query._id = { $in: validIdList };
+      }
     }
 
     // Filter by brand if provided
@@ -84,13 +112,61 @@ exports.getAllProducts = async (req, res) => {
 
     console.log("📊 Sorting by:", sortOptions);
 
-    const products = await Product.find(query).sort(sortOptions);
+    let mongooseQuery = Product.find(query).sort(sortOptions);
+
+    // Optional limit support for lightweight list views
+    if (limit && Number(limit) > 0) {
+      mongooseQuery = mongooseQuery.limit(Number(limit));
+    }
+
+    const products = await mongooseQuery;
     console.log(`✅ Found ${products.length} products`);
 
     res.json(products);
   } catch (error) {
     console.error("Get products error:", error);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+// GET /api/v1/products/top-rated
+exports.getTopRatedProducts = async (req, res) => {
+  try {
+    const limit = Math.max(1, Math.min(Number(req.query.limit) || 8, 50));
+
+    const ratingRows = await Review.aggregate([
+      { $match: { isHidden: false } },
+      {
+        $group: {
+          _id: "$product",
+          averageRating: { $avg: "$rating" },
+          reviewCount: { $sum: 1 },
+        },
+      },
+      { $sort: { averageRating: -1, reviewCount: -1 } },
+      { $limit: limit * 3 },
+    ]);
+
+    if (!ratingRows.length) {
+      return res.json([]);
+    }
+
+    const sortedProductIds = ratingRows.map((row) => row._id);
+    const products = await Product.find({
+      _id: { $in: sortedProductIds },
+      isActive: true,
+    });
+
+    const productMap = new Map(products.map((product) => [String(product._id), product]));
+    const sortedProducts = sortedProductIds
+      .map((id) => productMap.get(String(id)))
+      .filter(Boolean)
+      .slice(0, limit);
+
+    return res.json(sortedProducts);
+  } catch (error) {
+    console.error("Get top-rated products error:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 

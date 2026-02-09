@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { FiX, FiPlus, FiCheck } from 'react-icons/fi';
 
 // Predefined color palette
-const PRESET_COLORS = [
+export const PRESET_COLORS = [
   { name: 'Black', hex: '#000000' },
   { name: 'White', hex: '#FFFFFF' },
   { name: 'Brown', hex: '#8B4513' },
@@ -24,6 +24,21 @@ const PRESET_COLORS = [
   { name: 'Red', hex: '#FF0000' },
   { name: 'Blue', hex: '#0000FF' },
 ];
+
+// Utility function to get color name from hex code
+export const getColorName = (hexCode) => {
+  if (!hexCode) return 'Unknown';
+  
+  // Normalize hex code (uppercase, with #)
+  const normalizedHex = hexCode.toUpperCase().startsWith('#') ? hexCode.toUpperCase() : `#${hexCode.toUpperCase()}`;
+  
+  // Find matching preset color
+  const preset = PRESET_COLORS.find(c => c.hex.toUpperCase() === normalizedHex);
+  if (preset) return preset.name;
+  
+  // If not found in presets, return hex code
+  return hexCode;
+};
 
 export default function ColorPicker({ selectedColors = [], onChange }) {
   const [customColorName, setCustomColorName] = useState('');
@@ -76,11 +91,11 @@ export default function ColorPicker({ selectedColors = [], onChange }) {
                 className="flex items-center gap-2 pl-2 pr-3 py-1.5 bg-primary-100 rounded-full border border-primary-200"
               >
                 <div
-                  className="w-6 h-6 rounded-full border-2 border-white shadow-sm"
+                  className="w-6 h-6 rounded-full border-2 border-white shadow-sm flex-shrink-0"
                   style={{ backgroundColor: color }}
                 />
                 <span className="text-sm capitalize">
-                  {color}
+                  {getColorName(color)}
                 </span>
                 <button
                   type="button"

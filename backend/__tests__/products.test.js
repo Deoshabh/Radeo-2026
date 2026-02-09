@@ -33,6 +33,39 @@ describe("Product API Tests", () => {
       expect(res.statusCode).toBe(200);
       expect(Array.isArray(res.body)).toBe(true);
     });
+
+    it("should ignore invalid ids without throwing cast errors", async () => {
+      const product = await Product.create({
+        name: "IDs Filter Shoe",
+        slug: "ids-filter-shoe",
+        description: "Test description",
+        category: "formal",
+        price: 1999,
+        brand: "TestBrand",
+        stock: 5,
+        images: [],
+        isActive: true,
+      });
+
+      const res = await request(app)
+        .get("/api/v1/products")
+        .query({ ids: `${product._id},invalid-id` });
+
+      expect(res.statusCode).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      expect(res.body.length).toBe(1);
+      expect(String(res.body[0]._id)).toBe(String(product._id));
+    });
+
+    it("should return an empty array when all ids are invalid", async () => {
+      const res = await request(app)
+        .get("/api/v1/products")
+        .query({ ids: "bad-id-1,bad-id-2" });
+
+      expect(res.statusCode).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      expect(res.body).toHaveLength(0);
+    });
   });
 
   describe("GET /api/v1/products/:slug", () => {

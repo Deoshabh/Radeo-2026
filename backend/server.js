@@ -89,9 +89,11 @@ app.use(
 app.use("/api/health", require("./routes/healthRoutes")); // Health checks
 app.use("/api/v1/auth", require("./routes/authRoutes"));
 app.use("/api/v1/products", require("./routes/productRoutes"));
+app.use("/api/v1/settings", require("./routes/settingsRoutes"));
 app.use("/api/v1/cart", require("./routes/cartRoutes"));
 app.use("/api/v1/orders", require("./routes/orderRoutes"));
 app.use("/api/v1/filters", require("./routes/filterRoutes"));
+app.use("/api/v1/contact", require("./routes/contactRoutes"));
 
 // Review routes
 app.use("/api/v1", require("./routes/reviewRoutes"));
@@ -109,6 +111,7 @@ app.use("/api/v1/admin/media", require("./routes/adminMediaRoutes"));
 app.use("/api/v1/admin/filters", require("./routes/adminFilterRoutes"));
 app.use("/api/v1/admin/shiprocket", require("./routes/shiprocketRoutes"));
 app.use("/api/v1/admin/reviews", require("./routes/adminReviewRoutes"));
+app.use("/api/v1/admin/settings", require("./routes/adminSettingsRoutes"));
 
 app.use("/api/v1/coupons", require("./routes/couponRoutes"));
 app.use("/api/v1/categories", require("./routes/categoryRoutes"));

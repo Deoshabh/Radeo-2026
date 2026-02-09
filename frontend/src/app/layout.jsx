@@ -2,11 +2,14 @@ import { Inter, Playfair_Display } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from '@/context/AuthContext';
+import { SiteSettingsProvider } from '@/context/SiteSettingsContext';
 import { CartProvider } from '@/context/CartContext';
 import { WishlistProvider } from '@/context/WishlistContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import AnnouncementBar from '@/components/AnnouncementBar';
+import MaintenanceModeGate from '@/components/MaintenanceModeGate';
 import { generateMetadata as generateSEOMetadata } from '@/utils/seo';
 
 const inter = Inter({ 
@@ -33,39 +36,42 @@ export default function RootLayout({ children }) {
       <body className="antialiased">
         <ErrorBoundary>
           <AuthProvider>
-            <CartProvider>
-              <WishlistProvider>
-                <Navbar />
-                <main className="min-h-screen pt-[80px]">
-                  {children}
-                </main>
-                <Footer />
-                <Toaster 
-                position="top-right"
-                toastOptions={{
-                  duration: 3000,
-                  style: {
-                    background: '#363636',
-                    color: '#fff',
-                  },
-                  success: {
+            <SiteSettingsProvider>
+              <CartProvider>
+                <WishlistProvider>
+                  <Navbar />
+                  <main className="min-h-screen pt-[80px]">
+                    <AnnouncementBar />
+                    <MaintenanceModeGate>{children}</MaintenanceModeGate>
+                  </main>
+                  <Footer />
+                  <Toaster 
+                  position="top-right"
+                  toastOptions={{
                     duration: 3000,
-                    iconTheme: {
-                      primary: '#10b981',
-                      secondary: '#fff',
+                    style: {
+                      background: '#363636',
+                      color: '#fff',
                     },
-                  },
-                  error: {
-                    duration: 4000,
-                    iconTheme: {
-                      primary: '#ef4444',
-                      secondary: '#fff',
+                    success: {
+                      duration: 3000,
+                      iconTheme: {
+                        primary: '#10b981',
+                        secondary: '#fff',
+                      },
                     },
-                  },
-                }}
-              />
-            </WishlistProvider>
-          </CartProvider>
+                    error: {
+                      duration: 4000,
+                      iconTheme: {
+                        primary: '#ef4444',
+                        secondary: '#fff',
+                      },
+                    },
+                  }}
+                />
+              </WishlistProvider>
+            </CartProvider>
+          </SiteSettingsProvider>
         </AuthProvider>
       </ErrorBoundary>
       </body>

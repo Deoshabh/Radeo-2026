@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FiGrid, FiPackage, FiShoppingBag, FiUsers, FiTag, FiPercent, FiStar } from 'react-icons/fi';
+import { FiGrid, FiPackage, FiShoppingBag, FiUsers, FiTag, FiPercent, FiStar, FiEdit3 } from 'react-icons/fi';
 
 export default function AdminLayout({ children }) {
   const pathname = usePathname();
@@ -15,6 +15,7 @@ export default function AdminLayout({ children }) {
     { href: '/admin/users', icon: FiUsers, label: 'Users' },
     { href: '/admin/categories', icon: FiTag, label: 'Categories' },
     { href: '/admin/coupons', icon: FiPercent, label: 'Coupons' },
+    { href: '/admin/content', icon: FiEdit3, label: 'Content CMS' },
   ];
   
   const isActive = (href, exact = false) => {

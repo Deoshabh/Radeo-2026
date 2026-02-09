@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { productAPI, categoryAPI } from '@/utils/api';
 import ProductCard from '@/components/ProductCard';
 import PriceRangeSlider from '@/components/PriceRangeSlider';
+import { getColorName } from '@/components/ColorPicker';
 import { FiFilter, FiX } from 'react-icons/fi';
 
 function ProductsContent() {
@@ -365,14 +366,21 @@ function ProductsContent() {
                   <h4 className="font-medium mb-3">Color</h4>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {colors.map((color) => (
-                      <label key={color} className="flex items-center gap-2 cursor-pointer">
+                      <label key={color} className="flex items-center gap-3 cursor-pointer group">
                         <input
                           type="checkbox"
                           checked={selectedColors.includes(color)}
                           onChange={() => handleColorToggle(color)}
                           className="w-4 h-4 text-brand-brown focus:ring-brand-brown rounded"
                         />
-                        <span className="text-sm">{color}</span>
+                        <div
+                          className="w-6 h-6 rounded-full border-2 border-gray-300 group-hover:border-brand-brown transition-colors flex-shrink-0"
+                          style={{ 
+                            backgroundColor: color,
+                            borderColor: color === '#FFFFFF' ? '#d1d5db' : undefined
+                          }}
+                        />
+                        <span className="text-sm capitalize">{getColorName(color)}</span>
                       </label>
                     ))}
                   </div>
@@ -488,14 +496,21 @@ function ProductsContent() {
                     <h4 className="font-medium mb-3">Color</h4>
                     <div className="space-y-2 max-h-48 overflow-y-auto">
                       {colors.map((color) => (
-                        <label key={color} className="flex items-center gap-2 cursor-pointer">
+                        <label key={color} className="flex items-center gap-3 cursor-pointer group">
                           <input
                             type="checkbox"
                             checked={selectedColors.includes(color)}
                             onChange={() => handleColorToggle(color)}
                             className="w-4 h-4 text-brand-brown focus:ring-brand-brown rounded"
                           />
-                          <span className="text-sm">{color}</span>
+                          <div
+                            className="w-6 h-6 rounded-full border-2 border-gray-300 group-hover:border-brand-brown transition-colors flex-shrink-0"
+                            style={{ 
+                              backgroundColor: color,
+                              borderColor: color === '#FFFFFF' ? '#d1d5db' : undefined
+                            }}
+                          />
+                          <span className="text-sm capitalize">{getColorName(color)}</span>
                         </label>
                       ))}
                     </div>
@@ -539,7 +554,7 @@ function ProductsContent() {
                 <div className="spinner"></div>
               </div>
             ) : products.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 lg:gap-8">
                 {products.map((product) => (
                   <ProductCard key={product._id} product={product} />
                 ))}

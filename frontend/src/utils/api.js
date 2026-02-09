@@ -105,8 +105,21 @@ export const productAPI = {
   getPriceRange: () => api.get("/products/price-range"),
   getColors: () => api.get("/products/colors"),
   getSizes: () => api.get("/products/sizes"),
+  getTopRatedProducts: (params) => api.get("/products/top-rated", { params }),
   searchProducts: (query) =>
     api.get("/products/search", { params: { q: query } }),
+};
+
+export const settingsAPI = {
+  getPublicSettings: (keys) =>
+    api.get("/settings", {
+      params: keys?.length ? { keys: keys.join(",") } : undefined,
+    }),
+  getPublicSettingByKey: (key) => api.get(`/settings/${key}`),
+};
+
+export const contactAPI = {
+  submitMessage: (data) => api.post("/contact", data),
 };
 
 export const categoryAPI = {
@@ -239,4 +252,16 @@ export const adminAPI = {
   // Stats
   getAdminStats: () => api.get("/admin/stats"),
   getStats: () => api.get("/admin/stats"), // Alias for backward compatibility
+
+  // CMS Settings
+  getAllSettings: (keys) =>
+    api.get("/admin/settings", {
+      params: keys?.length ? { keys: keys.join(",") } : undefined,
+    }),
+  getSettingByKey: (key) => api.get(`/admin/settings/${key}`),
+  updateSetting: (key, value) => api.put(`/admin/settings/${key}`, { value }),
+  bulkUpdateSettings: (items) => api.post("/admin/settings/bulk", { items }),
+  resetSetting: (key) => api.post(`/admin/settings/${key}/reset`),
+  getSettingHistory: (key, limit = 20) =>
+    api.get(`/admin/settings/${key}/history`, { params: { limit } }),
 };

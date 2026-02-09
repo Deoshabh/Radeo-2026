@@ -59,38 +59,38 @@ export default function ProductCard({ product }) {
 
   return (
     <Link href={`/products/${product.slug}`}>
-      <div className="card group overflow-hidden h-full flex flex-col">
+      <div className="card group overflow-hidden h-full flex flex-col shadow-sm hover:shadow-md transition-shadow">
         {/* Image Container */}
-        <div className="relative aspect-[3/4] sm:aspect-[4/5] overflow-hidden bg-primary-100">
+        <div className="relative aspect-square sm:aspect-[4/5] overflow-hidden bg-primary-100">
           <Image
             src={product.images?.[0]?.url || product.images?.[0] || '/placeholder.jpg'}
             alt={product.name}
             fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             className="object-cover group-hover:scale-110 transition-transform duration-500"
           />
 
           {/* Wishlist Button */}
           <button
             onClick={handleToggleWishlist}
-            className={`absolute top-4 right-4 p-2 rounded-full backdrop-blur-sm transition-all ${
+            className={`absolute top-2 right-2 sm:top-4 sm:right-4 p-2 sm:p-2.5 rounded-full backdrop-blur-sm transition-all shadow-md ${
               isProductInWishlist
                 ? 'bg-red-500 text-white'
-                : 'bg-white/80 text-primary-900 hover:bg-white'
+                : 'bg-white/90 text-primary-900 hover:bg-white active:scale-95'
             }`}
           >
-            <FiHeart className={`w-5 h-5 ${isProductInWishlist ? 'fill-current' : ''}`} />
+            <FiHeart className={`w-4 h-4 sm:w-5 sm:h-5 ${isProductInWishlist ? 'fill-current' : ''}`} />
           </button>
 
           {/* Availability Badge */}
           {!product.inStock && (
-            <div className="absolute top-4 left-4 px-3 py-1 bg-red-500 text-white text-xs font-medium rounded-full">
+            <div className="absolute top-2 left-2 sm:top-4 sm:left-4 px-2 py-1 sm:px-3 bg-red-500 text-white text-[10px] sm:text-xs font-medium rounded-full">
               Unavailable
             </div>
           )}
 
-          {/* Action Buttons on Hover */}
-          <div className="absolute bottom-4 left-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+          {/* Action Buttons on Hover - Hidden on mobile, shown on hover on desktop */}
+          <div className="hidden sm:flex absolute bottom-4 left-4 right-4 gap-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
             {product.inStock ? (
               <>
                 <button
@@ -127,48 +127,48 @@ export default function ProductCard({ product }) {
         </div>
 
         {/* Product Info */}
-        <div className="p-4 sm:p-6 flex-1 flex flex-col">
+        <div className="p-3 sm:p-4 md:p-6 flex-1 flex flex-col">
           {/* Category */}
-          <p className="text-[10px] sm:text-xs uppercase tracking-wider text-primary-600 mb-1">
+          <p className="text-[10px] sm:text-xs uppercase tracking-wider text-primary-600 mb-1 sm:mb-1.5">
             {categoryLabel || 'Uncategorized'}
           </p>
 
           {/* Name */}
-          <h3 className="font-serif text-base sm:text-lg font-semibold text-primary-900 mb-2 group-hover:text-brand-brown transition-colors line-clamp-1">
+          <h3 className="font-serif text-sm sm:text-base md:text-lg font-semibold text-primary-900 mb-1.5 sm:mb-2 group-hover:text-brand-brown transition-colors line-clamp-2">
             {product.name}
           </h3>
 
-          {/* Description */}
+          {/* Description - Hidden on mobile */}
           {product.description && (
-            <p className="text-xs text-primary-600 mb-2 line-clamp-1">{product.description}</p>
+            <p className="hidden sm:block text-xs text-primary-600 mb-2 line-clamp-1">{product.description}</p>
           )}
 
           {/* Price */}
           <div className="mt-auto">
             {/* Price with Discount */}
             {product.comparePrice && product.comparePrice > product.price ? (
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-lg sm:text-xl font-bold text-green-600">
+              <div className="space-y-0.5 sm:space-y-1">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                  <span className="text-base sm:text-lg md:text-xl font-bold text-green-600">
                     ₹{(product.price ?? 0).toLocaleString('en-IN')}
                   </span>
-                  <span className="text-sm text-gray-500 line-through">
+                  <span className="text-xs sm:text-sm text-gray-500 line-through">
                     ₹{(product.comparePrice ?? 0).toLocaleString('en-IN')}
                   </span>
-                  <span className="bg-red-500 text-white text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
+                  <span className="bg-red-500 text-white text-[9px] sm:text-[10px] md:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
                     {Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)}% OFF
                   </span>
                 </div>
                 {product.sizes && product.sizes.length > 0 && (
                   <p className="text-[10px] sm:text-xs text-primary-600">
-                    {product.sizes.length} sizes available
+                    {product.sizes.length} sizes
                   </p>
                 )}
               </div>
             ) : (
               <div className="flex items-center justify-between">
-                <p className="text-base sm:text-lg font-bold text-primary-800">
-                  {`\u20B9${(product.price ?? 0).toLocaleString('en-IN')}`}
+                <p className="text-base sm:text-lg md:text-xl font-bold text-primary-800">
+                  ₹{(product.price ?? 0).toLocaleString('en-IN')}
                 </p>
                 {product.sizes && product.sizes.length > 0 && (
                   <p className="text-[10px] sm:text-xs text-primary-600">

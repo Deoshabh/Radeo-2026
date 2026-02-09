@@ -7,6 +7,7 @@ import { productAPI } from '@/utils/api';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { useAuth } from '@/context/AuthContext';
+import { getColorName } from '@/components/ColorPicker';
 import { FiHeart, FiShoppingCart, FiAward, FiTruck, FiShield, FiCheck } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import ProductMetadata from '@/components/ProductMetadata';
@@ -197,12 +198,13 @@ export default function ProductDetailPage() {
             {product.colors && product.colors.length > 0 && (
               <div>
                 <label className="block text-sm font-medium text-primary-900 mb-3">
-                  Select Color: <span className="capitalize text-brand-brown">{selectedColor}</span>
+                  Select Color: <span className="capitalize text-brand-brown">{getColorName(selectedColor)}</span>
                 </label>
                 <div className="flex flex-wrap gap-3">
                   {product.colors.map((color, idx) => {
                     // Parse color - handle hex codes or color names
                     const colorValue = color.startsWith('#') ? color : color.toLowerCase();
+                    const colorName = getColorName(color);
                     return (
                       <button
                         key={idx}
@@ -213,7 +215,7 @@ export default function ProductDetailPage() {
                             : 'border-primary-300 hover:border-brand-brown hover:scale-105'
                         }`}
                         style={{ backgroundColor: colorValue }}
-                        title={color}
+                        title={colorName}
                       >
                         {selectedColor === color && (
                           <FiCheck className="w-5 h-5 text-white absolute inset-0 m-auto drop-shadow-lg" />
