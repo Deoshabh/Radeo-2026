@@ -229,7 +229,7 @@ export default function AdminCMSPage() {
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-5xl">
                     <div className="mb-6">
                         <h1 className="text-2xl sm:text-3xl font-bold text-primary-900">CMS & Site Settings</h1>
-                        <p className="text-primary-600 mt-1">Manage your website's look and feel</p>
+                        <p className="text-primary-600 mt-1">Manage your website&apos;s look and feel</p>
                     </div>
 
                     {/* Tabs */}
@@ -237,8 +237,8 @@ export default function AdminCMSPage() {
                         <button
                             onClick={() => setActiveTab('branding')}
                             className={`px-6 py-4 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'branding'
-                                    ? 'border-primary-900 text-primary-900 bg-primary-50'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                                ? 'border-primary-900 text-primary-900 bg-primary-50'
+                                : 'border-transparent text-gray-500 hover:text-gray-700'
                                 }`}
                         >
                             <FiLayout className="inline mr-2" /> Branding (Logo & Favicon)
@@ -246,8 +246,8 @@ export default function AdminCMSPage() {
                         <button
                             onClick={() => setActiveTab('banners')}
                             className={`px-6 py-4 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'banners'
-                                    ? 'border-primary-900 text-primary-900 bg-primary-50'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                                ? 'border-primary-900 text-primary-900 bg-primary-50'
+                                : 'border-transparent text-gray-500 hover:text-gray-700'
                                 }`}
                         >
                             <FiImage className="inline mr-2" /> Home Banners

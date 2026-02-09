@@ -204,3 +204,60 @@ export const adminAPI = {
   getAdminStats: () => api.get("/admin/stats"),
   getStats: () => api.get("/admin/stats"),
 };
+
+export const categoryAPI = {
+  getAllCategories: () => api.get("/products/categories"),
+  getCategoryBySlug: (slug) => api.get(`/products/categories/${slug}`),
+};
+
+export const addressAPI = {
+  getAll: () => api.get("/user/addresses"),
+  getById: (id) => api.get(`/user/addresses/${id}`),
+  create: (data) => api.post("/user/addresses", data),
+  update: (id, data) => api.put(`/user/addresses/${id}`, data),
+  delete: (id) => api.delete(`/user/addresses/${id}`),
+  setDefault: (id) => api.put(`/user/addresses/${id}/default`),
+};
+
+export const couponAPI = {
+  validate: (code) => api.post("/coupons/validate", { code }),
+  getAll: () => api.get("/coupons"), // Public coupons if any
+};
+
+export const orderAPI = {
+  create: (data) => api.post("/orders", data),
+  getAll: (params) => api.get("/orders", { params }),
+  getById: (id) => api.get(`/orders/${id}`),
+  verifyPayment: (data) => api.post("/orders/verify-payment", data),
+  cancel: (id) => api.post(`/orders/${id}/cancel`),
+};
+
+export const contactAPI = {
+  submit: (data) => api.post("/contact", data),
+};
+
+export const userAPI = {
+  getProfile: () => api.get("/user/profile"),
+  updateProfile: (data) => api.put("/user/profile", data),
+  changePassword: (data) => api.put("/user/change-password", data),
+  uploadAvatar: (formData) =>
+    api.post("/user/avatar", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+};
+
+export const cartAPI = {
+  get: () => api.get("/cart"),
+  add: (data) => api.post("/cart", data),
+  update: (itemId, data) => api.put(`/cart/${itemId}`, data),
+  remove: (itemId) => api.delete(`/cart/${itemId}`),
+  clear: () => api.delete("/cart"),
+  sync: (cartItems) => api.post("/cart/sync", { cartItems }), // For syncing local cart after login
+};
+
+export const wishlistAPI = {
+  get: () => api.get("/wishlist"),
+  add: (productId) => api.post("/wishlist", { productId }),
+  remove: (productId) => api.delete(`/wishlist/${productId}`),
+  check: (productId) => api.get(`/wishlist/check/${productId}`),
+};
