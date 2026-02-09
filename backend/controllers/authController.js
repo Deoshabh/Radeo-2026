@@ -31,6 +31,14 @@ const generateRefreshToken = async (user, ip) => {
   return token;
 };
 
+const normalizeAuthProvider = (providerId) => {
+  if (!providerId) return "local";
+  if (providerId === "google.com") return "google";
+  if (providerId === "facebook.com") return "facebook";
+  if (["local", "phone", "password"].includes(providerId)) return providerId;
+  return "local"; // Fallback
+};
+
 /* =====================
    Register
 ===================== */
@@ -502,7 +510,9 @@ exports.firebaseLogin = async (req, res, next) => {
         decodedToken.firebase.sign_in_provider &&
         decodedToken.firebase.sign_in_provider !== "password"
       ) {
-        user.authProvider = decodedToken.firebase.sign_in_provider;
+        user.authProvider = normalizeAuthProvider(
+          decodedToken.firebase.sign_in_provider,
+        );
       }
       await user.save();
     }
