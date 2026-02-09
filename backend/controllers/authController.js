@@ -65,7 +65,9 @@ exports.register = async (req, res, next) => {
       .cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        domain: process.env.NODE_ENV === "production" ? ".radeo.in" : undefined,
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       })
       .status(201)
       .json({
@@ -107,7 +109,9 @@ exports.login = async (req, res, next) => {
       .cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        domain: process.env.NODE_ENV === "production" ? ".radeo.in" : undefined,
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       })
       .json({
         message: "Login successful",
@@ -204,7 +208,14 @@ exports.logout = async (req, res, next) => {
       }
     }
 
-    res.clearCookie("refreshToken").json({ message: "Logged out" });
+    res
+      .clearCookie("refreshToken", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        domain: process.env.NODE_ENV === "production" ? ".radeo.in" : undefined,
+      })
+      .json({ message: "Logged out" });
   } catch (err) {
     next(err);
   }
@@ -423,7 +434,8 @@ exports.firebaseLogin = async (req, res, next) => {
       .cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        domain: process.env.NODE_ENV === "production" ? ".radeo.in" : undefined,
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       })
       .json({
