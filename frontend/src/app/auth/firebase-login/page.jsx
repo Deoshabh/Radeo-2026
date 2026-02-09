@@ -44,8 +44,8 @@ export default function FirebaseLoginPage() {
       // Get reCAPTCHA token for backend verification
       const recaptchaToken = await getToken(RECAPTCHA_ACTIONS.LOGIN);
 
-      // Send Firebase token to backend to create/sync user session
-      const response = await authAPI.firebaseLogin({
+      // Validate token before sending
+      const payload = {
         firebaseToken: token,
         email: user.email,
         phoneNumber: user.phoneNumber,
@@ -53,7 +53,23 @@ export default function FirebaseLoginPage() {
         photoURL: user.photoURL,
         uid: user.uid,
         recaptchaToken
+      };
+
+      console.log(`📤 Sending Firebase login payload:`, {
+        hasToken: !!payload.firebaseToken,
+        tokenLength: payload.firebaseToken ? payload.firebaseToken.length : 0,
+        email: payload.email,
+        uid: payload.uid,
+        payloadKeys: Object.keys(payload),
       });
+
+      if (!payload.firebaseToken) {
+        toast.error("Failed to get Firebase ID token. Please try again.");
+        return;
+      }
+
+      // Send Firebase token to backend to create/sync user session
+      const response = await authAPI.firebaseLogin(payload);
 
       // ✅ SECURITY CHECK #2: Verify returned user email matches Firebase
       if (response.data?.user) {
@@ -83,7 +99,12 @@ export default function FirebaseLoginPage() {
         toast.error('Failed to sync with server. Please try again.');
       }
     } catch (error) {
-      console.error('Backend sync error:', error);
+      console.error('Backend sync error:', {
+        status: error.response?.status,
+        message: error.message,
+        responseData: error.response?.data,
+        errorCode: error.code,
+      });
       
       // Check if error is FIREBASE_UID_MISMATCH (account hijack prevention)
       if (error.response?.data?.error === 'FIREBASE_UID_MISMATCH') {
@@ -94,7 +115,9 @@ export default function FirebaseLoginPage() {
         return;
       }
 
-      toast.error('Failed to sync with server. Please try again.');
+      // Show detailed error if available
+      const errorMessage = error.response?.data?.message || 'Failed to sync with server. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
@@ -104,13 +127,45 @@ export default function FirebaseLoginPage() {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     
-    const result = await loginWithGoogle();
-    
-    if (result.success) {
+    try {
+      const result = await loginWithGoogle();
+      
+      console.log(`🔐 Google Sign-In Result:`, {
+        success: result?.success,
+        hasUser: !!result?.user,
+        hasToken: !!result?.token,
+        userEmail: result?.user?.email,
+        errorCode: result?.code,
+        errorMessage: result?.error,
+      });
+      
+      if (!result) {
+        toast.error('No response from Google sign-in');
+        setGoogleLoading(false);
+        return;
+      }
+      
+      if (!result.success) {
+        console.error('Google sign-in failed:', result.error);
+        toast.error(result.error || 'Google sign-in failed');
+        setGoogleLoading(false);
+        return;
+      }
+      
+      if (!result.token) {
+        console.error('⚠️  Google sign-in returned no token:', result);
+        toast.error('Failed to get authentication token from Google');
+        setGoogleLoading(false);
+        return;
+      }
+      
       await handleFirebaseSuccess(result);
+    } catch (error) {
+      console.error('Google sign-in exception:', error);
+      toast.error('An error occurred during Google sign-in');
+    } finally {
+      setGoogleLoading(false);
     }
-    
-    setGoogleLoading(false);
   };
 
   return (

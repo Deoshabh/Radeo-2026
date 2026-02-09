@@ -365,17 +365,47 @@ exports.firebaseLogin = async (req, res, next) => {
     const { firebaseToken, email, phoneNumber, displayName, photoURL, uid } =
       req.body;
 
+    // Detailed logging for debugging
+    console.log(`📋 Firebase Login Request Received:`, {
+      hasToken: !!firebaseToken,
+      tokenLength: firebaseToken ? firebaseToken.length : 0,
+      email,
+      uid,
+      bodyKeys: Object.keys(req.body),
+      contentType: req.headers["content-type"],
+    });
+
     if (!firebaseToken) {
-      return res.status(400).json({ message: "Firebase token is required" });
+      console.warn(`⚠️  MISSING FIREBASE TOKEN:`, {
+        requestBodyKeys: Object.keys(req.body || {}),
+        contentType: req.headers["content-type"],
+        hasAuthorizationHeader: Boolean(req.headers.authorization),
+        hasCookieHeader: Boolean(req.headers.cookie),
+      });
+      return res.status(400).json({
+        message: "Firebase token is required",
+        error: "MISSING_FIREBASE_TOKEN",
+        received: Object.keys(req.body),
+      });
     }
 
     // Verify Firebase ID token
     let decodedToken;
     try {
       decodedToken = await admin.auth().verifyIdToken(firebaseToken);
+      console.log(`✅ Firebase token verified for UID: ${decodedToken.uid}`);
     } catch (error) {
-      console.error("Firebase token verification error:", error);
-      return res.status(401).json({ message: "Invalid Firebase token" });
+      console.error("Firebase token verification error:", {
+        code: error.code,
+        message: error.message,
+        tokenLength: firebaseToken.length,
+      });
+      return res.status(401).json({
+        message: "Invalid Firebase token",
+        error: "FIREBASE_TOKEN_INVALID",
+        details:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
+      });
     }
 
     // ✅ SECURITY FIX: Prioritize Firebase UID for user lookup
@@ -510,7 +540,12 @@ exports.firebaseLogin = async (req, res, next) => {
         },
       });
   } catch (err) {
-    console.error("Firebase login error:", err);
+    console.error("Firebase login error:", {
+      code: err.code,
+      message: err.message,
+      name: err.name,
+      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+    });
     next(err);
   }
 };
