@@ -151,7 +151,7 @@ export default function EmailAuth({ onSuccess, mode: initialMode = 'login' }) {
 
         <div className="text-center">
           <p className="text-sm text-primary-600">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <button
               onClick={() => setMode('register')}
               className="text-brand-brown hover:underline font-medium"
@@ -329,7 +329,7 @@ export default function EmailAuth({ onSuccess, mode: initialMode = 'login' }) {
         <div>
           <h2 className="text-2xl font-bold text-primary-900 mb-2">Verify Your Email</h2>
           <p className="text-primary-600">
-            We've sent a verification link to <strong>{formData.email}</strong>
+            We&apos;ve sent a verification link to <strong>{formData.email}</strong>
           </p>
           <p className="text-sm text-primary-500 mt-2">
             Please check your email and click the verification link to continue.

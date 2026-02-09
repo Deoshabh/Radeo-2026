@@ -183,7 +183,7 @@ export default function PhoneAuth({ onSuccess }) {
             <div className="text-sm text-primary-700">
               <p className="font-medium mb-1">Secure Authentication</p>
               <p className="text-xs">
-                We'll send a 6-digit OTP to verify your phone number. Standard SMS charges may apply.
+                We&apos;ll send a 6-digit OTP to verify your phone number. Standard SMS charges may apply.
               </p>
             </div>
           </div>
@@ -265,7 +265,7 @@ export default function PhoneAuth({ onSuccess }) {
 
         <div className="bg-primary-50 rounded-lg p-4 text-center">
           <p className="text-xs text-primary-600">
-            Didn't receive the OTP? Check your SMS inbox or try resending after the cooldown period.
+            Didn&apos;t receive the OTP? Check your SMS inbox or try resending after the cooldown period.
           </p>
         </div>
       </div>
