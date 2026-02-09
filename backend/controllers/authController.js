@@ -476,7 +476,7 @@ exports.firebaseLogin = async (req, res, next) => {
         role: "customer",
         emailVerified: decodedToken.email_verified || false,
         phoneVerified: !!decodedToken.phone_number,
-        authProvider: decodedToken.firebase.sign_in_provider, // 'phone', 'password', google.com, etc.
+        authProvider: normalizeAuthProvider(decodedToken.firebase.sign_in_provider), // 'phone', 'password', google.com, etc.
       });
     } else {
       // Update existing user with Firebase data
