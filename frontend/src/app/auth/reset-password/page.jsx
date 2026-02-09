@@ -1,155 +1,65 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { FiArrowLeft, FiMail, FiKey, FiLock } from 'react-icons/fi';
-import { authAPI } from '@/utils/api';
+import { FiArrowLeft } from 'react-icons/fi';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [email, setEmail] = useState(searchParams.get('email') || '');
-  const [token, setToken] = useState(searchParams.get('token') || '');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState('');
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+  useEffect(() => {
+    // Firebase handles password reset through its own UI flow
+    // Redirect to login page after a short delay
+    const timeout = setTimeout(() => {
+      router.push('/auth/firebase-login');
+    }, 3000);
 
-    if (newPassword !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      setError('New password must be at least 6 characters');
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      await authAPI.resetPassword({ email, token, newPassword });
-      setSuccess(true);
-      setTimeout(() => {
-        router.push('/auth/login');
-      }, 1500);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to reset password');
-    } finally {
-      setLoading(false);
-    }
-  };
+    return () => clearTimeout(timeout);
+  }, [router]);
 
   return (
     <div className="min-h-screen bg-primary-50 pt-24 flex items-center justify-center">
       <div className="container-custom py-12">
         <div className="max-w-md mx-auto">
-          <Link href="/auth/login" className="inline-flex items-center gap-2 text-primary-600 hover:text-brand-brown mb-8">
+          <Link href="/auth/firebase-login" className="inline-flex items-center gap-2 text-primary-600 hover:text-brand-brown mb-8">
             <FiArrowLeft />
             Back to Login
           </Link>
 
-          <div className="bg-white rounded-lg shadow-lg p-8">
-            <h1 className="font-serif text-3xl font-bold text-primary-900 mb-2">Reset Password</h1>
-            <p className="text-primary-600 mb-8">Enter your reset details and set a new password.</p>
+          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+            <div className="mb-6">
+              <svg
+                className="w-16 h-16 mx-auto text-brand-brown"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+                />
+              </svg>
+            </div>
 
-            {success ? (
-              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
-                Password reset successful. Redirecting to login...
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
-                    {error}
-                  </div>
-                )}
+            <h1 className="font-serif text-3xl font-bold text-primary-900 mb-4">Password Reset</h1>
+            
+            <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-4 rounded-lg mb-6">
+              <p className="font-medium mb-2">Firebase Authentication</p>
+              <p className="text-sm">
+                Password resets are now handled through Firebase. Please use the reset link sent to your email or request a new one from the login page.
+              </p>
+            </div>
 
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-primary-900 mb-2">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-400" />
-                    <input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="input pl-10"
-                      placeholder="you@example.com"
-                    />
-                  </div>
-                </div>
+            <p className="text-primary-600 mb-6">
+              Redirecting to login page...
+            </p>
 
-                <div>
-                  <label htmlFor="token" className="block text-sm font-medium text-primary-900 mb-2">
-                    Reset Token
-                  </label>
-                  <div className="relative">
-                    <FiKey className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-400" />
-                    <input
-                      id="token"
-                      type="text"
-                      value={token}
-                      onChange={(e) => setToken(e.target.value)}
-                      required
-                      className="input pl-10"
-                      placeholder="Paste reset token"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="newPassword" className="block text-sm font-medium text-primary-900 mb-2">
-                    New Password
-                  </label>
-                  <div className="relative">
-                    <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-400" />
-                    <input
-                      id="newPassword"
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      required
-                      minLength={6}
-                      className="input pl-10"
-                      placeholder="Enter new password"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-primary-900 mb-2">
-                    Confirm New Password
-                  </label>
-                  <div className="relative">
-                    <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-400" />
-                    <input
-                      id="confirmPassword"
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      required
-                      minLength={6}
-                      className="input pl-10"
-                      placeholder="Confirm new password"
-                    />
-                  </div>
-                </div>
-
-                <button type="submit" disabled={loading} className="w-full btn btn-primary">
-                  {loading ? 'Resetting...' : 'Reset Password'}
-                </button>
-              </form>
-            )}
+            <Link href="/auth/firebase-login" className="btn btn-primary">
+              Go to Login Now
+            </Link>
           </div>
         </div>
       </div>

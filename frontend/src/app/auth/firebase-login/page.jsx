@@ -137,17 +137,6 @@ export default function FirebaseLoginPage() {
             </div>
           </div>
 
-          {/* Alternative Login Option */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-primary-600 mb-3">Or continue with</p>
-            <Link
-              href="/auth/login"
-              className="inline-flex items-center gap-2 text-brand-brown hover:underline font-medium"
-            >
-              Traditional Login (Backend Auth)
-            </Link>
-          </div>
-
           {/* Footer Info */}
           <div className="mt-8 text-center">
             <p className="text-xs text-primary-500">
