@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { FiMail, FiLock, FiUser, FiCheck } from 'react-icons/fi';
 import { loginWithEmail, registerWithEmail, resetPassword, resendVerificationEmail } from '@/utils/firebaseAuth';
+import { useRecaptcha, RECAPTCHA_ACTIONS } from '@/utils/recaptcha';
 import toast from 'react-hot-toast';
 
 /**
@@ -12,6 +13,7 @@ import toast from 'react-hot-toast';
 export default function EmailAuth({ onSuccess, mode: initialMode = 'login' }) {
   const [mode, setMode] = useState(initialMode); // 'login', 'register', 'reset', 'verify'
   const [loading, setLoading] = useState(false);
+  const { getToken } = useRecaptcha();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -27,17 +29,25 @@ export default function EmailAuth({ onSuccess, mode: initialMode = 'login' }) {
     e.preventDefault();
     setLoading(true);
 
-    const result = await loginWithEmail(formData.email, formData.password);
-    
-    if (result.success) {
-      if (onSuccess) {
-        onSuccess(result);
+    try {
+      // Get reCAPTCHA token
+      const recaptchaToken = await getToken(RECAPTCHA_ACTIONS.LOGIN);
+      
+      const result = await loginWithEmail(formData.email, formData.password, recaptchaToken);
+      
+      if (result.success) {
+        if (onSuccess) {
+          onSuccess(result);
+        }
+      } else if (result.needsVerification) {
+        setMode('verify');
       }
-    } else if (result.needsVerification) {
-      setMode('verify');
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error('An error occurred during login');
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   const handleRegister = async (e) => {
@@ -56,30 +66,47 @@ export default function EmailAuth({ onSuccess, mode: initialMode = 'login' }) {
 
     setLoading(true);
 
-    const result = await registerWithEmail(
-      formData.email,
-      formData.password,
-      formData.displayName
-    );
-    
-    if (result.success) {
-      setMode('verify');
+    try {
+      // Get reCAPTCHA token
+      const recaptchaToken = await getToken(RECAPTCHA_ACTIONS.REGISTER);
+      
+      const result = await registerWithEmail(
+        formData.email,
+        formData.password,
+        formData.displayName,
+        recaptchaToken
+      );
+      
+      if (result.success) {
+        setMode('verify');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      toast.error('An error occurred during registration');
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    const result = await resetPassword(formData.email);
-    
-    if (result.success) {
-      setMode('login');
+    try {
+      // Get reCAPTCHA token
+      const recaptchaToken = await getToken(RECAPTCHA_ACTIONS.FORGOT_PASSWORD);
+      
+      const result = await resetPassword(formData.email, recaptchaToken);
+      
+      if (result.success) {
+        setMode('login');
+      }
+    } catch (error) {
+      console.error('Reset password error:', error);
+      toast.error('An error occurred while resetting password');
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   const handleResendVerification = async () => {

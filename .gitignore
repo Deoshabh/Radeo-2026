@@ -74,5 +74,10 @@ firebase-service-account.json
 *-firebase-adminsdk-*.json
 service-account*.json
 
+# Google Cloud credentials (NEVER commit)
+google-credentials.json
+*-google-credentials*.json
+gcloud-credentials.json
+
 # Ignore vscode AI rules
 .github/instructions/codacy.instructions.md

@@ -33,6 +33,9 @@ export const metadata = generateSEOMetadata({
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
+      <head>
+        <script src="https://www.google.com/recaptcha/enterprise.js?render=6LcbjmUsAAAAAHVeGta063p2ii-OlYGQqOBPfmQl" async defer></script>
+      </head>
       <body className="antialiased">
         <ErrorBoundary>
           <AuthProvider>

@@ -10,11 +10,13 @@ import PhoneAuth from '@/components/auth/PhoneAuth';
 import { authAPI } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
 import { loginWithGoogle } from '@/utils/firebaseAuth';
+import { useRecaptcha, RECAPTCHA_ACTIONS } from '@/utils/recaptcha';
 import toast from 'react-hot-toast';
 
 export default function FirebaseLoginPage() {
   const router = useRouter();
   const { updateUser } = useAuth();
+  const { getToken } = useRecaptcha();
   const [authMethod, setAuthMethod] = useState('email'); // 'email' or 'phone'
   const [googleLoading, setGoogleLoading] = useState(false);
 
@@ -26,6 +28,9 @@ export default function FirebaseLoginPage() {
     try {
       const { user, token } = result;
 
+      // Get reCAPTCHA token for backend verification
+      const recaptchaToken = await getToken(RECAPTCHA_ACTIONS.LOGIN);
+
       // Send Firebase token to backend to create/sync user session
       const response = await authAPI.firebaseLogin({
         firebaseToken: token,
@@ -33,7 +38,8 @@ export default function FirebaseLoginPage() {
         phoneNumber: user.phoneNumber,
         displayName: user.displayName,
         photoURL: user.photoURL,
-        uid: user.uid
+        uid: user.uid,
+        recaptchaToken
       });
 
       // Update auth context with backend user data
