@@ -4,10 +4,18 @@ const { analyzeOrderRisks } = require("../utils/riskDetection");
 
 exports.getAllOrders = async (req, res) => {
   try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const skip = (page - 1) * limit;
+
+    const totalOrders = await Order.countDocuments();
+
     const orders = await Order.find()
       .populate("user", "name email createdAt")
       .populate("items.product", "name slug category images")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
     // Enhance orders with additional user info and risk analysis
     const enhancedOrders = orders.map((order) => {
@@ -31,6 +39,9 @@ exports.getAllOrders = async (req, res) => {
     res.json({
       success: true,
       count: orders.length,
+      totalOrders,
+      page,
+      totalPages: Math.ceil(totalOrders / limit),
       orders: enhancedOrders,
     });
   } catch (error) {

@@ -8,66 +8,85 @@ const mongoose = require("mongoose");
 exports.getAllUsers = async (req, res) => {
   try {
     const Order = require("../models/Order");
-    const users = await User.find()
+
+    const page = parseInt(req.query.page) || 0; // 0 = return all (backward compatible)
+    const limit = parseInt(req.query.limit) || 0;
+
+    let usersQuery = User.find()
       .select("-passwordHash -resetPasswordToken -resetPasswordExpires")
       .sort({ createdAt: -1 });
 
+    if (page > 0 && limit > 0) {
+      const skip = (page - 1) * limit;
+      usersQuery = usersQuery.skip(skip).limit(limit);
+    }
+
+    const users = await usersQuery;
+
+    // Batch fetch all order addresses in ONE query instead of N+1
+    const userIds = users.map((u) => u._id);
+    const allOrders = await Order.find({ user: { $in: userIds } })
+      .sort({ createdAt: -1 })
+      .select("user shippingAddress")
+      .lean();
+
+    // Group orders by userId
+    const ordersByUser = {};
+    for (const order of allOrders) {
+      const uid = order.user.toString();
+      if (!ordersByUser[uid]) ordersByUser[uid] = [];
+      ordersByUser[uid].push(order);
+    }
+
     // Map users to include isActive and collect all addresses from profile and orders
-    const usersWithStatus = await Promise.all(
-      users.map(async (user) => {
-        const userObj = user.toObject();
+    const usersWithStatus = users.map((user) => {
+      const userObj = user.toObject();
+      const orders = ordersByUser[user._id.toString()] || [];
 
-        // Collect all unique addresses from orders
-        const orders = await Order.find({ user: user._id })
-          .sort({ createdAt: -1 })
-          .select("shippingAddress")
-          .lean();
+      const allAddresses = [];
+      const profileAddresses = userObj.addresses || [];
 
-        const allAddresses = [];
-        const profileAddresses = userObj.addresses || [];
-
-        // Mark profile addresses as priority
-        profileAddresses.forEach((addr) => {
-          allAddresses.push({
-            ...addr,
-            source: "profile",
-            isPriority: true,
-          });
+      // Mark profile addresses as priority
+      profileAddresses.forEach((addr) => {
+        allAddresses.push({
+          ...addr,
+          source: "profile",
+          isPriority: true,
         });
+      });
 
-        // Collect unique addresses from orders
-        const seenPhones = new Set(
-          profileAddresses.map((a) => a.phone).filter(Boolean),
-        );
+      // Collect unique addresses from orders
+      const seenPhones = new Set(
+        profileAddresses.map((a) => a.phone).filter(Boolean),
+      );
 
-        orders.forEach((order) => {
-          if (order.shippingAddress && order.shippingAddress.phone) {
-            // Add if phone number not already in profile
-            if (!seenPhones.has(order.shippingAddress.phone)) {
-              seenPhones.add(order.shippingAddress.phone);
-              allAddresses.push({
-                fullName: order.shippingAddress.fullName,
-                phone: order.shippingAddress.phone,
-                addressLine1: order.shippingAddress.addressLine1,
-                addressLine2: order.shippingAddress.addressLine2,
-                city: order.shippingAddress.city,
-                state: order.shippingAddress.state,
-                postalCode: order.shippingAddress.postalCode,
-                country: order.shippingAddress.country || "India",
-                source: "order",
-                isPriority: false,
-              });
-            }
+      orders.forEach((order) => {
+        if (order.shippingAddress && order.shippingAddress.phone) {
+          // Add if phone number not already in profile
+          if (!seenPhones.has(order.shippingAddress.phone)) {
+            seenPhones.add(order.shippingAddress.phone);
+            allAddresses.push({
+              fullName: order.shippingAddress.fullName,
+              phone: order.shippingAddress.phone,
+              addressLine1: order.shippingAddress.addressLine1,
+              addressLine2: order.shippingAddress.addressLine2,
+              city: order.shippingAddress.city,
+              state: order.shippingAddress.state,
+              postalCode: order.shippingAddress.postalCode,
+              country: order.shippingAddress.country || "India",
+              source: "order",
+              isPriority: false,
+            });
           }
-        });
+        }
+      });
 
-        return {
-          ...userObj,
-          addresses: allAddresses,
-          isActive: !user.isBlocked,
-        };
-      }),
-    );
+      return {
+        ...userObj,
+        addresses: allAddresses,
+        isActive: !user.isBlocked,
+      };
+    });
 
     res.json({ users: usersWithStatus });
   } catch (error) {

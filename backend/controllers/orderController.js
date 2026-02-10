@@ -52,6 +52,34 @@ exports.createOrder = async (req, res) => {
       return res.status(400).json({ message: "Cart is empty" });
     }
 
+    // Validate product availability and stock
+    for (const item of cart.items) {
+      if (!item.product) {
+        return res.status(400).json({
+          message:
+            "A product in your cart no longer exists. Please update your cart.",
+        });
+      }
+      if (!item.product.isActive) {
+        return res.status(400).json({
+          message: `"${item.product.name}" is no longer available. Please remove it from your cart.`,
+        });
+      }
+      if (item.product.isOutOfStock) {
+        return res.status(400).json({
+          message: `"${item.product.name}" is currently out of stock.`,
+        });
+      }
+      if (
+        item.product.stock !== undefined &&
+        item.product.stock < item.quantity
+      ) {
+        return res.status(400).json({
+          message: `Insufficient stock for "${item.product.name}". Only ${item.product.stock} available.`,
+        });
+      }
+    }
+
     // Calculate subtotal and create items snapshot
     let subtotal = 0;
     const orderItems = cart.items.map((item) => {

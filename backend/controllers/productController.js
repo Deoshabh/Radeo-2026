@@ -3,6 +3,9 @@ const Product = require("../models/Product");
 const Review = require("../models/Review");
 const { getOrSetCache } = require("../utils/cache");
 
+// Escape special regex characters to prevent ReDoS attacks
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 // GET /api/v1/products
 exports.getAllProducts = async (req, res) => {
   try {
@@ -19,7 +22,7 @@ exports.getAllProducts = async (req, res) => {
       ids,
       limit,
       color,
-      size
+      size,
     } = req.query;
 
     // Create a unique cache key based on query parameters
@@ -28,12 +31,14 @@ exports.getAllProducts = async (req, res) => {
     // Cache TTL: 5 minutes for filtered lists, 15 minutes for default list
     const ttl = Object.keys(req.query).length > 0 ? 300 : 900;
 
-    const products = await getOrSetCache(cacheKey, async () => {
+    const products = await getOrSetCache(
+      cacheKey,
+      async () => {
         const query = { isActive: true };
 
         // Search functionality
         if (search && search.trim()) {
-          const searchRegex = new RegExp(search.trim(), "i");
+          const searchRegex = new RegExp(escapeRegex(search.trim()), "i");
           query.$or = [
             { name: searchRegex },
             { description: searchRegex },
@@ -79,22 +84,22 @@ exports.getAllProducts = async (req, res) => {
 
         // Filter by brand if provided
         if (brand) {
-          query.brand = new RegExp(`^${brand}$`, "i"); // Case-insensitive exact match
+          query.brand = new RegExp(`^${escapeRegex(brand)}$`, "i"); // Case-insensitive exact match
         }
 
         // Filter by material if provided
         if (material) {
-          query.materialAndCare = new RegExp(material, "i"); // Case-insensitive contains
+          query.materialAndCare = new RegExp(escapeRegex(material), "i"); // Case-insensitive contains
         }
 
         // Filter by color if provided
         if (color) {
-          query.colors = { $in: [new RegExp(`^${color}$`, "i")] };
+          query.colors = { $in: [new RegExp(`^${escapeRegex(color)}$`, "i")] };
         }
 
         // Filter by size if provided
         if (size) {
-          query["sizes.size"] = new RegExp(`^${size}$`, "i");
+          query["sizes.size"] = new RegExp(`^${escapeRegex(size)}$`, "i");
         }
 
         // Price range filtering
@@ -132,7 +137,9 @@ exports.getAllProducts = async (req, res) => {
         const results = await mongooseQuery;
         console.log(`✅ Found ${results.length} products`);
         return results;
-    }, ttl);
+      },
+      ttl,
+    );
 
     res.json(products);
   } catch (error) {
@@ -147,7 +154,9 @@ exports.getTopRatedProducts = async (req, res) => {
     const limit = Math.max(1, Math.min(Number(req.query.limit) || 8, 50));
     const cacheKey = `products:top-rated:${limit}`;
 
-    const sortedProducts = await getOrSetCache(cacheKey, async () => {
+    const sortedProducts = await getOrSetCache(
+      cacheKey,
+      async () => {
         const ratingRows = await Review.aggregate([
           { $match: { isHidden: false } },
           {
@@ -171,12 +180,16 @@ exports.getTopRatedProducts = async (req, res) => {
           isActive: true,
         });
 
-        const productMap = new Map(products.map((product) => [String(product._id), product]));
+        const productMap = new Map(
+          products.map((product) => [String(product._id), product]),
+        );
         return sortedProductIds
           .map((id) => productMap.get(String(id)))
           .filter(Boolean)
           .slice(0, limit);
-    }, 1800); // Cache for 30 minutes
+      },
+      1800,
+    ); // Cache for 30 minutes
 
     return res.json(sortedProducts);
   } catch (error) {
@@ -196,7 +209,7 @@ exports.searchProducts = async (req, res) => {
       });
     }
 
-    const searchRegex = new RegExp(q.trim(), "i");
+    const searchRegex = new RegExp(escapeRegex(q.trim()), "i");
 
     const products = await Product.find({
       isActive: true,
@@ -238,9 +251,13 @@ exports.getProductBySlug = async (req, res) => {
 // GET /api/v1/products/categories
 exports.getCategories = async (req, res) => {
   try {
-    const categories = await getOrSetCache("products:categories", async () => {
+    const categories = await getOrSetCache(
+      "products:categories",
+      async () => {
         return await Product.distinct("category", { isActive: true });
-    }, 3600 * 24); // Cache for 24 hours
+      },
+      3600 * 24,
+    ); // Cache for 24 hours
 
     res.json(categories);
   } catch (error) {
@@ -252,14 +269,18 @@ exports.getCategories = async (req, res) => {
 // GET /api/v1/products/brands
 exports.getBrands = async (req, res) => {
   try {
-    const brands = await getOrSetCache("products:brands", async () => {
+    const brands = await getOrSetCache(
+      "products:brands",
+      async () => {
         const brands = await Product.distinct("brand", {
           isActive: true,
           brand: { $exists: true, $ne: "" },
         });
         // Sort brands alphabetically
         return brands.filter(Boolean).sort();
-    }, 3600 * 24); // Cache for 24 hours
+      },
+      3600 * 24,
+    ); // Cache for 24 hours
 
     res.json(brands);
   } catch (error) {

@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const app = require("../server");
 const User = require("../models/User");
-const bcrypt = require("bcryptjs");
+const bcrypt = require("bcrypt");
 
 describe("Auth API Tests", () => {
   beforeAll(async () => {

@@ -63,7 +63,7 @@ export default function ProductCard({ product }) {
         {/* Image Container */}
         <div className="relative aspect-square sm:aspect-[4/5] overflow-hidden bg-primary-100">
           <Image
-            src={product.images?.[0]?.url || product.images?.[0] || '/placeholder.jpg'}
+            src={product.images?.[0]?.url || product.images?.[0] || '/placeholder.svg'}
             alt={product.name}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"

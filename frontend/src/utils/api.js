@@ -206,7 +206,7 @@ export const adminAPI = {
   getStats: () => api.get("/admin/stats"),
 
   // Site Settings
-  getSettingHistory: (key, limit) => 
+  getSettingHistory: (key, limit) =>
     api.get(`/admin/settings/${key}/history`, { params: { limit } }),
 };
 

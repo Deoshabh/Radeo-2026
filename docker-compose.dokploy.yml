@@ -8,16 +8,19 @@ services:
     image: valkey/valkey:8.1.4
     restart: unless-stopped
 
+    # Log rotation to prevent disk exhaustion
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
     # Redis server with password protection
-    command: valkey-server --requirepass ${VALKEY_PASSWORD:-ro6k0egdepp8tc8dvwmibnjsbuzkbvyz}
+    command: valkey-server --requirepass ${VALKEY_PASSWORD}
 
     # Health check
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          'valkey-cli -a "${VALKEY_PASSWORD:-ro6k0egdepp8tc8dvwmibnjsbuzkbvyz}" ping | grep PONG',
-        ]
+      test: ["CMD-SHELL", 'valkey-cli -a "${VALKEY_PASSWORD}" ping | grep PONG']
       interval: 10s
       timeout: 3s
       retries: 5

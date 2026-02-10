@@ -35,7 +35,7 @@ export default function RootLayout({ children }) {
     <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
       <head>
         <link rel="preconnect" href="https://api.radeo.in" />
-        <script src="https://www.google.com/recaptcha/enterprise.js?render=6LcbjmUsAAAAAHVeGta063p2ii-OlYGQqOBPfmQl" async defer></script>
+        <script src={`https://www.google.com/recaptcha/enterprise.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`} async defer></script>
       </head>
       <body className="antialiased">
         <ErrorBoundary>

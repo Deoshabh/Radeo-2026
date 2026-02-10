@@ -12,6 +12,8 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const rateLimit = require("express-rate-limit");
+const helmet = require("helmet");
+const mongoSanitize = require("express-mongo-sanitize");
 const { initializeBucket } = require("./utils/minio");
 const { logger, log } = require("./utils/logger");
 const { errorHandler, notFoundHandler } = require("./middleware/errorHandler");
@@ -63,6 +65,8 @@ app.use(
 // ===============================
 // Middleware
 // ===============================
+app.use(helmet()); // Security headers
+app.use(mongoSanitize()); // Prevent NoSQL injection
 app.use(logger); // HTTP request logging
 app.use(
   express.json({

@@ -207,12 +207,22 @@ exports.logout = async (req, res, next) => {
   try {
     const token = req.cookies.refreshToken;
     if (token) {
-      const tokens = await RefreshToken.find();
-      for (const t of tokens) {
-        if (await bcrypt.compare(token, t.tokenHash)) {
-          await t.deleteOne();
-          break;
+      // Decode the refresh token to get userId (narrow the search scope)
+      const refreshSecret =
+        process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET;
+      try {
+        const payload = jwt.verify(token, refreshSecret);
+        // Only search tokens belonging to this user
+        const tokens = await RefreshToken.find({ userId: payload.id });
+        for (const t of tokens) {
+          if (await bcrypt.compare(token, t.tokenHash)) {
+            await t.deleteOne();
+            break;
+          }
         }
+      } catch (jwtErr) {
+        // Token expired or invalid — still clear cookie, skip DB cleanup
+        console.log("Logout: refresh token invalid/expired, clearing cookie");
       }
     }
 
@@ -484,7 +494,9 @@ exports.firebaseLogin = async (req, res, next) => {
         role: "customer",
         emailVerified: decodedToken.email_verified || false,
         phoneVerified: !!decodedToken.phone_number,
-        authProvider: normalizeAuthProvider(decodedToken.firebase.sign_in_provider), // 'phone', 'password', google.com, etc.
+        authProvider: normalizeAuthProvider(
+          decodedToken.firebase.sign_in_provider,
+        ), // 'phone', 'password', google.com, etc.
       });
     } else {
       // Update existing user with Firebase data

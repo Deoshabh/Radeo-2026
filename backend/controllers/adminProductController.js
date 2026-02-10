@@ -7,7 +7,21 @@ const { invalidateCache } = require("../utils/cache");
 exports.getAllProducts = async (req, res) => {
   try {
     console.log("📦 Admin: Fetching all products...");
-    const products = await Product.find({}).sort({ createdAt: -1 });
+
+    const page = parseInt(req.query.page) || 0; // 0 = return all (backward compatible)
+    const limit = parseInt(req.query.limit) || 0;
+
+    let products;
+    if (page > 0 && limit > 0) {
+      const skip = (page - 1) * limit;
+      products = await Product.find({})
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+    } else {
+      products = await Product.find({}).sort({ createdAt: -1 });
+    }
+
     console.log(
       `✅ Admin: Found ${products.length} products (including inactive)`,
     );
@@ -265,10 +279,18 @@ exports.updateProduct = async (req, res) => {
       description,
       category,
       price,
+      comparePrice,
+      brand,
+      sku,
       sizes,
+      colors,
+      tags,
       images,
       featured,
       isActive,
+      gstPercentage,
+      averageDeliveryCost,
+      careInstructions,
     } = req.body;
 
     const product = await Product.findById(id);
@@ -297,13 +319,23 @@ exports.updateProduct = async (req, res) => {
     if (description) product.description = description;
     if (category) product.category = category;
     if (price) product.price = price;
+    if (comparePrice !== undefined) product.comparePrice = comparePrice;
+    if (brand !== undefined) product.brand = brand;
+    if (sku !== undefined) product.sku = sku;
     if (req.body.stock !== undefined) product.stock = req.body.stock;
     if (sizes !== undefined) product.sizes = sizes;
+    if (colors !== undefined) product.colors = colors;
+    if (tags !== undefined) product.tags = tags;
     if (images !== undefined) product.images = images;
     if (featured !== undefined) product.featured = featured;
     if (isActive !== undefined) product.isActive = isActive;
     if (req.body.isOutOfStock !== undefined)
       product.isOutOfStock = req.body.isOutOfStock;
+    if (gstPercentage !== undefined) product.gstPercentage = gstPercentage;
+    if (averageDeliveryCost !== undefined)
+      product.averageDeliveryCost = averageDeliveryCost;
+    if (careInstructions !== undefined)
+      product.careInstructions = careInstructions;
 
     await product.save();
 
@@ -426,25 +458,34 @@ exports.deleteProduct = async (req, res) => {
 
       console.log(`📦 Product has ${product.images.length} images to delete`);
 
-      for (const imageUrl of product.images) {
+      for (const image of product.images) {
         try {
-          // Extract object name from URL
-          // URL format: https://minio-api.radeo.in/product-media/products/slug/filename
-          const urlParts = imageUrl.split("/product-media/");
+          // Images are stored as objects with { url, key }
+          const objectKey = image.key || null;
 
-          if (urlParts.length > 1) {
-            const objectName = urlParts[1];
-            console.log(`  Deleting image: ${objectName}`);
-            await deleteObject(objectName);
-            console.log(`  ✅ Deleted: ${objectName}`);
+          if (objectKey) {
+            console.log(`  Deleting image: ${objectKey}`);
+            await deleteObject(objectKey);
+            console.log(`  ✅ Deleted: ${objectKey}`);
           } else {
-            console.log(`  ⚠️  Could not parse image URL: ${imageUrl}`);
+            // Fallback: try parsing URL if key is missing
+            const imageUrl = typeof image === "string" ? image : image.url;
+            if (imageUrl) {
+              const urlParts = imageUrl.split("/product-media/");
+              if (urlParts.length > 1) {
+                const objectName = urlParts[1];
+                console.log(`  Deleting image (from URL): ${objectName}`);
+                await deleteObject(objectName);
+                console.log(`  ✅ Deleted: ${objectName}`);
+              } else {
+                console.log(`  ⚠️  Could not parse image URL: ${imageUrl}`);
+              }
+            } else {
+              console.log(`  ⚠️  Image has no key or url:`, image);
+            }
           }
         } catch (imageError) {
-          console.error(
-            `  ❌ Failed to delete image ${imageUrl}:`,
-            imageError.message,
-          );
+          console.error(`  ❌ Failed to delete image:`, imageError.message);
           // Continue deleting other images even if one fails
         }
       }
