@@ -213,15 +213,14 @@ export const adminAPI = {
 };
 
 export const categoryAPI = {
-  getAllCategories: () => api.get("/products/categories"),
-  getNavbarCategories: () => api.get("/products/categories"),
-  getCategoryBySlug: (slug) => api.get(`/products/categories/${slug}`),
+  getAllCategories: () => api.get("/categories"),
+  getNavbarCategories: () => api.get("/categories/navbar"),
+  getCategoryBySlug: (slug) => api.get(`/categories/${slug}`),
 };
 
 export const addressAPI = {
   getAll: () => api.get("/user/addresses"),
   getAddresses: () => api.get("/user/addresses"),
-  getById: (id) => api.get(`/user/addresses/${id}`),
   create: (data) => api.post("/user/addresses", data),
   addAddress: (data) => api.post("/user/addresses", data),
   update: (id, data) => api.patch(`/user/addresses/${id}`, data),
@@ -234,7 +233,6 @@ export const addressAPI = {
 export const couponAPI = {
   validate: (code) => api.post("/coupons/validate", { code }),
   validateCoupon: (code) => api.post("/coupons/validate", { code }),
-  getAll: () => api.get("/coupons"),
 };
 
 export const orderAPI = {
@@ -260,10 +258,6 @@ export const userAPI = {
   getProfile: () => api.get("/user/profile"),
   updateProfile: (data) => api.patch("/user/profile", data),
   changePassword: (data) => api.post("/auth/change-password", data),
-  uploadAvatar: (formData) =>
-    api.post("/user/avatar", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    }),
 };
 
 export const cartAPI = {
@@ -271,15 +265,12 @@ export const cartAPI = {
   getCart: () => api.get("/cart"),
   add: (data) => api.post("/cart", data),
   addToCart: (data) => api.post("/cart", data),
-  update: (itemId, data) => api.put(`/cart/${itemId}`, data),
-  remove: (itemId) => api.delete(`/cart/${itemId}`),
   removeFromCart: (productId, size) =>
     api.delete(
       `/cart/${encodeURIComponent(productId)}/${encodeURIComponent(size)}`,
     ),
   clear: () => api.delete("/cart"),
   clearCart: () => api.delete("/cart"),
-  sync: (cartItems) => api.post("/cart/sync", { cartItems }),
 };
 
 export const wishlistAPI = {
@@ -290,5 +281,4 @@ export const wishlistAPI = {
   remove: (productId) => api.post("/wishlist/toggle", { productId }),
   removeFromWishlist: (productId) =>
     api.post("/wishlist/toggle", { productId }),
-  check: (productId) => api.get(`/wishlist/check/${productId}`),
 };
