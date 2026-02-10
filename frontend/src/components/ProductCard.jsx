@@ -9,7 +9,10 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
-export default function ProductCard({ product }) {
+// Tiny 1x1 neutral blur placeholder (avoids layout shift)
+const BLUR_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN89OhRPQAIhwMwaKSvfQAAAABJRU5ErkJggg==';
+
+export default function ProductCard({ product, priority = false }) {
   const router = useRouter();
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
@@ -68,6 +71,9 @@ export default function ProductCard({ product }) {
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             className="object-cover group-hover:scale-110 transition-transform duration-500"
+            placeholder="blur"
+            blurDataURL={BLUR_DATA_URL}
+            priority={priority}
           />
 
           {/* Wishlist Button */}

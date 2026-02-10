@@ -292,8 +292,8 @@ export default function Home() {
             ) : featuredProducts.length > 0 ? (
               <>
                 <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
-                  {featuredProducts.map((product) => (
-                    <ProductCard key={product._id} product={product} />
+                  {featuredProducts.map((product, index) => (
+                    <ProductCard key={product._id} product={product} priority={index < 4} />
                   ))}
                 </div>
                 {featuredSection.viewAllButtonText && featuredSection.viewAllButtonLink && (

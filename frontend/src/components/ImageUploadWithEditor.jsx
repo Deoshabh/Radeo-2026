@@ -53,21 +53,31 @@ const ImageUploadWithEditor = ({ images = [], imagePreviews = [], existingImages
       return;
     }
 
-    // Add images and create previews
-    const newImages = [...images, ...validFiles];
-    const newPreviews = [...imagePreviews];
+    // Read all files as data URLs in parallel, then update state once
+    try {
+      const newDataUrls = await Promise.all(
+        validFiles.map(
+          (file) =>
+            new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result);
+              reader.onerror = () => reject(new Error('Failed to read file'));
+              reader.readAsDataURL(file);
+            })
+        )
+      );
 
-    for (const file of validFiles) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        newPreviews.push(reader.result);
-        onImagesChange({
-          images: newImages,
-          imagePreviews: newPreviews,
-          existingImages
-        });
-      };
-      reader.readAsDataURL(file);
+      const newImages = [...images, ...validFiles];
+      const newPreviews = [...imagePreviews, ...newDataUrls];
+
+      onImagesChange({
+        images: newImages,
+        imagePreviews: newPreviews,
+        existingImages,
+      });
+    } catch (error) {
+      console.error('Failed to read image files:', error);
+      toast.error('Failed to process some images');
     }
 
     setProcessing(false);
