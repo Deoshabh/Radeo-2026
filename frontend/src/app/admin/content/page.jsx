@@ -55,7 +55,7 @@ export default function AdminContentPage() {
   const loadSettings = async () => {
     try {
       setIsLoadingData(true);
-      const response = await adminAPI.getAllSettings();
+      const response = await adminAPI.getAdvancedSettings();
       const list = response?.data?.settings || [];
       const nextMap = list.reduce((acc, item) => {
         acc[item.key] = item;
@@ -190,11 +190,10 @@ export default function AdminContentPage() {
                             type="button"
                             key={item.key}
                             onClick={() => setSelectedKey(item.key)}
-                            className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                              active
+                            className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${active
                                 ? 'bg-primary-900 text-white'
                                 : 'hover:bg-primary-100 text-primary-700'
-                            }`}
+                              }`}
                           >
                             {item.label}
                           </button>

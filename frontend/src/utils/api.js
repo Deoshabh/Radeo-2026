@@ -119,8 +119,9 @@ export const adminAPI = {
   // ... other admin APIs ...
 
   // CMS Settings
-  getAllSettings: () => api.get("/settings"), // GET /api/v1/settings (Admin protected)
-  updateSettings: (data) => api.put("/settings", data), // PUT /api/v1/settings (Admin protected)
+  getAllSettings: () => api.get("/settings"), // GET /api/v1/settings (Singleton - Branding/Banners)
+  getAdvancedSettings: () => api.get("/admin/settings"), // GET /api/v1/admin/settings (Key-Value List)
+  updateSettings: (data) => api.put("/settings", data), // PUT /api/v1/settings
 
   // Products, Orders, etc. (keep existing)
   getAllProducts: (params) => api.get("/admin/products", { params }),
