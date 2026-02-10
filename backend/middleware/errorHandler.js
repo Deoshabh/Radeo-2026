@@ -13,12 +13,30 @@ const notFoundHandler = (req, res, next) => {
 // Global Error Handler
 const errorHandler = (err, req, res, next) => {
   // Log error for debugging
-  console.error("❌ Error:", {
-    message: err.message,
-    stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
-    path: req.path,
-    method: req.method,
-  });
+  // Filter out bot noise / known scanners
+  const ignorePatterns = [
+    "wp-includes",
+    "wp-admin",
+    "wlwmanifest.xml",
+    ".php",
+    ".env",
+    ".git",
+    "xmlrpc.php",
+  ];
+
+  const isBotProbe = ignorePatterns.some((pattern) =>
+    req.originalUrl.includes(pattern),
+  );
+
+  // Log error for debugging, unless it's a known bot probe returning 404
+  if (!isBotProbe || res.statusCode !== 404) {
+    console.error("❌ Error:", {
+      message: err.message,
+      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+      path: req.path,
+      method: req.method,
+    });
+  }
 
   // Default status code
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;

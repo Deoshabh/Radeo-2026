@@ -200,7 +200,9 @@ exports.createOrder = async (req, res) => {
       });
     }
 
-    res.status(500).json({ message: "Failed to create order. Please try again." });
+    res
+      .status(500)
+      .json({ message: "Failed to create order. Please try again." });
   }
 };
 
