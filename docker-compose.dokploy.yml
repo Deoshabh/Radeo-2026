@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  # ============================================
+  # VALKEY / REDIS CACHE
+  # ============================================
+  valkey:
+    image: valkey/valkey:8.1.4
+    restart: unless-stopped
+    
+    # Redis server with password protection
+    command: valkey-server --requirepass ${VALKEY_PASSWORD:-ro6k0egdepp8tc8dvwmibnjsbuzkbvyz}
+    
+    # Health check
+    healthcheck:
+      test: ["CMD-SHELL", "valkey-cli -a \"${VALKEY_PASSWORD:-ro6k0egdepp8tc8dvwmibnjsbuzkbvyz}\" ping | grep PONG"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    
+    # Persistent volume for data
+    volumes:
+      - valkey-data:/data
+    
+    # Expose only internally (Dokploy network)
+    expose:
+      - "6379"
+
+# ============================================
+# VOLUMES
+# ============================================
+volumes:
+  valkey-data:
+    driver: local
