@@ -86,10 +86,16 @@ exports.createOrder = async (req, res) => {
       const itemTotal = item.product.price * item.quantity;
       subtotal += itemTotal;
 
+      // Get primary image URL from images array
+      const primaryImage =
+        item.product.images?.find((img) => img.isPrimary)?.url ||
+        item.product.images?.[0]?.url ||
+        null;
+
       return {
         product: item.product._id,
         name: item.product.name,
-        image: item.product.image,
+        image: primaryImage,
         size: item.size,
         quantity: item.quantity,
         price: item.product.price,
@@ -153,7 +159,11 @@ exports.createOrder = async (req, res) => {
       coupon: couponData,
       shippingAddress: {
         fullName: shippingAddress.fullName.trim(),
-        phone: shippingAddress.phone.trim(),
+        // Strip country code prefix (+91, 91, 0) to get bare 10-digit number
+        phone: shippingAddress.phone
+          .trim()
+          .replace(/[\s\-()]/g, "")
+          .replace(/^(\+?91|0)/, ""),
         addressLine1: shippingAddress.addressLine1.trim(),
         addressLine2: shippingAddress.addressLine2?.trim() || "",
         city: shippingAddress.city.trim(),
@@ -180,7 +190,17 @@ exports.createOrder = async (req, res) => {
     });
   } catch (error) {
     console.error("Create order error:", error);
-    res.status(500).json({ message: "Server error" });
+
+    // Return useful validation messages instead of generic 500
+    if (error.name === "ValidationError") {
+      const firstError = Object.values(error.errors)[0];
+      return res.status(400).json({
+        message: firstError.message || "Validation failed",
+        field: firstError.path,
+      });
+    }
+
+    res.status(500).json({ message: "Failed to create order. Please try again." });
   }
 };
 

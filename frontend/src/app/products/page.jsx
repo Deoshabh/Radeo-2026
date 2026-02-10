@@ -174,7 +174,7 @@ function ProductsContent() {
       sort, 
       search
     );
-  }, [searchParams, fetchProducts, priceRange]);
+  }, [searchParams, fetchProducts]);
 
   const updateFilters = (key, value) => {
     const params = new URLSearchParams(searchParams.toString());

@@ -1,6 +1,13 @@
 const Address = require("../models/Address");
 const { validateAddress } = require("../utils/addressValidator");
 
+// Helper to normalize phone to bare 10-digit Indian number
+const normalizePhone = (phone) =>
+  phone
+    .trim()
+    .replace(/[\s\-()]/g, "")
+    .replace(/^(\+?91|0)/, "");
+
 /**
  * Validate address with serviceability check
  * POST /api/v1/address/validate
@@ -130,7 +137,7 @@ exports.createAddress = async (req, res) => {
     const address = await Address.create({
       user: req.user.id,
       fullName,
-      phone,
+      phone: normalizePhone(phone),
       addressLine1,
       addressLine2,
       city,
@@ -179,7 +186,7 @@ exports.updateAddress = async (req, res) => {
 
     // Update fields
     if (fullName !== undefined) address.fullName = fullName;
-    if (phone !== undefined) address.phone = phone;
+    if (phone !== undefined) address.phone = normalizePhone(phone);
     if (addressLine1 !== undefined) address.addressLine1 = addressLine1;
     if (addressLine2 !== undefined) address.addressLine2 = addressLine2;
     if (city !== undefined) address.city = city;
