@@ -121,7 +121,7 @@ export const adminAPI = {
   // CMS Settings
   getAllSettings: () => api.get("/settings"), // GET /api/v1/settings (Admin protected)
   updateSettings: (data) => api.put("/settings", data), // PUT /api/v1/settings (Admin protected)
-  
+
   // Products, Orders, etc. (keep existing)
   getAllProducts: (params) => api.get("/admin/products", { params }),
   getProductById: (id) => api.get(`/admin/products/${id}`),
@@ -213,6 +213,7 @@ export const categoryAPI = {
 
 export const addressAPI = {
   getAll: () => api.get("/user/addresses"),
+  getAddresses: () => api.get("/user/addresses"),
   getById: (id) => api.get(`/user/addresses/${id}`),
   create: (data) => api.post("/user/addresses", data),
   update: (id, data) => api.put(`/user/addresses/${id}`, data),
@@ -228,6 +229,7 @@ export const couponAPI = {
 export const orderAPI = {
   create: (data) => api.post("/orders", data),
   getAll: (params) => api.get("/orders", { params }),
+  getMyOrders: (params) => api.get("/orders", { params }),
   getById: (id) => api.get(`/orders/${id}`),
   verifyPayment: (data) => api.post("/orders/verify-payment", data),
   cancel: (id) => api.post(`/orders/${id}/cancel`),
