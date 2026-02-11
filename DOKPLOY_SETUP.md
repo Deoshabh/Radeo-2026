@@ -30,7 +30,9 @@ You will create **3 Separate Applications** in Dokploy (one for each service) to
     NODE_ENV=production
     MONGO_URI=mongodb://user:pass@host:27017/radeo?authSource=admin
     REDIS_HOST=your-redis-host  (or internal dokploy container name)
+    REDIS_HOST=your-redis-host  (or internal dokploy container name)
     REDIS_PORT=6379
+    REDIS_PASSWORD=your-redis-password
     MINIO_ENDPOINT=your-minio-host
     MINIO_PORT=9000
     MINIO_ACCESS_KEY=your-access-key
@@ -71,6 +73,7 @@ You will create **3 Separate Applications** in Dokploy (one for each service) to
     MONGO_URI=mongodb://user:pass@host:27017/radeo?authSource=admin
     REDIS_HOST=your-redis-host
     REDIS_PORT=6379
+    REDIS_PASSWORD=your-redis-password
     MINIO_ENDPOINT=your-minio-host
     MINIO_PORT=9000
     MINIO_ACCESS_KEY=your-access-key

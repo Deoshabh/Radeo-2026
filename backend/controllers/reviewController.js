@@ -43,14 +43,10 @@ const BUCKET_NAME = process.env.MINIO_BUCKET_NAME || 'radeo-reviews';
   }
 })();
 
-// Initialize Redis Client for Queue (using ioredis)
-const Redis = require('ioredis');
-const redisClient = new Redis({
-  host: process.env.REDIS_HOST || 'redis',
-  port: parseInt(process.env.REDIS_PORT || '6379')
-});
+// Initialize Redis Client for Queue
+const redisClient = require('../config/redis');
 
-redisClient.on('error', (err) => console.error('Redis Client Error', err));
+// redisClient.on('error', ...) is already handled in config/redis.js
 
 // Helper: Upload to MinIO
 const uploadToMinio = async (file) => {

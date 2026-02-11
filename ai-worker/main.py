@@ -16,6 +16,7 @@ from datetime import datetime
 # --- Configuration ---
 REDIS_HOST = os.getenv('REDIS_HOST', 'redis')
 REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD', None)
 REDIS_QUEUE_NAME = 'image-moderation'
 
 MONGO_URI = os.getenv('MONGO_URI', 'mongodb://mongo:27017/radeo')
@@ -29,7 +30,7 @@ MINIO_SECURE = os.getenv('MINIO_SECURE', 'false').lower() == 'true'
 print("Initializing AI Worker...")
 
 # Redis
-r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0, decode_responses=True)
+r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASSWORD, db=0, decode_responses=True)
 
 # MongoDB
 mongo_client = pymongo.MongoClient(MONGO_URI)
