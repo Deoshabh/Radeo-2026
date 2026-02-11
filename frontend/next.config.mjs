@@ -10,12 +10,7 @@ const nextConfig = {
       },
       {
         protocol: "https",
-        hostname: "minio-api.radeo.in",
-        pathname: "/product-media/**",
-      },
-      {
-        protocol: "https",
-        hostname: "api.minio.radeo.in",
+        hostname: "minio.radeo.in",
         pathname: "/product-media/**",
       },
       {
