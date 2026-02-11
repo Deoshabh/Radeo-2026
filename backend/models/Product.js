@@ -127,6 +127,23 @@ const productSchema = new mongoose.Schema(
   },
 );
 
+// Indexes for performance
+productSchema.index({ name: 1 });
+productSchema.index({ slug: 1 });
+productSchema.index({ category: 1 });
+productSchema.index({ brand: 1 });
+productSchema.index({ price: 1 });
+productSchema.index({ isActive: 1 });
+productSchema.index({ featured: 1 });
+productSchema.index({ tags: 1 });
+productSchema.index({ createdAt: -1 });
+
+// Compound indexes for common filters
+productSchema.index({ category: 1, isActive: 1 });
+productSchema.index({ brand: 1, isActive: 1 });
+productSchema.index({ price: 1, isActive: 1 });
+productSchema.index({ status: 1, isActive: 1 });
+
 // Virtual field for inStock (calculated from stock quantity)
 productSchema.virtual("inStock").get(function () {
   return this.stock > 0 && !this.isOutOfStock;

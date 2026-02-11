@@ -209,21 +209,32 @@ exports.searchProducts = async (req, res) => {
       });
     }
 
-    const searchRegex = new RegExp(escapeRegex(q.trim()), "i");
+    const searchQuery = q.trim();
+    const cacheKey = `products:search:${searchQuery.toLowerCase()}`;
 
-    const products = await Product.find({
-      isActive: true,
-      $or: [
-        { name: searchRegex },
-        { description: searchRegex },
-        { brand: searchRegex },
-        { category: searchRegex },
-        { tags: searchRegex },
-      ],
-    })
-      .limit(20)
-      .select("name slug image price category brand")
-      .sort({ featured: -1, createdAt: -1 });
+    const products = await getOrSetCache(
+      cacheKey,
+      async () => {
+        const searchRegex = new RegExp(escapeRegex(searchQuery), "i");
+
+        const results = await Product.find({
+          isActive: true,
+          $or: [
+            { name: searchRegex },
+            { description: searchRegex },
+            { brand: searchRegex },
+            { category: searchRegex },
+            { tags: searchRegex },
+          ],
+        })
+          .limit(20)
+          .select("name slug images price category brand")
+          .sort({ featured: -1, createdAt: -1 });
+          
+        return results;
+      },
+      600 // 10 minutes cache
+    );
 
     console.log(`🔍 Search for "${q}": found ${products.length} results`);
 
@@ -236,16 +247,31 @@ exports.searchProducts = async (req, res) => {
 
 // GET /api/v1/products/:slug
 exports.getProductBySlug = async (req, res) => {
-  const product = await Product.findOne({
-    slug: req.params.slug,
-    isActive: true,
-  });
+  try {
+    const { slug } = req.params;
+    const cacheKey = `products:slug:${slug}`;
 
-  if (!product) {
-    return res.status(404).json({ message: "Product not found" });
+    const product = await getOrSetCache(
+      cacheKey,
+      async () => {
+        const foundProduct = await Product.findOne({
+          slug,
+          isActive: true,
+        });
+        return foundProduct;
+      },
+      900, // 15 minutes cache
+    );
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    res.json(product);
+  } catch (error) {
+    console.error("Get product by slug error:", error);
+    res.status(500).json({ message: "Server error" });
   }
-
-  res.json(product);
 };
 
 // GET /api/v1/products/categories
