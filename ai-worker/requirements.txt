@@ -4,7 +4,6 @@ minio==7.2.3
 nudenet==3.4.2
 ultralytics==8.1.0
 imagehash==4.3.1
-opencv-python-headless==4.9.0.80
 Pillow==10.2.0
 numpy==1.26.3
 requests==2.31.0
