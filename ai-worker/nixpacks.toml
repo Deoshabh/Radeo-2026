@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["python310", "ffmpeg", "libGL", "libGLU", "glib"]
+nixPkgs = ["python310", "python310Packages.pip", "ffmpeg", "libGL", "libGLU", "glib"]
 
 [phases.install]
 cmds = ["python3 -m pip install -r requirements.txt"]
