@@ -18,6 +18,7 @@ const {
   MINIO_SECRET_KEY,
   MINIO_BUCKET,
   MINIO_REGION,
+  MINIO_PUBLIC_URL,
 } = process.env;
 
 if (
@@ -56,13 +57,7 @@ async function initializeBucket() {
       MINIO_ACCESS_KEY ? "***" + MINIO_ACCESS_KEY.slice(-4) : "NOT SET",
     );
 
-    // ⚠️ Security Warning: Allow skipping SSL verification for self-signed certs
-    if (process.env.MINIO_SKIP_SSL_VERIFY === "true") {
-      console.warn(
-        "⚠️  SECURITY WARNING: SSL verification is disabled for MinIO connection (MINIO_SKIP_SSL_VERIFY=true)",
-      );
-      process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-    }
+
 
     minioClient = new Minio.Client({
       endPoint: MINIO_ENDPOINT,
@@ -165,10 +160,18 @@ async function deleteObjects(keys) {
 }
 
 /**
- * Public URL (HTTPS safe)
+ * Public URL
+ * Uses MINIO_PUBLIC_URL if set (recommended for Docker/internal networking)
+ * Falls back to constructing URL from MINIO_ENDPOINT
  */
 function getPublicUrl(key) {
-  return `https://${MINIO_ENDPOINT}/${MINIO_BUCKET}/${key}`;
+  if (MINIO_PUBLIC_URL) {
+    // Remove trailing slash if present
+    const baseUrl = MINIO_PUBLIC_URL.replace(/\/$/, "");
+    return `${baseUrl}/${MINIO_BUCKET}/${key}`;
+  }
+  const protocol = MINIO_USE_SSL === "true" ? "https" : "http";
+  return `${protocol}://${MINIO_ENDPOINT}/${MINIO_BUCKET}/${key}`;
 }
 
 /**
