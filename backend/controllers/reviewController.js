@@ -128,4 +128,166 @@ exports.createReview = async (req, res) => {
   }
 };
 
-// ... other controller methods (getReviews, etc.) can be added here
+// Get Reviews for a Product
+exports.getProductReviews = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const { page = 1, limit = 10, sort = 'newest' } = req.query;
+
+    const query = { product: productId, status: 'approved' };
+    
+    // Sort options
+    let sortOptions = {};
+    if (sort === 'newest') sortOptions = { createdAt: -1 };
+    else if (sort === 'oldest') sortOptions = { createdAt: 1 };
+    else if (sort === 'highest') sortOptions = { rating: -1 };
+    else if (sort === 'lowest') sortOptions = { rating: 1 };
+    else if (sort === 'helpful') sortOptions = { helpfulVotes: -1 };
+
+    const reviews = await Review.find(query)
+      .populate('user', 'firstName lastName profilePicture')
+      .sort(sortOptions)
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .exec();
+
+    const count = await Review.countDocuments(query);
+
+    res.json({
+      reviews,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
+      totalReviews: count
+    });
+  } catch (error) {
+    console.error('Get Product Reviews Error:', error);
+    res.status(500).json({ message: 'Failed to fetch reviews', error: error.message });
+  }
+};
+
+// Get My Reviews (Logged in user)
+exports.getMyReviews = async (req, res) => {
+  try {
+    const reviews = await Review.find({ user: req.user.id })
+      .populate('product', 'name slug images')
+      .sort({ createdAt: -1 });
+
+    res.json(reviews);
+  } catch (error) {
+    console.error('Get My Reviews Error:', error);
+    res.status(500).json({ message: 'Failed to fetch your reviews', error: error.message });
+  }
+};
+
+// Update Review
+exports.updateReview = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rating, title, comment } = req.body;
+    const userId = req.user.id;
+
+    const review = await Review.findOne({ _id: id, user: userId });
+    
+    if (!review) {
+      return res.status(404).json({ message: 'Review not found or unauthorized' });
+    }
+
+    // Handle new images if any (append to existing)
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const uploadResult = await uploadToMinio(file);
+        review.images.push(uploadResult);
+        
+        // Re-trigger moderation for new images
+        const jobData = JSON.stringify({
+          reviewId: review._id.toString(),
+          imageId: uploadResult.publicId,
+          bucketName: BUCKET_NAME
+        });
+        await redisClient.rpush('queue:image-moderation', jobData);
+      }
+      review.status = 'pending'; // Re-set to pending if images added
+    }
+
+    if (rating) review.rating = Number(rating);
+    if (title) review.title = title;
+    if (comment) review.comment = comment;
+
+    await review.save();
+
+    res.json({ message: 'Review updated successfully', review });
+  } catch (error) {
+    console.error('Update Review Error:', error);
+    res.status(500).json({ message: 'Failed to update review', error: error.message });
+  }
+};
+
+// Delete Review
+exports.deleteReview = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    // Allow user to delete own review, or admin to delete any
+    const query = { _id: id };
+    if (req.user.role !== 'admin') {
+      query.user = userId;
+    }
+
+    const review = await Review.findOneAndDelete(query);
+
+    if (!review) {
+      return res.status(404).json({ message: 'Review not found or unauthorized' });
+    }
+
+    res.json({ message: 'Review deleted successfully' });
+  } catch (error) {
+    console.error('Delete Review Error:', error);
+    res.status(500).json({ message: 'Failed to delete review', error: error.message });
+  }
+};
+
+// Mark Review Helpful
+exports.markReviewHelpful = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const review = await Review.findByIdAndUpdate(
+      id,
+      { $inc: { helpfulVotes: 1 } },
+      { new: true }
+    );
+
+    if (!review) {
+      return res.status(404).json({ message: 'Review not found' });
+    }
+
+    res.json({ message: 'Marked as helpful', helpfulVotes: review.helpfulVotes });
+  } catch (error) {
+    console.error('Mark Helpful Error:', error);
+    res.status(500).json({ message: 'Failed to mark review as helpful', error: error.message });
+  }
+};
+
+// Upload Review Photos (Standalone - possibly deprecated or used by separate flow)
+exports.uploadReviewPhotos = async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: 'No files uploaded' });
+    }
+
+    const uploadedImages = [];
+    for (const file of req.files) {
+      const result = await uploadToMinio(file);
+      uploadedImages.push(result);
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Photos uploaded successfully',
+      images: uploadedImages 
+    });
+  } catch (error) {
+    console.error('Upload Photos Error:', error);
+    res.status(500).json({ message: 'Failed to upload photos', error: error.message });
+  }
+};
