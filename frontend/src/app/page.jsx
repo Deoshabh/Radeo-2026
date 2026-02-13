@@ -217,7 +217,7 @@ export default function Home() {
       )}
 
       {hero.enabled && (
-        <section className="relative min-h-[calc(100vh-80px)] flex items-center justify-center overflow-hidden bg-gradient-to-br from-primary-50 via-brand-cream/20 to-primary-100">
+        <section className={`relative min-h-[calc(100vh-80px)] flex items-center justify-center overflow-hidden bg-gradient-to-br ${hero.backgroundGradient || 'from-primary-50 via-brand-cream/20 to-primary-100'}`}>
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-24 relative z-10">
             <div className="max-w-4xl mx-auto text-center">
               <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-primary-900 mb-4 sm:mb-6 animate-fade-in leading-tight">

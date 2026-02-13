@@ -776,6 +776,30 @@ export default function AdminCMSPage() {
                                             <input type="text" value={homeSections.heroSection?.secondaryButtonText || ''} onChange={(e) => handleSectionChange('heroSection', 'secondaryButtonText', e.target.value)} className="input w-full mb-1" placeholder="Text" />
                                             <input type="text" value={homeSections.heroSection?.secondaryButtonLink || ''} onChange={(e) => handleSectionChange('heroSection', 'secondaryButtonLink', e.target.value)} className="input w-full" placeholder="Link" />
                                         </div>
+                                        <div className="md:col-span-2">
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase">Description</label>
+                                            <textarea
+                                                rows="3"
+                                                value={homeSections.heroSection?.description || ''}
+                                                onChange={(e) => handleSectionChange('heroSection', 'description', e.target.value)}
+                                                className="input w-full"
+                                                placeholder="Hero description text..."
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase">Background Gradient</label>
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={homeSections.heroSection?.backgroundGradient || ''}
+                                                    onChange={(e) => handleSectionChange('heroSection', 'backgroundGradient', e.target.value)}
+                                                    className="input w-full"
+                                                    placeholder="from-primary-50 via-brand-cream/20 to-primary-100"
+                                                />
+                                                <div className={`w-12 h-10 rounded border border-gray-200 bg-gradient-to-br ${homeSections.heroSection?.backgroundGradient || 'from-gray-100 to-gray-200'}`} title="Preview"></div>
+                                            </div>
+                                            <p className="text-xs text-gray-400 mt-1">Use Tailwind CSS gradient classes (e.g. <code>from-primary-50 to-white</code>)</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
