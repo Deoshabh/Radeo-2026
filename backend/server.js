@@ -217,9 +217,14 @@ app.get("/health", (req, res) => {
 // ===============================
 async function startServer() {
   try {
-    // 🔴 CRITICAL: wait for S3 storage initialization
-    await initializeBucket();
-    log.success("S3 storage initialized — starting server");
+    // 🔴 CRITICAL: Attempt S3 storage initialization
+    // We do NOT exit the process if this fails, so that the API remains available for non-media tasks.
+    try {
+      await initializeBucket();
+      log.success("S3 storage initialized — starting server");
+    } catch (e) {
+      log.error("⚠️ S3 Initializaton Failed: Media uploads will not work.", e);
+    }
 
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, "0.0.0.0", () => {
