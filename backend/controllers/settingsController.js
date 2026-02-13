@@ -64,6 +64,14 @@ exports.updateSettings = async (req, res, next) => {
       if (homeSections.madeToOrder) settings.homeSections.madeToOrder = { ...settings.homeSections.madeToOrder.toObject(), ...homeSections.madeToOrder };
       if (homeSections.newsletter) settings.homeSections.newsletter = { ...settings.homeSections.newsletter.toObject(), ...homeSections.newsletter };
     }
+
+    if (req.body.layout) {
+      settings.layout = req.body.layout;
+    }
+
+    if (req.body.theme) {
+      settings.theme = { ...settings.theme.toObject(), ...req.body.theme };
+    }
     
     await settings.save();
     

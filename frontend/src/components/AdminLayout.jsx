@@ -6,6 +6,7 @@ import { FiGrid, FiPackage, FiShoppingBag, FiUsers, FiTag, FiPercent, FiStar, Fi
 
 import { useRouter } from 'next/navigation';
 import { AdminProvider, useAdmin } from '@/context/AdminContext';
+import AdminCommandPalette from '@/components/admin/AdminCommandPalette';
 
 // Navigation Link Component that checks dirty state
 const AdminLink = ({ href, active, icon: Icon, label, className }) => {
@@ -99,6 +100,7 @@ function AdminLayoutContent({ children }) {
 
   return (
     <div className="min-h-screen bg-primary-50">
+      <AdminCommandPalette />
       {/* Admin Header */}
       <header className="fixed top-0 left-0 right-0 h-[80px] bg-white shadow-sm z-50 px-4 lg:px-8 flex items-center justify-between">
         <div className="flex items-center gap-3">

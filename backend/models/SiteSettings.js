@@ -67,6 +67,22 @@ const siteSettingsSchema = new mongoose.Schema(
         buttonText: { type: String, default: 'Subscribe' },
       },
     },
+    // Dynamic Layout Configuration (Visual CMS)
+    layout: [
+      {
+        id: { type: String, required: true },
+        type: { type: String, required: true }, // 'hero', 'products', 'text', 'newsletter'
+        enabled: { type: Boolean, default: true },
+        data: { type: mongoose.Schema.Types.Mixed, default: {} }, // Flexible data storage
+      }
+    ],
+    // Global Theme Validation
+    theme: {
+      primaryColor: { type: String, default: '#3B2F2F' }, // brand-brown
+      secondaryColor: { type: String, default: '#F4F1EA' }, // brand-cream
+      fontFamily: { type: String, default: 'Inter' },
+      borderRadius: { type: String, default: '8px' },
+    },
     // Singleton pattern enforcement
     isDefault: { type: Boolean, default: true, unique: true },
   },

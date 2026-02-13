@@ -30,6 +30,10 @@ export const metadata = generateSEOMetadata({
   keywords: ['shoes', 'handcrafted', 'premium', 'leather', 'oxford', 'derby', 'brogue', 'loafer'],
 });
 
+import QueryProvider from '@/providers/QueryProvider';
+
+// ...
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
@@ -39,44 +43,46 @@ export default function RootLayout({ children }) {
       </head>
       <body className="antialiased">
         <ErrorBoundary>
-          <AuthProvider>
-            <SiteSettingsProvider>
-              <CartProvider>
-                <WishlistProvider>
-                  <Navbar />
-                  <main className="min-h-screen pt-[80px]">
-                    <AnnouncementBar />
-                    <MaintenanceModeGate>{children}</MaintenanceModeGate>
-                  </main>
-                  <Footer />
-                  <Toaster
-                    position="top-right"
-                    toastOptions={{
-                      duration: 3000,
-                      style: {
-                        background: '#363636',
-                        color: '#fff',
-                      },
-                      success: {
+          <QueryProvider>
+            <AuthProvider>
+              <SiteSettingsProvider>
+                <CartProvider>
+                  <WishlistProvider>
+                    <Navbar />
+                    <main className="min-h-screen pt-[80px]">
+                      <AnnouncementBar />
+                      <MaintenanceModeGate>{children}</MaintenanceModeGate>
+                    </main>
+                    <Footer />
+                    <Toaster
+                      position="top-right"
+                      toastOptions={{
                         duration: 3000,
-                        iconTheme: {
-                          primary: '#10b981',
-                          secondary: '#fff',
+                        style: {
+                          background: '#363636',
+                          color: '#fff',
                         },
-                      },
-                      error: {
-                        duration: 4000,
-                        iconTheme: {
-                          primary: '#ef4444',
-                          secondary: '#fff',
+                        success: {
+                          duration: 3000,
+                          iconTheme: {
+                            primary: '#10b981',
+                            secondary: '#fff',
+                          },
                         },
-                      },
-                    }}
-                  />
-                </WishlistProvider>
-              </CartProvider>
-            </SiteSettingsProvider>
-          </AuthProvider>
+                        error: {
+                          duration: 4000,
+                          iconTheme: {
+                            primary: '#ef4444',
+                            secondary: '#fff',
+                          },
+                        },
+                      }}
+                    />
+                  </WishlistProvider>
+                </CartProvider>
+              </SiteSettingsProvider>
+            </AuthProvider>
+          </QueryProvider>
         </ErrorBoundary>
       </body>
     </html>

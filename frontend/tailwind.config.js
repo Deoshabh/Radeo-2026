@@ -9,16 +9,16 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          50: "#fafaf9",
-          100: "#f5f5f4",
-          200: "#e7e5e4",
-          300: "#d6d3d1",
-          400: "#a8a29e",
-          500: "#78716c",
-          600: "#57534e",
-          700: "#44403c",
-          800: "#292524",
-          900: "#1c1917",
+          50: "var(--color-primary-50)",
+          100: "var(--color-primary-100)",
+          200: "var(--color-primary-200)",
+          300: "var(--color-primary-300)",
+          400: "var(--color-primary-400)",
+          500: "var(--color-primary-500)",
+          600: "var(--color-primary-600)",
+          700: "var(--color-primary-700)",
+          800: "var(--color-primary-800)",
+          900: "var(--color-primary-900)",
         },
         brand: {
           brown: "#3d2f28",

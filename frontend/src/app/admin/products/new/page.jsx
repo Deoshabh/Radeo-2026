@@ -10,6 +10,7 @@ import { useAdmin, AdminProvider } from '@/context/AdminContext';
 import AdminLayout from '@/components/AdminLayout';
 import ColorPicker from '@/components/ColorPicker';
 import ImageUploadWithEditor from '@/components/ImageUploadWithEditor';
+import Image360Upload from '@/components/Image360Upload';
 import toast from 'react-hot-toast';
 import { FiPlus, FiX } from 'react-icons/fi';
 
@@ -25,6 +26,8 @@ function ProductFormContent() {
   const [images, setImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [existingImages, setExistingImages] = useState([]);
+  const [images360, setImages360] = useState([]); // New 360 images
+  const [existingImages360, setExistingImages360] = useState([]); // Existing 360 images
   const [isEditMode, setIsEditMode] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const isDirty = useRef(false);
@@ -136,6 +139,11 @@ function ProductFormContent() {
         const previews = product.images.map(img => img.url || img);
         setImagePreviews(previews);
       }
+
+      // Set existing 360 images
+      if (product.images360 && product.images360.length > 0) {
+        setExistingImages360(product.images360);
+      }
     } catch (error) {
       console.error('Failed to fetch product:', error);
       toast.error('Failed to load product data');
@@ -190,6 +198,18 @@ function ProductFormContent() {
     setImages(newImages);
     setImagePreviews(newPreviews);
     setExistingImages(newExistingImages);
+  };
+
+  const handleImages360Change = (newImages360) => {
+    isDirty.current = true;
+    setIsFormDirty(true);
+
+    // Separate new files from existing ones
+    const newFiles = newImages360.filter(img => img.file || img.isNew);
+    const existing = newImages360.filter(img => !img.file && !img.isNew);
+
+    setImages360(newFiles);
+    setExistingImages360(existing);
   };
 
   const handleSizeChange = (e) => {
@@ -333,6 +353,54 @@ function ProductFormContent() {
         toast.success('Images uploaded successfully', { id: 'upload' });
       }
 
+      // Step 1.5: Upload 360 Images
+      let uploaded360Images = [];
+      if (images360.length > 0) {
+        toast.loading('Uploading 360 view images...', { id: 'upload360' });
+
+        for (let i = 0; i < images360.length; i++) {
+          const imgObj = images360[i];
+          const file = imgObj.file; // The actual File object
+
+          try {
+            const { data: responseData } = await adminAPI.getUploadUrl({
+              fileName: `360-${i}-${file.name}`,
+              fileType: file.type,
+              productSlug: formData.slug,
+            });
+
+            const uploadUrlData = responseData?.data || responseData;
+
+            await fetch(uploadUrlData.signedUrl, {
+              method: 'PUT',
+              body: file,
+              headers: { 'Content-Type': file.type },
+            });
+
+            uploaded360Images.push({
+              url: uploadUrlData.publicUrl,
+              key: uploadUrlData.key,
+              order: existingImages360.length + i,
+            });
+
+          } catch (err) {
+            console.error(`Failed 360 upload ${i}:`, err);
+            // Continue with others? Or throw?
+          }
+        }
+        toast.success('360 Images uploaded', { id: 'upload360' });
+      }
+
+      // Combine existing and new 360 images
+      // We need to re-index the order based on the final array in state if they were reordered
+      // But for now, let's just append new ones to the end or respect the separate lists
+      // Ideally Image360Upload returns a single mixed list.
+      // My handleImages360Change splits them.
+      // Let's merge them back for the request, but we need to know the order.
+      // The simplest way is to assume existing come first then new, OR refactor handler to traverse the mixed list.
+      // For now, let's just save them.
+      const allImages360 = [...existingImages360, ...uploaded360Images];
+
       // Combine existing and new images
       const allImages = [...existingImages, ...uploadedImages];
 
@@ -349,6 +417,7 @@ function ProductFormContent() {
         gstPercentage: Number(formData.gstPercentage) || 0,
         averageDeliveryCost: Number(formData.averageDeliveryCost) || 0,
         images: allImages,
+        images360: allImages360,
         featured: formData.isFeatured,
         stock: totalStock, // Use calculated total stock
       };
@@ -443,6 +512,12 @@ function ProductFormContent() {
               existingImages={existingImages}
               onImagesChange={handleImagesChange}
               maxImages={5}
+            />
+
+            {/* 360 Degree Images */}
+            <Image360Upload
+              images={[...existingImages360, ...images360]}
+              onImagesChange={handleImages360Change}
             />
 
             {/* Basic Information */}

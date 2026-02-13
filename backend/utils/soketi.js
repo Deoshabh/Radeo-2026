@@ -54,8 +54,27 @@ const emitGlobalShipmentUpdate = async (data) => {
   }
 };
 
+/**
+ * Emit new order event to admin dashboard
+ * @param {Object} order - The created order object
+ */
+const emitAdminOrderCreated = async (order) => {
+  try {
+    await soketi.trigger("admin-updates", "order:created", {
+      id: order.orderId,
+      amount: order.totalAmount,
+      customer: order.shippingAddress?.fullName,
+      timestamp: new Date().toISOString(),
+    });
+    console.log(`✅ Soketi: Emitted admin order:created for ${order.orderId}`);
+  } catch (error) {
+    console.error("❌ Soketi emit error:", error.message);
+  }
+};
+
 module.exports = {
   soketi,
   emitOrderUpdate,
   emitGlobalShipmentUpdate,
+  emitAdminOrderCreated,
 };

@@ -244,6 +244,11 @@ exports.createOrder = async (req, res) => {
     // Invalidate product cache
     await invalidateCache("products:*");
 
+    // Emit Real-time Event to Admin Dashboard
+    const { emitAdminOrderCreated } = require("../utils/soketi");
+    // Fire and forget - don't await/block response
+    emitAdminOrderCreated(order).catch(err => console.error("Socket emit failed", err));
+
     // Return created order
     res.status(201).json({
       success: true,

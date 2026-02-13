@@ -111,6 +111,14 @@ const productSchema = new mongoose.Schema(
         },
       },
     ],
+    // 360 Degree View Images (Sequence)
+    images360: [
+      {
+        url: { type: String, required: true },
+        key: { type: String, required: true },
+        order: { type: Number, default: 0 },
+      }
+    ],
     isActive: {
       type: Boolean,
       default: true,

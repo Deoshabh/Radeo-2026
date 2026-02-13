@@ -1,24 +1,26 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { adminAPI, productAPI, categoryAPI } from '@/utils/api';
+import { productAPI, categoryAPI } from '@/utils/api';
+import {
+  useProducts,
+  useDeleteProduct,
+  useBulkDeleteProducts,
+  useUpdateProductStatus,
+  useBulkUpdateProductStatus,
+  useToggleFeatured
+} from '@/hooks/useProducts';
 import AdminLayout from '@/components/AdminLayout';
 import ProductFilters from '@/components/admin/products/ProductFilters';
 import ProductTable from '@/components/admin/products/ProductTable';
 import toast from 'react-hot-toast';
-import { FiPlus } from 'react-icons/fi';
+import { FiPlus, FiGrid } from 'react-icons/fi';
 
 export default function AdminProductsPage() {
   const router = useRouter();
-  const { user, isAuthenticated, loading } = useAuth();
-
-  // Data State
-  const [products, setProducts] = useState([]);
-  const [loadingProducts, setLoadingProducts] = useState(true);
-  const [categories, setCategories] = useState([]);
-  const [brands, setBrands] = useState([]);
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   // Filter/Sort State
   const [searchQuery, setSearchQuery] = useState('');
@@ -28,23 +30,21 @@ export default function AdminProductsPage() {
   const [filterStock, setFilterStock] = useState('all');
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('desc');
-
-  // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalProducts, setTotalProducts] = useState(0);
-
-  // Selection State
   const [selectedProducts, setSelectedProducts] = useState([]);
 
-  // Auth Check
+  // Filters Data
+  const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
+
+  // Auth Redirect
   useEffect(() => {
-    if (!loading && (!isAuthenticated || user?.role !== 'admin')) {
+    if (!authLoading && (!isAuthenticated || user?.role !== 'admin')) {
       router.push('/');
     }
-  }, [user, isAuthenticated, loading, router]);
+  }, [user, isAuthenticated, authLoading, router]);
 
-  // Initial Data Fetch (Categories/Brands)
+  // Initial Filter Fetch (Keep this as useEffect for now as these are static-ish)
   useEffect(() => {
     const fetchFilters = async () => {
       if (isAuthenticated && user?.role === 'admin') {
@@ -63,61 +63,33 @@ export default function AdminProductsPage() {
     fetchFilters();
   }, [isAuthenticated, user]);
 
-  // Fetch Products
-  const fetchProducts = useCallback(async () => {
-    if (!isAuthenticated || user?.role !== 'admin') return;
-
-    try {
-      setLoadingProducts(true);
-      const params = {
-        page: currentPage,
-        limit: 20,
-        search: searchQuery,
-        status: filterStatus,
-        category: filterCategory,
-        brand: filterBrand,
-        stockStatus: filterStock,
-        sortBy,
-        order: sortOrder
-      };
-
-      const response = await adminAPI.getAllProducts(params);
-      const data = response.data;
-
-      setProducts(data.products || []);
-      setTotalPages(data.totalPages || 1);
-      setTotalProducts(data.total || 0);
-      setCurrentPage(data.page || 1);
-
-      // Clear selection on refresh/filter change
-      setSelectedProducts([]);
-    } catch (error) {
-      toast.error('Failed to fetch products');
-      console.error('Failed to fetch products:', error);
-    } finally {
-      setLoadingProducts(false);
-    }
-  }, [
-    isAuthenticated,
-    user,
-    currentPage,
-    searchQuery,
-    filterStatus,
-    filterCategory,
-    filterBrand,
-    filterStock,
+  // TanStack Query for Products
+  const { data: productData, isLoading: loadingProducts } = useProducts({
+    page: currentPage,
+    limit: 20,
+    search: searchQuery,
+    status: filterStatus,
+    category: filterCategory,
+    brand: filterBrand,
+    stockStatus: filterStock,
     sortBy,
-    sortOrder
-  ]);
+    order: sortOrder
+  });
 
-  // Trigger fetch when dependencies change
-  useEffect(() => {
-    // Debounce search
-    const timeout = setTimeout(() => {
-      fetchProducts();
-    }, 400);
-    return () => clearTimeout(timeout);
-  }, [fetchProducts]);
+  // Mutations
+  const deleteProduct = useDeleteProduct();
+  const bulkDelete = useBulkDeleteProducts();
+  const updateStatus = useUpdateProductStatus();
+  const bulkStatus = useBulkUpdateProductStatus();
+  const toggleFeatured = useToggleFeatured();
+
+  const products = productData?.products || [];
+  const totalPages = productData?.totalPages || 1;
+  const totalProducts = productData?.total || 0;
+
+  // Clear selection when data reloads (optional, but good UX to avoid stale selections)
+  // implementing this via useEffect on products change if strict behavior needed, 
+  // currently we can just clear it manually on bulk actions.
 
   // Handlers
   const handleSort = (field) => {
@@ -145,58 +117,35 @@ export default function AdminProductsPage() {
 
   const handleBulkDelete = async () => {
     if (!confirm(`Are you sure you want to delete ${selectedProducts.length} products?`)) return;
-
-    try {
-      await adminAPI.bulkDeleteProducts(selectedProducts);
-      toast.success('Products deleted successfully');
-      fetchProducts();
-    } catch (error) {
-      toast.error('Failed to delete products');
-    }
+    bulkDelete.mutate(selectedProducts, {
+      onSuccess: () => setSelectedProducts([]) // Clear selection on success
+    });
   };
 
   const handleBulkStatus = async (status) => {
-    try {
-      await adminAPI.bulkUpdateProductStatus(selectedProducts, status === 'active');
-      toast.success('Product status updated');
-      fetchProducts();
-    } catch (error) {
-      toast.error('Failed to update status');
-    }
+    bulkStatus.mutate({ ids: selectedProducts, status }, {
+      onSuccess: () => setSelectedProducts([])
+    });
   };
 
-  const handleToggleStatus = async (productId, currentStatus) => {
-    try {
-      await adminAPI.toggleProductStatus(productId);
-      toast.success(`Product ${currentStatus === 'active' ? 'deactivated' : 'activated'} successfully`);
-      fetchProducts();
-    } catch (error) {
-      toast.error('Failed to update product status');
-    }
+  const handleToggleStatus = (productId, currentStatus) => {
+    updateStatus.mutate({ id: productId, currentStatus });
   };
 
-  const handleToggleFeatured = async (productId, currentFeatured) => {
-    try {
-      await adminAPI.toggleProductFeatured(productId);
-      toast.success(`Product ${currentFeatured ? 'unmarked' : 'marked'} as featured`);
-      fetchProducts();
-    } catch (error) {
-      toast.error('Failed to update featured status');
-    }
+  const handleToggleFeatured = (productId, currentFeatured) => {
+    toggleFeatured.mutate({ id: productId, currentFeatured });
   };
 
-  const handleDeleteProduct = async (productId) => {
+  const handleDeleteProduct = (productId) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
-    try {
-      await adminAPI.deleteProduct(productId);
-      toast.success('Product deleted successfully');
-      fetchProducts();
-    } catch (error) {
-      toast.error('Failed to delete product');
-    }
+    deleteProduct.mutate(productId);
   };
 
-  if (loading) return null;
+  if (authLoading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-900"></div>
+    </div>
+  );
 
   return (
     <AdminLayout>
@@ -235,6 +184,12 @@ export default function AdminProductsPage() {
                   </button>
                 </div>
               )}
+              <button
+                onClick={() => router.push('/admin/products/bulk')}
+                className="btn bg-white border border-primary-200 text-primary-700 hover:bg-primary-50 flex items-center gap-2 justify-center w-full sm:w-auto touch-manipulation mr-2"
+              >
+                <FiGrid /> Bulk Edit
+              </button>
               <button
                 onClick={() => router.push('/admin/products/new')}
                 className="btn btn-primary flex items-center gap-2 justify-center w-full sm:w-auto touch-manipulation"
