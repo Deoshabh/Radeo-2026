@@ -107,6 +107,10 @@ export default function CouponsPage() {
       const data = {
         ...formData,
         code: formData.code.toUpperCase(),
+        minOrder: Number(formData.minPurchase) || 0,
+        expiry: formData.validUntil,
+        usageLimit: formData.usageLimit ? Number(formData.usageLimit) : null,
+        // maxDiscount and validFrom are not supported by backend yet
       };
 
       if (editMode) {
@@ -222,8 +226,8 @@ export default function CouponsPage() {
                   <div className="flex flex-col items-end gap-2">
                     <span
                       className={`px-2 py-1 text-xs font-medium rounded-full ${coupon.isActive && !isExpired(coupon.validUntil)
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-red-100 text-red-700'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-red-100 text-red-700'
                         }`}
                     >
                       {isExpired(coupon.validUntil) ? 'Expired' : coupon.isActive ? 'Active' : 'Inactive'}

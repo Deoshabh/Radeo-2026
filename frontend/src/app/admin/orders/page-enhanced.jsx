@@ -53,6 +53,20 @@ export default function AdminOrdersDashboard() {
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('desc');
 
+  // Filter & Selection State
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [selectedOrders, setSelectedOrders] = useState([]);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+
+  // Modal & View State
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showShipmentModal, setShowShipmentModal] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [showUserHistory, setShowUserHistory] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [expandedRow, setExpandedRow] = useState(null);
+
   useEffect(() => {
     if (!loading && (!isAuthenticated || user?.role !== 'admin')) {
       router.push('/');

@@ -65,6 +65,7 @@ exports.createCoupon = async (req, res) => {
       value,
       minOrder: minOrder || 0,
       expiry: expiryDate,
+      usageLimit: req.body.usageLimit || null,
     });
 
     res.status(201).json(coupon);
@@ -157,6 +158,7 @@ exports.updateCoupon = async (req, res) => {
     if (value !== undefined) coupon.value = value;
     if (minOrder !== undefined) coupon.minOrder = minOrder;
     if (isActive !== undefined) coupon.isActive = isActive;
+    if (req.body.usageLimit !== undefined) coupon.usageLimit = req.body.usageLimit;
 
     await coupon.save();
     res.json(coupon);

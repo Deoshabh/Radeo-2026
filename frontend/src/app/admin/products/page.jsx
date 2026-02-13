@@ -66,7 +66,7 @@ export default function AdminProductsPage() {
             categoryAPI.getAllCategories(),
             productAPI.getBrands()
           ]);
-          setCategories(catRes.data || []);
+          setCategories(catRes.data.categories || []);
           setBrands(brandRes.data || []);
         } catch (error) {
           console.error('Failed to fetch filters:', error);
