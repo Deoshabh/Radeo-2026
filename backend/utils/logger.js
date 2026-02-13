@@ -1,110 +1,99 @@
 const morgan = require("morgan");
-const fs = require("fs");
-const path = require("path");
 
 /**
  * HTTP Request Logger Configuration
  * Uses Morgan for HTTP request logging
+ * 
+ * Production: JSON format to stdout (for Docker/K8s/Dokploy)
+ * Development: Colored text format
  */
 
-// Create logs directory if it doesn't exist
-const logsDir = path.join(__dirname, "../logs");
-if (!fs.existsSync(logsDir)) {
-  fs.mkdirSync(logsDir);
-}
-
-// Create write streams for different log files
-const accessLogStream = fs.createWriteStream(path.join(logsDir, "access.log"), {
-  flags: "a",
-});
-
-const errorLogStream = fs.createWriteStream(path.join(logsDir, "error.log"), {
-  flags: "a",
-});
-
-// Custom token for response time in milliseconds
+// Custom token for response time
 morgan.token("response-time-ms", (req, res) => {
-  if (!req._startAt || !res._startAt) {
-    return;
-  }
+  if (!req._startAt || !res._startAt) return;
   const ms =
     (res._startAt[0] - req._startAt[0]) * 1000 +
     (res._startAt[1] - req._startAt[1]) / 1000000;
   return ms.toFixed(2);
 });
 
-// Custom format for detailed logging
-const detailedFormat =
-  ":method :url :status :response-time-ms ms - :res[content-length] bytes - :remote-addr - :user-agent";
+// JSON format for production
+const jsonFormat = (tokens, req, res) => {
+  return JSON.stringify({
+    method: tokens.method(req, res),
+    url: tokens.url(req, res),
+    status: Number(tokens.status(req, res)),
+    content_length: tokens.res(req, res, 'content-length'),
+    response_time: Number(tokens['response-time-ms'](req, res)),
+    remote_addr: tokens['remote-addr'](req, res),
+    user_agent: tokens['user-agent'](req, res),
+    timestamp: new Date().toISOString(),
+  });
+};
 
-// Console logger for development (colorful)
-const consoleLogger = morgan("dev");
+// Console logger (Environment aware)
+const requestLogger = process.env.NODE_ENV === "production" 
+  ? morgan(jsonFormat)
+  : morgan("dev");
 
-// File logger for production (detailed)
-const fileLogger = morgan(detailedFormat, {
-  stream: accessLogStream,
-});
-
-// Error logger (only log 4xx and 5xx responses)
-const errorLogger = morgan(detailedFormat, {
-  stream: errorLogStream,
-  skip: (req, res) => res.statusCode < 400,
-});
-
-// Combined logger
+// Middleware wrapper
 const logger = (req, res, next) => {
-  // Skip OPTIONS requests to reduce noise
-  if (req.method === "OPTIONS") {
+  // Skip OPTIONS and health checks to force reduce noise
+  if (req.method === "OPTIONS" || req.url === "/api/health") {
     return next();
   }
-
-  // Use different loggers based on environment
-  if (process.env.NODE_ENV === "production") {
-    fileLogger(req, res, () => {
-      errorLogger(req, res, next);
-    });
-  } else {
-    consoleLogger(req, res, next);
-  }
+  requestLogger(req, res, next);
 };
 
 /**
  * Custom logger for application events
+ * Logs to stdout/stderr in JSON (Prod) or Text (Dev)
  */
 const log = {
   info: (message, data = {}) => {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] ℹ️  INFO: ${message}`, data);
+    if (process.env.NODE_ENV === "production") {
+      console.log(JSON.stringify({ level: "info", message, ...data, timestamp: new Date().toISOString() }));
+    } else {
+      console.log(`[${new Date().toISOString()}] ℹ️  INFO: ${message}`, data);
+    }
   },
 
   error: (message, error = {}) => {
-    const timestamp = new Date().toISOString();
-    console.error(`[${timestamp}] ❌ ERROR: ${message}`, {
-      error: error.message,
-      stack: error.stack,
-    });
-
-    // Write to error log file
-    const errorLog = `[${timestamp}] ERROR: ${message}\n${
-      error.stack || error.message || ""
-    }\n\n`;
-    fs.appendFileSync(path.join(logsDir, "error.log"), errorLog);
+    if (process.env.NODE_ENV === "production") {
+      console.error(JSON.stringify({ 
+        level: "error", 
+        message, 
+        error: error.message, 
+        stack: error.stack, 
+        timestamp: new Date().toISOString() 
+      }));
+    } else {
+      console.error(`[${new Date().toISOString()}] ❌ ERROR: ${message}`, {
+        error: error.message,
+        stack: error.stack,
+      });
+    }
   },
 
   warn: (message, data = {}) => {
-    const timestamp = new Date().toISOString();
-    console.warn(`[${timestamp}] ⚠️  WARN: ${message}`, data);
+    if (process.env.NODE_ENV === "production") {
+      console.warn(JSON.stringify({ level: "warn", message, ...data, timestamp: new Date().toISOString() }));
+    } else {
+      console.warn(`[${new Date().toISOString()}] ⚠️  WARN: ${message}`, data);
+    }
   },
 
   success: (message, data = {}) => {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] ✅ SUCCESS: ${message}`, data);
+    if (process.env.NODE_ENV === "production") {
+      console.log(JSON.stringify({ level: "success", message, ...data, timestamp: new Date().toISOString() }));
+    } else {
+      console.log(`[${new Date().toISOString()}] ✅ SUCCESS: ${message}`, data);
+    }
   },
 
   debug: (message, data = {}) => {
-    if (process.env.NODE_ENV === "development") {
-      const timestamp = new Date().toISOString();
-      console.log(`[${timestamp}] 🐛 DEBUG: ${message}`, data);
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[${new Date().toISOString()}] 🐛 DEBUG: ${message}`, data);
     }
   },
 };

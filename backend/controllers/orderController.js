@@ -89,8 +89,10 @@ exports.createOrder = async (req, res) => {
     // Calculate subtotal and create items snapshot
     let subtotal = 0;
     const orderItems = cart.items.map((item) => {
+      // Safe currency addition
+      const CurrencyUtils = require('../utils/currencyUtils');
       const itemTotal = item.product.price * item.quantity;
-      subtotal += itemTotal;
+      subtotal = CurrencyUtils.add(subtotal, itemTotal);
 
       // Get primary image URL from images array
       const primaryImage =
@@ -114,47 +116,24 @@ exports.createOrder = async (req, res) => {
     let couponData = null;
 
     if (couponCode) {
-      const Coupon = require("../models/Coupon");
-      const coupon = await Coupon.findOne({
-        code: couponCode.toUpperCase(),
-        isActive: true,
-      });
+      const couponService = require('../services/couponService');
+      const validation = await couponService.validateCoupon(couponCode, subtotal, req.user.id);
 
-      if (coupon) {
-        // Check if coupon is expired
-        if (new Date(coupon.expiry) < new Date()) {
-          return res.status(400).json({ message: "Coupon has expired" });
-        }
-
-        // Check minimum order value
-        if (subtotal < coupon.minOrder) {
-          return res.status(400).json({
-            message: `Minimum order value of ₹${coupon.minOrder} required for this coupon`,
-          });
-        }
-
-        // Calculate discount
-        if (coupon.type === "flat") {
-          discount = coupon.value;
-        } else if (coupon.type === "percent") {
-          discount = Math.floor((subtotal * coupon.value) / 100);
-        }
-
-        // Ensure discount doesn't exceed subtotal
-        discount = Math.min(discount, subtotal);
-
-        couponData = {
-          code: coupon.code,
-          type: coupon.type,
-          value: coupon.value,
-          discount: discount,
-        };
+      if (!validation.valid) {
+        return res.status(400).json({ message: validation.message });
       }
+
+      discount = validation.discount;
+      couponData = validation.coupon;
     }
 
     // Calculate shipping cost (server-side, mirrors frontend logic)
     const shippingCost = subtotal > 1000 ? 0 : 50;
-    const total = subtotal + shippingCost - discount;
+    
+    // Total = Subtotal + Shipping - Discount
+    const CurrencyUtils = require('../utils/currencyUtils');
+    let total = CurrencyUtils.add(subtotal, shippingCost);
+    total = CurrencyUtils.subtract(total, discount);
 
     // === Transactional order creation ===
     const session = await mongoose.startSession();
@@ -188,11 +167,21 @@ exports.createOrder = async (req, res) => {
 
         // 2. Increment coupon usage if applicable
         if (couponData && couponCode) {
+           // We use the service/model logic here but need session support. 
+           // Since service method might not support session, we'll keep the direct DB update here for transactional safety
+           // OR update service to accept session. 
+           // For now, let's keep the direct update to ensure session passing, but use the clean logic.
+           
+           // Ideally: await couponService.incrementUsage(couponData._id, session);
+           // Let's stick to the direct invalidation for now to avoid modifying service too much for session propagation 
+           // unless we update service method.
+           
            const couponUpdateResult = await require("../models/Coupon").updateOne(
             { 
-              code: couponCode.toUpperCase(), 
+              _id: couponData._id,
               $or: [
                 { usageLimit: null },
+                { usageLimit: 0 }, // 0 or null usually means unlimited
                 { $expr: { $lt: ["$usedCount", "$usageLimit"] } }
               ]
             },
@@ -373,7 +362,9 @@ exports.createRazorpayOrder = async (req, res) => {
     // CRITICAL: Razorpay requires amount in paise (₹1 = 100 paise)
     // This is the ONLY place where we convert INR to paise
     // Use total (after discount) instead of subtotal
-    const amountInPaise = Math.round((order.total || order.subtotal) * 100);
+    const CurrencyUtils = require('../utils/currencyUtils');
+    const payAmount = order.total || order.subtotal;
+    const amountInPaise = CurrencyUtils.toPaise(payAmount);
 
     console.log(
       `Creating Razorpay order for ₹${order.total || order.subtotal} (${amountInPaise} paise)`,

@@ -232,22 +232,54 @@ exports.removeFromCart = async (req, res) => {
   }
 };
 
-// DELETE /api/v1/cart
-exports.clearCart = async (req, res) => {
+// GET /api/v1/cart/validate
+exports.validateCart = async (req, res) => {
   try {
-    let cart = await Cart.findOne({ user: req.user.id });
+    const cart = await Cart.findOne({ user: req.user.id }).populate("items.product");
 
-    if (!cart) {
-      // Create empty cart if doesn't exist
-      cart = await Cart.create({ user: req.user.id, items: [] });
-    } else {
-      cart.items = [];
-      await cart.save();
+    if (!cart || !cart.items || cart.items.length === 0) {
+      return res.json({ valid: true, changes: [] });
     }
 
-    res.json(cart);
+    const changes = [];
+    let isValid = true;
+
+    for (const item of cart.items) {
+      // 1. Check if product exists and is active
+      if (!item.product || !item.product.isActive) {
+        changes.push({
+          productId: item.product?._id,
+          name: item.product?.name || "Unknown Product",
+          message: "Product is no longer available",
+          type: "removed"
+        });
+        isValid = false;
+        continue;
+      }
+
+      // 2. Check stock
+      const sizeEntry = item.product.sizes?.find((s) => s.size === item.size);
+      const availableStock = sizeEntry ? sizeEntry.stock : 0;
+
+      if (availableStock < item.quantity) {
+        changes.push({
+          productId: item.product._id,
+          name: item.product.name,
+          size: item.size,
+          requested: item.quantity,
+          available: availableStock,
+          message: availableStock === 0 
+            ? "Out of stock" 
+            : `Only ${availableStock} left`,
+          type: "stock_issue"
+        });
+        isValid = false;
+      }
+    }
+
+    res.json({ valid: isValid, changes });
   } catch (error) {
-    console.error("Error clearing cart:", error);
-    res.status(500).json({ message: "Cart operation failed" });
+    console.error("Error validating cart:", error);
+    res.status(500).json({ message: "Validation failed" });
   }
 };

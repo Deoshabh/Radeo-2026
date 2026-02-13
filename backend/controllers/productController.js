@@ -38,14 +38,30 @@ exports.getAllProducts = async (req, res) => {
 
         // Search functionality
         if (search && search.trim()) {
-          const searchRegex = new RegExp(escapeRegex(search.trim()), "i");
-          query.$or = [
-            { name: searchRegex },
-            { description: searchRegex },
-            { brand: searchRegex },
-            { category: searchRegex },
-            { tags: searchRegex },
-          ];
+          const searchTerm = search.trim();
+          // Escape regex characters
+          const escapedSearch = escapeRegex(searchTerm);
+          
+          // Create regex: case insensitive
+          const searchRegex = new RegExp(escapedSearch, "i");
+          
+          // Optimization: Also check for exact matches or starts-with for higher relevance explicitly if we had text score
+          // For now, we keep the $or but ensure we aren't doing unnecessary lookups if search text is too short
+          if (searchTerm.length > 2) {
+             query.$or = [
+              { name: searchRegex },
+              { description: searchRegex },
+              { brand: searchRegex },
+              { category: searchRegex },
+              { "tags": searchRegex }, // Ensure tags is treated as array/string field
+            ];
+          } else {
+             // For very short strings, limit scope to name/brand to avoid slow description scans
+             query.$or = [
+              { name: searchRegex },
+              { brand: searchRegex },
+            ];
+          }
         }
 
         // Filter by featured if requested

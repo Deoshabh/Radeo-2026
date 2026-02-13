@@ -17,6 +17,7 @@ const compression = require("compression");
 const { initializeBucket } = require("./utils/minio");
 const { logger, log } = require("./utils/logger");
 const { errorHandler, notFoundHandler } = require("./middleware/errorHandler");
+const { preventCaching } = require("./middleware/security");
 
 // ===============================
 // NoSQL injection sanitizer (Express 5 compatible)
@@ -169,6 +170,9 @@ app.use("/api/v1", require("./routes/reviewRoutes"));
 
 // Webhook routes (must be before other middleware that might interfere)
 app.use("/api/webhooks", require("./routes/webhookRoutes"));
+
+// Apply robust cache prevention for all Admin APIs
+app.use("/api/v1/admin", preventCaching);
 
 app.use("/api/v1/admin/orders", require("./routes/adminOrderRoutes"));
 app.use("/api/v1/admin/products", require("./routes/adminProductRoutes"));

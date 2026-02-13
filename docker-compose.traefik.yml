@@ -20,11 +20,10 @@ services:
       - "--certificatesresolvers.letsencrypt.acme.email=admin@radeo.in"
       - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
 
-    # Ports: HTTP (80), HTTPS (443), Dashboard (8080)
+    # Ports: HTTP (80), HTTPS (443)
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080"
 
     # Volumes
     volumes:
@@ -282,7 +281,6 @@ services:
 volumes:
   letsencrypt:
   valkey-data:
-    driver: local
     driver: local
   minio-data:
     driver: local
