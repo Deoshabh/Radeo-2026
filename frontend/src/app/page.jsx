@@ -63,6 +63,7 @@ export default function Home() {
 
   // Destructure from settings.homeSections
   const homeSections = settings.homeSections || {};
+  const trustBadges = settings.trustBadges || [];
   const hero = homeSections.heroSection || {};
   const featuredSection = useMemo(
     () => homeSections.featuredProducts || {},
