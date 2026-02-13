@@ -817,8 +817,3 @@ export default function AdminCMSPage() {
     );
 }
 
-                </div >
-            </div >
-        </AdminLayout >
-    );
-}
