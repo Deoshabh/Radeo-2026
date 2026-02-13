@@ -8,7 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import AdminLayout from '@/components/AdminLayout';
 import ImageUploadWithEditor from '@/components/ImageUploadWithEditor';
 import toast from 'react-hot-toast';
-import { FiSave, FiImage, FiLayout, FiTrash2, FiPlus, FiArrowUp, FiArrowDown } from 'react-icons/fi';
+import { FiSave, FiImage, FiLayout, FiTrash2, FiPlus, FiArrowUp, FiArrowDown, FiFileText, FiPhone, FiSettings } from 'react-icons/fi';
 import { useSiteSettings } from '@/context/SiteSettingsContext';
 
 export default function AdminCMSPage() {
@@ -47,6 +47,11 @@ export default function AdminCMSPage() {
         newsletter: {}
     });
 
+    // Advanced Settings State
+    const [advancedSettings, setAdvancedSettings] = useState({});
+    const [jsonError, setJsonError] = useState(null);
+    const [selectedPolicy, setSelectedPolicy] = useState('shippingPolicy');
+
     // Image Upload State
     const [logoPreview, setLogoPreview] = useState([]);
     const [logoFile, setLogoFile] = useState([]);
@@ -68,8 +73,13 @@ export default function AdminCMSPage() {
     const fetchSettings = async () => {
         try {
             setLoading(true);
-            const response = await adminAPI.getAllSettings();
-            const settings = response.data.settings;
+            const [mainSettingsRes, advancedSettingsRes] = await Promise.all([
+                adminAPI.getAllSettings(),
+                adminAPI.getAdvancedSettings()
+            ]);
+
+            const settings = mainSettingsRes.data.settings;
+            setAdvancedSettings(advancedSettingsRes.data.settings || {});
 
             setBranding(settings.branding || { logo: {}, favicon: {}, siteName: '' });
             setBanners(settings.banners || []);
@@ -89,7 +99,12 @@ export default function AdminCMSPage() {
             }
         } catch (error) {
             console.error('Failed to fetch settings:', error);
-            toast.error('Failed to load settings');
+            if (error.response?.status === 401) {
+                toast.error('Session expired. Please login again.');
+                router.push('/auth/login');
+            } else {
+                toast.error('Failed to load settings');
+            }
         } finally {
             setLoading(false);
         }
@@ -152,7 +167,12 @@ export default function AdminCMSPage() {
             refreshSettings(); // Update context
         } catch (error) {
             console.error('Save failed:', error);
-            toast.error('Failed to save branding settings');
+            if (error.response?.status === 401) {
+                toast.error('Session expired. Please login again.');
+                router.push('/auth/login');
+            } else {
+                toast.error('Failed to save branding settings');
+            }
         } finally {
             setSaving(false);
         }
@@ -166,7 +186,12 @@ export default function AdminCMSPage() {
             refreshSettings();
         } catch (error) {
             console.error('Save failed:', error);
-            toast.error('Failed to save announcement bar');
+            if (error.response?.status === 401) {
+                toast.error('Session expired. Please login again.');
+                router.push('/auth/login');
+            } else {
+                toast.error('Failed to save announcement bar');
+            }
         } finally {
             setSaving(false);
         }
@@ -180,7 +205,12 @@ export default function AdminCMSPage() {
             refreshSettings();
         } catch (error) {
             console.error('Save failed:', error);
-            toast.error('Failed to save sections');
+            if (error.response?.status === 401) {
+                toast.error('Session expired. Please login again.');
+                router.push('/auth/login');
+            } else {
+                toast.error('Failed to save sections');
+            }
         } finally {
             setSaving(false);
         }
@@ -272,7 +302,35 @@ export default function AdminCMSPage() {
             refreshSettings();
         } catch (error) {
             console.error('Save failed:', error);
-            toast.error('Failed to save banners');
+            if (error.response?.status === 401) {
+                toast.error('Session expired. Please login again.');
+                router.push('/auth/login');
+            } else {
+                toast.error('Failed to save banners');
+            }
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleSaveAdvanced = async (key, value) => {
+        try {
+            setSaving(true);
+            setJsonError(null);
+
+            await adminAPI.updateSetting(key, value);
+
+            toast.success('Setting updated successfully');
+            setAdvancedSettings(prev => ({ ...prev, [key]: value }));
+            refreshSettings();
+        } catch (error) {
+            console.error(`Failed to save ${key}:`, error);
+            if (error.response?.status === 401) {
+                toast.error('Session expired. Please login again.');
+                router.push('/auth/login');
+            } else {
+                toast.error(`Failed to save ${key}`);
+            }
         } finally {
             setSaving(false);
         }
@@ -332,6 +390,33 @@ export default function AdminCMSPage() {
                                 }`}
                         >
                             <FiLayout className="inline mr-2" /> Home Sections
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('policies')}
+                            className={`px-6 py-4 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'policies'
+                                ? 'border-primary-900 text-primary-900 bg-primary-50'
+                                : 'border-transparent text-gray-500 hover:text-gray-700'
+                                }`}
+                        >
+                            <FiFileText className="inline mr-2" /> Policies & Pages
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('contact')}
+                            className={`px-6 py-4 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'contact'
+                                ? 'border-primary-900 text-primary-900 bg-primary-50'
+                                : 'border-transparent text-gray-500 hover:text-gray-700'
+                                }`}
+                        >
+                            <FiPhone className="inline mr-2" /> Contact Info
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('system')}
+                            className={`px-6 py-4 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'system'
+                                ? 'border-primary-900 text-primary-900 bg-primary-50'
+                                : 'border-transparent text-gray-500 hover:text-gray-700'
+                                }`}
+                        >
+                            <FiSettings className="inline mr-2" /> System
                         </button>
                     </div>
 
@@ -806,6 +891,211 @@ export default function AdminCMSPage() {
                                     className="btn btn-primary flex items-center gap-2"
                                 >
                                     <FiSave /> {saving ? 'Saving...' : 'Save Sections'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Policies Tab */}
+                    {activeTab === 'policies' && (
+                        <div className="bg-white rounded-lg shadow-md p-6 space-y-6 animate-fade-in">
+                            <div className="flex justify-between items-center mb-6">
+                                <div>
+                                    <h3 className="text-lg font-semibold text-primary-900">Policy & Page Content</h3>
+                                    <p className="text-sm text-gray-500">Edit detailed content for various site sections.</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <select
+                                        value={selectedPolicy}
+                                        onChange={(e) => setSelectedPolicy(e.target.value)}
+                                        className="input py-2"
+                                    >
+                                        <option value="shippingPolicy">Shipping Policy</option>
+                                        <option value="returnsPolicy">Returns Policy</option>
+                                        <option value="aboutPage">About Page</option>
+                                        <option value="faqPage">FAQ Page</option>
+                                        <option value="footerContent">Footer Content</option>
+                                    </select>
+                                    <button
+                                        onClick={() => {
+                                            try {
+                                                const value = JSON.parse(document.getElementById('policy-editor').value);
+                                                handleSaveAdvanced(selectedPolicy, value);
+                                            } catch (e) {
+                                                toast.error('Invalid JSON format');
+                                            }
+                                        }}
+                                        disabled={saving}
+                                        className="btn btn-primary flex items-center gap-2"
+                                    >
+                                        <FiSave /> {saving ? 'Saving...' : 'Save Changes'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="relative">
+                                <textarea
+                                    id="policy-editor"
+                                    className="w-full h-[600px] font-mono text-sm p-4 border rounded-lg bg-gray-50 focus:bg-white transition-colors custom-scrollbar"
+                                    defaultValue={JSON.stringify(advancedSettings[selectedPolicy] || {}, null, 2)}
+                                    key={selectedPolicy}
+                                    spellCheck={false}
+                                />
+                                <div className="absolute top-2 right-4 text-xs text-gray-400 pointer-events-none">
+                                    JSON Editor
+                                </div>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-2">
+                                <span className="font-semibold text-yellow-600">Note:</span> Be careful when editing JSON structure. Ensure all quotes and commas are correct.
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Contact Tab */}
+                    {activeTab === 'contact' && (
+                        <div className="bg-white rounded-lg shadow-md p-6 space-y-6 animate-fade-in">
+                            <h3 className="text-lg font-semibold text-primary-900 mb-6 border-b pb-2">Contact Information</h3>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-primary-900 mb-2">Business Address</label>
+                                    <textarea
+                                        rows={3}
+                                        className="input w-full"
+                                        value={advancedSettings.contactInfo?.address || ''}
+                                        onChange={(e) => setAdvancedSettings(prev => ({
+                                            ...prev,
+                                            contactInfo: { ...prev.contactInfo, address: e.target.value }
+                                        }))}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-primary-900 mb-2">Phone Number</label>
+                                    <input
+                                        type="text"
+                                        className="input w-full"
+                                        value={advancedSettings.contactInfo?.phone || ''}
+                                        onChange={(e) => setAdvancedSettings(prev => ({
+                                            ...prev,
+                                            contactInfo: { ...prev.contactInfo, phone: e.target.value }
+                                        }))}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-primary-900 mb-2">Email Address</label>
+                                    <input
+                                        type="email"
+                                        className="input w-full"
+                                        value={advancedSettings.contactInfo?.email || ''}
+                                        onChange={(e) => setAdvancedSettings(prev => ({
+                                            ...prev,
+                                            contactInfo: { ...prev.contactInfo, email: e.target.value }
+                                        }))}
+                                    />
+                                </div>
+
+                                <div className="md:col-span-2 grid grid-cols-3 gap-4 pt-4">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={advancedSettings.contactInfo?.showAddress ?? true}
+                                            onChange={(e) => setAdvancedSettings(prev => ({
+                                                ...prev,
+                                                contactInfo: { ...prev.contactInfo, showAddress: e.target.checked }
+                                            }))}
+                                            className="accent-primary-900"
+                                        />
+                                        <span className="text-sm">Show Address</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={advancedSettings.contactInfo?.showPhone ?? true}
+                                            onChange={(e) => setAdvancedSettings(prev => ({
+                                                ...prev,
+                                                contactInfo: { ...prev.contactInfo, showPhone: e.target.checked }
+                                            }))}
+                                            className="accent-primary-900"
+                                        />
+                                        <span className="text-sm">Show Phone</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={advancedSettings.contactInfo?.showEmail ?? true}
+                                            onChange={(e) => setAdvancedSettings(prev => ({
+                                                ...prev,
+                                                contactInfo: { ...prev.contactInfo, showEmail: e.target.checked }
+                                            }))}
+                                            className="accent-primary-900"
+                                        />
+                                        <span className="text-sm">Show Email</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div className="pt-6 border-t flex justify-end">
+                                <button
+                                    onClick={() => handleSaveAdvanced('contactInfo', advancedSettings.contactInfo)}
+                                    disabled={saving}
+                                    className="btn btn-primary flex items-center gap-2"
+                                >
+                                    <FiSave /> {saving ? 'Saving...' : 'Save Contact Info'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* System Tab */}
+                    {activeTab === 'system' && (
+                        <div className="bg-white rounded-lg shadow-md p-6 space-y-6 animate-fade-in">
+                            <h3 className="text-lg font-semibold text-primary-900 mb-6 border-b pb-2">System Settings</h3>
+
+                            <div className="space-y-6">
+                                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                    <div>
+                                        <h4 className="font-medium text-primary-900">Maintenance Mode</h4>
+                                        <p className="text-sm text-gray-500">Temporarily disable the storefront for visitors.</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only peer"
+                                            checked={advancedSettings.maintenanceMode?.enabled ?? false}
+                                            onChange={(e) => setAdvancedSettings(prev => ({
+                                                ...prev,
+                                                maintenanceMode: { ...prev.maintenanceMode, enabled: e.target.checked }
+                                            }))}
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                                    </label>
+                                </div>
+
+                                {advancedSettings.maintenanceMode?.enabled && (
+                                    <div className="p-4 border rounded-lg animate-fade-in">
+                                        <label className="block text-sm font-medium text-primary-900 mb-2">Maintenance Message</label>
+                                        <textarea
+                                            className="input w-full"
+                                            rows={2}
+                                            value={advancedSettings.maintenanceMode?.message || ''}
+                                            onChange={(e) => setAdvancedSettings(prev => ({
+                                                ...prev,
+                                                maintenanceMode: { ...prev.maintenanceMode, message: e.target.value }
+                                            }))}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="pt-6 border-t flex justify-end">
+                                <button
+                                    onClick={() => handleSaveAdvanced('maintenanceMode', advancedSettings.maintenanceMode)}
+                                    disabled={saving}
+                                    className="btn btn-primary flex items-center gap-2"
+                                >
+                                    <FiSave /> {saving ? 'Saving...' : 'Save System Settings'}
                                 </button>
                             </div>
                         </div>
