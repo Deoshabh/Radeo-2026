@@ -1,10 +1,12 @@
 name: New MCP server
 version: 0.0.1
 schema: v1
+
 mcpServers:
-  - name: New MCP server
+  - name: TestSprite
     command: npx
     args:
       - -y
-      - <your-mcp-server>
-    env: {}
+      - "@testsprite/testsprite-mcp@latest"
+    env:
+      API_KEY: "sk-user-3mOPsFEKcK4d...g5ETTTuFi16gtiOuBYnUw"

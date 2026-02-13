@@ -61,16 +61,15 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [activeBanners.length, nextSlide]);
 
-  const hero = settings.heroSection || {};
-  const trustBadges = (settings.trustBadges || [])
-    .filter((badge) => badge.enabled)
-    .sort((a, b) => (a.order || 0) - (b.order || 0));
+  // Destructure from settings.homeSections
+  const homeSections = settings.homeSections || {};
+  const hero = homeSections.heroSection || {};
   const featuredSection = useMemo(
-    () => settings.featuredProducts || {},
-    [settings.featuredProducts],
+    () => homeSections.featuredProducts || {},
+    [homeSections.featuredProducts],
   );
-  const madeToOrder = settings.homeSections?.madeToOrder || {};
-  const newsletter = settings.homeSections?.newsletter || {};
+  const madeToOrder = homeSections.madeToOrder || {};
+  const newsletter = homeSections.newsletter || {};
 
   useEffect(() => {
     const fetchFeaturedProducts = async () => {

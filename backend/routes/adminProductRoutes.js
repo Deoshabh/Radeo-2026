@@ -9,6 +9,8 @@ const {
   toggleProductFeatured,
   updateProductStatus,
   deleteProduct,
+  bulkDeleteProducts,
+  bulkUpdateStatus,
 } = require("../controllers/adminProductController");
 const { authenticate } = require("../middleware/auth");
 const admin = require("../middleware/admin");
@@ -22,6 +24,12 @@ router.get("/", getAllProducts);
 
 // @route   GET /api/admin/products/:id
 router.get("/:id", getProductById);
+
+// @route   POST /api/admin/products/bulk-delete
+router.post("/bulk-delete", bulkDeleteProducts);
+
+// @route   POST /api/admin/products/bulk-status
+router.post("/bulk-status", bulkUpdateStatus);
 
 // @route   POST /api/admin/products
 router.post("/", createProduct);

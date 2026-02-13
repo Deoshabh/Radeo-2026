@@ -29,6 +29,24 @@ export default function AdminCMSPage() {
 
     const [banners, setBanners] = useState([]);
 
+    // Announcement Bar State
+    const [announcementBar, setAnnouncementBar] = useState({
+        enabled: true,
+        text: '',
+        link: '',
+        backgroundColor: '#10b981',
+        textColor: '#ffffff',
+        dismissible: true
+    });
+
+    // Home Sections State
+    const [homeSections, setHomeSections] = useState({
+        heroSection: {},
+        featuredProducts: {},
+        madeToOrder: {},
+        newsletter: {}
+    });
+
     // Image Upload State
     const [logoPreview, setLogoPreview] = useState([]);
     const [logoFile, setLogoFile] = useState([]);
@@ -55,6 +73,12 @@ export default function AdminCMSPage() {
 
             setBranding(settings.branding || { logo: {}, favicon: {}, siteName: '' });
             setBanners(settings.banners || []);
+            setAnnouncementBar(settings.announcementBar || {
+                enabled: true, text: '', link: '', backgroundColor: '#10b981', textColor: '#ffffff', dismissible: true
+            });
+            setHomeSections(settings.homeSections || {
+                heroSection: {}, featuredProducts: {}, madeToOrder: {}, newsletter: {}
+            });
 
             // Init previews
             if (settings.branding?.logo?.url) {
@@ -132,6 +156,44 @@ export default function AdminCMSPage() {
         } finally {
             setSaving(false);
         }
+    };
+
+    const handleSaveAnnouncement = async () => {
+        try {
+            setSaving(true);
+            await adminAPI.updateSettings({ announcementBar });
+            toast.success('Announcement Bar updated!');
+            refreshSettings();
+        } catch (error) {
+            console.error('Save failed:', error);
+            toast.error('Failed to save announcement bar');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleSaveSections = async () => {
+        try {
+            setSaving(true);
+            await adminAPI.updateSettings({ homeSections });
+            toast.success('Home Sections updated!');
+            refreshSettings();
+        } catch (error) {
+            console.error('Save failed:', error);
+            toast.error('Failed to save sections');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleSectionChange = (section, field, value) => {
+        setHomeSections(prev => ({
+            ...prev,
+            [section]: {
+                ...prev[section],
+                [field]: value
+            }
+        }));
     };
 
     // Banner Management
@@ -242,7 +304,7 @@ export default function AdminCMSPage() {
                                 : 'border-transparent text-gray-500 hover:text-gray-700'
                                 }`}
                         >
-                            <FiLayout className="inline mr-2" /> Branding (Logo & Favicon)
+                            <FiLayout className="inline mr-2" /> Branding
                         </button>
                         <button
                             onClick={() => setActiveTab('banners')}
@@ -252,6 +314,24 @@ export default function AdminCMSPage() {
                                 }`}
                         >
                             <FiImage className="inline mr-2" /> Home Banners
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('announcement')}
+                            className={`px-6 py-4 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'announcement'
+                                ? 'border-primary-900 text-primary-900 bg-primary-50'
+                                : 'border-transparent text-gray-500 hover:text-gray-700'
+                                }`}
+                        >
+                            <span className="inline mr-2">📢</span> Announcement Bar
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('sections')}
+                            className={`px-6 py-4 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'sections'
+                                ? 'border-primary-900 text-primary-900 bg-primary-50'
+                                : 'border-transparent text-gray-500 hover:text-gray-700'
+                                }`}
+                        >
+                            <FiLayout className="inline mr-2" /> Home Sections
                         </button>
                     </div>
 
@@ -416,6 +496,7 @@ export default function AdminCMSPage() {
                                                             type="checkbox"
                                                             checked={banner.isActive}
                                                             onChange={(e) => handleBannerChange(index, 'isActive', e.target.checked)}
+                                                            className="accent-primary-900"
                                                         />
                                                         <span className="text-sm">Active</span>
                                                     </label>
@@ -465,8 +546,279 @@ export default function AdminCMSPage() {
                         </div>
                     )}
 
+                    {/* Announcement Bar Tab */}
+                    {activeTab === 'announcement' && (
+                        <div className="bg-white rounded-lg shadow-md p-6 space-y-6 animate-fade-in">
+                            <h3 className="text-lg font-semibold text-primary-900 mb-4">Announcement Bar Settings</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="md:col-span-2">
+                                    <label className="flex items-center gap-2 cursor-pointer mb-4">
+                                        <input
+                                            type="checkbox"
+                                            checked={announcementBar.enabled}
+                                            onChange={(e) => setAnnouncementBar({ ...announcementBar, enabled: e.target.checked })}
+                                            className="w-5 h-5 accent-primary-900"
+                                        />
+                                        <span className="font-medium text-primary-900">Enable Announcement Bar</span>
+                                    </label>
+                                </div>
+
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-primary-900 mb-2">Announcement Text</label>
+                                    <input
+                                        type="text"
+                                        value={announcementBar.text}
+                                        onChange={(e) => setAnnouncementBar({ ...announcementBar, text: e.target.value })}
+                                        className="input w-full"
+                                        placeholder="e.g. Free shipping on orders over $50!"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-primary-900 mb-2">Link URL (Optional)</label>
+                                    <input
+                                        type="text"
+                                        value={announcementBar.link}
+                                        onChange={(e) => setAnnouncementBar({ ...announcementBar, link: e.target.value })}
+                                        className="input w-full"
+                                        placeholder="e.g. /products"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="flex items-center gap-2 cursor-pointer mt-8">
+                                        <input
+                                            type="checkbox"
+                                            checked={announcementBar.dismissible}
+                                            onChange={(e) => setAnnouncementBar({ ...announcementBar, dismissible: e.target.checked })}
+                                            className="w-4 h-4 accent-primary-900"
+                                        />
+                                        <span className="text-sm text-primary-700">Allow users to dismiss</span>
+                                    </label>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-primary-900 mb-2">Background Color</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="color"
+                                            value={announcementBar.backgroundColor}
+                                            onChange={(e) => setAnnouncementBar({ ...announcementBar, backgroundColor: e.target.value })}
+                                            className="h-10 w-20 p-1 rounded border"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={announcementBar.backgroundColor}
+                                            onChange={(e) => setAnnouncementBar({ ...announcementBar, backgroundColor: e.target.value })}
+                                            className="input w-full uppercase"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-primary-900 mb-2">Text Color</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="color"
+                                            value={announcementBar.textColor}
+                                            onChange={(e) => setAnnouncementBar({ ...announcementBar, textColor: e.target.value })}
+                                            className="h-10 w-20 p-1 rounded border"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={announcementBar.textColor}
+                                            onChange={(e) => setAnnouncementBar({ ...announcementBar, textColor: e.target.value })}
+                                            className="input w-full uppercase"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-4 bg-gray-50 rounded-lg border border-gray-100 mt-6">
+                                <h4 className="text-sm font-semibold text-gray-500 uppercase mb-2">Preview</h4>
+                                <div
+                                    style={{ backgroundColor: announcementBar.backgroundColor, color: announcementBar.textColor }}
+                                    className="p-3 text-center text-sm font-medium rounded"
+                                >
+                                    {announcementBar.text || 'Preview Text'}
+                                </div>
+                            </div>
+
+                            <div className="pt-4 border-t flex justify-end">
+                                <button
+                                    onClick={handleSaveAnnouncement}
+                                    disabled={saving}
+                                    className="btn btn-primary flex items-center gap-2"
+                                >
+                                    <FiSave /> {saving ? 'Saving...' : 'Save Announcement'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Home Sections Tab */}
+                    {activeTab === 'sections' && (
+                        <div className="space-y-6 animate-fade-in">
+                            {/* Hero Section */}
+                            <div className="bg-white rounded-lg shadow-md p-6">
+                                <h3 className="text-lg font-semibold text-primary-900 mb-4 pb-2 border-b">Hero Section</h3>
+                                <div className="space-y-4">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={homeSections.heroSection?.enabled ?? true}
+                                            onChange={(e) => handleSectionChange('heroSection', 'enabled', e.target.checked)}
+                                            className="accent-primary-900"
+                                        />
+                                        <span className="font-medium">Enable Hero Section</span>
+                                    </label>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase">Title</label>
+                                            <input type="text" value={homeSections.heroSection?.title || ''} onChange={(e) => handleSectionChange('heroSection', 'title', e.target.value)} className="input w-full" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase">Subtitle</label>
+                                            <input type="text" value={homeSections.heroSection?.subtitle || ''} onChange={(e) => handleSectionChange('heroSection', 'subtitle', e.target.value)} className="input w-full" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase">Primary Button</label>
+                                            <input type="text" value={homeSections.heroSection?.primaryButtonText || ''} onChange={(e) => handleSectionChange('heroSection', 'primaryButtonText', e.target.value)} className="input w-full mb-1" placeholder="Text" />
+                                            <input type="text" value={homeSections.heroSection?.primaryButtonLink || ''} onChange={(e) => handleSectionChange('heroSection', 'primaryButtonLink', e.target.value)} className="input w-full" placeholder="Link" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase">Secondary Button</label>
+                                            <input type="text" value={homeSections.heroSection?.secondaryButtonText || ''} onChange={(e) => handleSectionChange('heroSection', 'secondaryButtonText', e.target.value)} className="input w-full mb-1" placeholder="Text" />
+                                            <input type="text" value={homeSections.heroSection?.secondaryButtonLink || ''} onChange={(e) => handleSectionChange('heroSection', 'secondaryButtonLink', e.target.value)} className="input w-full" placeholder="Link" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Featured Products */}
+                            <div className="bg-white rounded-lg shadow-md p-6">
+                                <h3 className="text-lg font-semibold text-primary-900 mb-4 pb-2 border-b">Featured Products</h3>
+                                <div className="space-y-4">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={homeSections.featuredProducts?.enabled ?? true}
+                                            onChange={(e) => handleSectionChange('featuredProducts', 'enabled', e.target.checked)}
+                                            className="accent-primary-900"
+                                        />
+                                        <span className="font-medium">Enable Featured Products</span>
+                                    </label>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase">Title</label>
+                                            <input type="text" value={homeSections.featuredProducts?.title || ''} onChange={(e) => handleSectionChange('featuredProducts', 'title', e.target.value)} className="input w-full" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase">Description</label>
+                                            <input type="text" value={homeSections.featuredProducts?.description || ''} onChange={(e) => handleSectionChange('featuredProducts', 'description', e.target.value)} className="input w-full" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase">Selection Strategy</label>
+                                            <select
+                                                value={homeSections.featuredProducts?.productSelection || 'latest'}
+                                                onChange={(e) => handleSectionChange('featuredProducts', 'productSelection', e.target.value)}
+                                                className="input w-full"
+                                            >
+                                                <option value="latest">Latest Products</option>
+                                                <option value="top-rated">Top Rated</option>
+                                                <option value="random">Random Selection</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase">Product Limit</label>
+                                            <input
+                                                type="number"
+                                                min="4" max="24"
+                                                value={homeSections.featuredProducts?.productLimit || 8}
+                                                onChange={(e) => handleSectionChange('featuredProducts', 'productLimit', Number(e.target.value))}
+                                                className="input w-full"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Made To Order */}
+                            <div className="bg-white rounded-lg shadow-md p-6">
+                                <h3 className="text-lg font-semibold text-primary-900 mb-4 pb-2 border-b">Made to Order Section</h3>
+                                <div className="space-y-4">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={homeSections.madeToOrder?.enabled ?? true}
+                                            onChange={(e) => handleSectionChange('madeToOrder', 'enabled', e.target.checked)}
+                                            className="accent-primary-900"
+                                        />
+                                        <span className="font-medium">Enable Section</span>
+                                    </label>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase">Title</label>
+                                            <input type="text" value={homeSections.madeToOrder?.title || ''} onChange={(e) => handleSectionChange('madeToOrder', 'title', e.target.value)} className="input w-full" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase">Description</label>
+                                            <input type="text" value={homeSections.madeToOrder?.description || ''} onChange={(e) => handleSectionChange('madeToOrder', 'description', e.target.value)} className="input w-full" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Newsletter */}
+                            <div className="bg-white rounded-lg shadow-md p-6">
+                                <h3 className="text-lg font-semibold text-primary-900 mb-4 pb-2 border-b">Newsletter Section</h3>
+                                <div className="space-y-4">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={homeSections.newsletter?.enabled ?? true}
+                                            onChange={(e) => handleSectionChange('newsletter', 'enabled', e.target.checked)}
+                                            className="accent-primary-900"
+                                        />
+                                        <span className="font-medium">Enable Newsletter</span>
+                                    </label>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase">Title</label>
+                                            <input type="text" value={homeSections.newsletter?.title || ''} onChange={(e) => handleSectionChange('newsletter', 'title', e.target.value)} className="input w-full" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase">Description</label>
+                                            <input type="text" value={homeSections.newsletter?.description || ''} onChange={(e) => handleSectionChange('newsletter', 'description', e.target.value)} className="input w-full" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase">Button Text</label>
+                                            <input type="text" value={homeSections.newsletter?.buttonText || ''} onChange={(e) => handleSectionChange('newsletter', 'buttonText', e.target.value)} className="input w-full" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="pt-4 border-t flex justify-end">
+                                <button
+                                    onClick={handleSaveSections}
+                                    disabled={saving}
+                                    className="btn btn-primary flex items-center gap-2"
+                                >
+                                    <FiSave /> {saving ? 'Saving...' : 'Save Sections'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                 </div>
             </div>
         </AdminLayout>
+    );
+}
+
+                </div >
+            </div >
+        </AdminLayout >
     );
 }

@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Order = require("../models/Order");
+const { invalidateCache } = require("../utils/cache");
 const Cart = require("../models/Cart");
 const Product = require("../models/Product");
 const Razorpay = require("razorpay");
@@ -250,6 +251,9 @@ exports.createOrder = async (req, res) => {
     } finally {
       session.endSession();
     }
+
+    // Invalidate product cache
+    await invalidateCache("products:*");
 
     // Return created order
     res.status(201).json({
@@ -508,6 +512,9 @@ exports.cancelOrder = async (req, res) => {
     } finally {
       session.endSession();
     }
+
+    // Invalidate product cache
+    await invalidateCache("products:*");
 
     res.json({
       success: true,

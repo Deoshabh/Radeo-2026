@@ -43,16 +43,15 @@ export default function AdminOrdersDashboard() {
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [showShipmentModal, setShowShipmentModal] = useState(false);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [expandedRow, setExpandedRow] = useState(null);
-  const [showContactModal, setShowContactModal] = useState(false);
-  const [selectedOrders, setSelectedOrders] = useState([]);
-  const [showBulkActions, setShowBulkActions] = useState(false);
-  const [showUserHistory, setShowUserHistory] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [limit] = useState(20);
+
+  // Sorting State
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
 
   useEffect(() => {
     if (!loading && (!isAuthenticated || user?.role !== 'admin')) {
@@ -63,9 +62,22 @@ export default function AdminOrdersDashboard() {
   const fetchOrders = async () => {
     try {
       setLoadingOrders(true);
-      const response = await adminAPI.getAllOrders();
-      console.log('📦 Admin Orders:', response.data);
-      setOrders(response.data.orders || []);
+      const params = {
+        page: currentPage,
+        limit,
+        status: filterStatus,
+        search: searchQuery,
+        sortBy,
+        order: sortOrder
+      };
+
+      const response = await adminAPI.getAllOrders(params);
+      const data = response.data;
+
+      setOrders(data.orders || []);
+      setTotalPages(data.totalPages || 1);
+      setTotalOrders(data.totalOrders || 0);
+      setSelectedOrders([]); // Clear selection on new data fetch
     } catch (error) {
       toast.error('Failed to fetch orders');
       console.error(error);
@@ -74,11 +86,20 @@ export default function AdminOrdersDashboard() {
     }
   };
 
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterStatus, sortBy, sortOrder]);
+
+  // Debounced fetch for search and filters
   useEffect(() => {
     if (isAuthenticated && user?.role === 'admin') {
-      fetchOrders();
+      const timeout = setTimeout(() => {
+        fetchOrders();
+      }, 400);
+      return () => clearTimeout(timeout);
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, currentPage, searchQuery, filterStatus, sortBy, sortOrder]);
 
   // Selection handlers
   const toggleOrderSelection = (orderId) => {
@@ -90,10 +111,10 @@ export default function AdminOrdersDashboard() {
   };
 
   const selectAllOrders = () => {
-    if (selectedOrders.length === filteredOrders.length) {
+    if (selectedOrders.length === orders.length) {
       setSelectedOrders([]);
     } else {
-      setSelectedOrders(filteredOrders.map((o) => o._id));
+      setSelectedOrders(orders.map((o) => o._id));
     }
   };
 
@@ -101,20 +122,23 @@ export default function AdminOrdersDashboard() {
     setShowBulkActions(selectedOrders.length > 0);
   }, [selectedOrders]);
 
-  // Filter orders
-  const filteredOrders = orders.filter((order) => {
-    const matchesSearch =
-      order.orderId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.shippingAddress?.fullName
-        ?.toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      order.shipping?.awb_code?.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesFilter =
-      filterStatus === 'all' || order.status === filterStatus;
+  // Handlers for Sort and Page
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('desc');
+    }
+  };
 
-    return matchesSearch && matchesFilter;
-  });
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
+
 
 
 
@@ -134,11 +158,10 @@ export default function AdminOrdersDashboard() {
         {riskAnalysis.risks.map((risk, idx) => (
           <span
             key={idx}
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
-              risk.severity === 'high'
-                ? 'bg-red-100 text-red-700'
-                : 'bg-orange-100 text-orange-700'
-            }`}
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${risk.severity === 'high'
+              ? 'bg-red-100 text-red-700'
+              : 'bg-orange-100 text-orange-700'
+              }`}
             title={risk.message}
           >
             <FiAlertTriangle className="text-xs" />
@@ -193,11 +216,26 @@ export default function AdminOrdersDashboard() {
   };
 
   // CSV Export handler
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
     try {
-      exportOrdersToCSV(filteredOrders, `orders-${new Date().toISOString().split('T')[0]}.csv`);
-      toast.success(`Exported ${filteredOrders.length} orders to CSV`);
+      const toastId = toast.loading('Preparing CSV export...');
+
+      // Fetch all orders matching current filters
+      const response = await adminAPI.getAllOrders({
+        page: 1,
+        limit: 10000, // Large limit to get all
+        status: filterStatus,
+        search: searchQuery,
+        sortBy,
+        order: sortOrder
+      });
+
+      const allOrders = response.data.orders || [];
+
+      exportOrdersToCSV(allOrders, `orders-${new Date().toISOString().split('T')[0]}.csv`);
+      toast.success(`Exported ${allOrders.length} orders to CSV`, { id: toastId });
     } catch (error) {
+      console.error('Export error:', error);
       toast.error('Failed to export orders');
     }
   };
@@ -281,13 +319,13 @@ export default function AdminOrdersDashboard() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Orders Management</h1>
             <p className="text-gray-600 mt-1">
-              {filteredOrders.length} orders
+              {orders.length} orders
               {selectedOrders.length > 0 && ` • ${selectedOrders.length} selected`}
             </p>
           </div>
           <button
             onClick={handleExportCSV}
-            disabled={filteredOrders.length === 0}
+            disabled={orders.length === 0}
             className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FiDownload />
@@ -349,15 +387,18 @@ export default function AdminOrdersDashboard() {
                     <input
                       type="checkbox"
                       checked={
-                        filteredOrders.length > 0 &&
-                        selectedOrders.length === filteredOrders.length
+                        orders.length > 0 &&
+                        selectedOrders.length === orders.length
                       }
                       onChange={selectAllOrders}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Order
+                  <th
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort('createdAt')}
+                  >
+                    Order {sortBy === 'createdAt' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Customer
@@ -371,8 +412,11 @@ export default function AdminOrdersDashboard() {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Age
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Amount
+                  <th
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort('totalAmount')}
+                  >
+                    Amount {sortBy === 'totalAmount' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -380,7 +424,7 @@ export default function AdminOrdersDashboard() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredOrders.map((order) => (
+                {orders.map((order) => (
                   <React.Fragment key={order._id}>
                     <tr className="hover:bg-gray-50">
                       {/* Checkbox */}
@@ -433,17 +477,16 @@ export default function AdminOrdersDashboard() {
                       {/* Status */}
                       <td className="px-4 py-4">
                         <span
-                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            order.status === 'delivered'
-                              ? 'bg-green-100 text-green-800'
-                              : order.status === 'shipped'
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${order.status === 'delivered'
+                            ? 'bg-green-100 text-green-800'
+                            : order.status === 'shipped'
                               ? 'bg-blue-100 text-blue-800'
                               : order.status === 'processing'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : order.status === 'cancelled'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : order.status === 'cancelled'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-gray-100 text-gray-800'
+                            }`}
                         >
                           {order.status}
                         </span>
@@ -560,15 +603,83 @@ export default function AdminOrdersDashboard() {
                   </React.Fragment>
                 ))}
 
-                {filteredOrders.length === 0 && (
+                {orders.length === 0 && (
                   <tr>
                     <td colSpan="9" className="px-4 py-8 text-center text-gray-500">
-                      No orders found
+                      No orders found matching your criteria.
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Pagination Footer */}
+          <div className="border-t border-gray-200 px-4 py-3 bg-gray-50 flex items-center justify-between sm:px-6">
+            <div className="flex-1 flex justify-between sm:hidden">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Showing page <span className="font-medium">{currentPage}</span> of <span className="font-medium">{totalPages}</span>
+                </p>
+              </div>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Previous
+                  </button>
+                  {[...Array(Math.min(5, totalPages))].map((_, idx) => {
+                    // Start page calculation to show window around current page
+                    let p = currentPage - 2 + idx;
+                    if (currentPage < 3) p = idx + 1;
+                    if (currentPage > totalPages - 2) p = totalPages - 4 + idx;
+                    if (totalPages < 5) p = idx + 1;
+
+                    if (p > 0 && p <= totalPages) {
+                      return (
+                        <button
+                          key={p}
+                          onClick={() => handlePageChange(p)}
+                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === p
+                            ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                            }`}
+                        >
+                          {p}
+                        </button>
+                      );
+                    }
+                    return null;
+                  })}
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                </nav>
+              </div>
+            </div>
           </div>
         </div>
       </div>

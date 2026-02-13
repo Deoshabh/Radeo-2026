@@ -1,6 +1,10 @@
 const Order = require("../models/Order");
 const User = require("../models/User");
+const Product = require("../models/Product");
 const { analyzeOrderRisks } = require("../utils/riskDetection");
+const { invalidateCache } = require("../utils/cache");
+
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 exports.getAllOrders = async (req, res) => {
   try {
@@ -8,12 +12,50 @@ exports.getAllOrders = async (req, res) => {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
     const skip = (page - 1) * limit;
 
-    const totalOrders = await Order.countDocuments();
+    const { status, search, sortBy, order } = req.query;
 
-    const orders = await Order.find()
+    const filter = {};
+
+    // Status Filter
+    if (status && status !== 'all') {
+      filter.status = status; // Exact match for status enum
+    }
+
+    // Search Logic (Complex: OrderId OR Shipping Details OR User Details)
+    if (search) {
+      const searchRegex = new RegExp(escapeRegex(search), 'i');
+      
+      // 1. Find matching users first
+      const users = await User.find({
+        $or: [{ name: searchRegex }, { email: searchRegex }],
+      }).select('_id');
+      const userIds = users.map(u => u._id);
+
+      // 2. Construct OR query
+      filter.$or = [
+        { orderId: searchRegex },
+        { 'shippingAddress.fullName': searchRegex },
+        { 'shippingAddress.phone': searchRegex },
+        { 'shipping.awb_code': searchRegex },
+        { 'shipping.trackingId': searchRegex },
+        { user: { $in: userIds } } // Match orders belonging to found users
+      ];
+    }
+
+    // Sorting
+    const sortOptions = {};
+    if (sortBy) {
+      sortOptions[sortBy] = order === 'asc' ? 1 : -1;
+    } else {
+      sortOptions.createdAt = -1; // Default
+    }
+
+    const totalOrders = await Order.countDocuments(filter);
+
+    const orders = await Order.find(filter)
       .populate("user", "name email createdAt")
       .populate("items.product", "name slug category images")
-      .sort({ createdAt: -1 })
+      .sort(sortOptions)
       .skip(skip)
       .limit(limit);
 
@@ -111,6 +153,25 @@ exports.updateOrderStatus = async (req, res) => {
       return res.status(400).json({
         message: `Cannot transition from ${order.status} to ${status}`,
       });
+    }
+
+    // Restore stock if cancelling
+    if (status === "cancelled" && order.status !== "cancelled") {
+      for (const item of order.items) {
+        if (item.product && item.quantity && item.size) {
+          await Product.updateOne(
+            { _id: item.product, "sizes.size": item.size },
+            {
+              $inc: {
+                "sizes.$.stock": item.quantity,
+                stock: item.quantity,
+              },
+            }
+          );
+        }
+      }
+      // Invalidate cache
+      await invalidateCache("products:*");
     }
 
     // Update status
@@ -275,6 +336,22 @@ exports.bulkUpdateStatus = async (req, res) => {
           continue;
         }
 
+        if (status === "cancelled" && order.status !== "cancelled") {
+          for (const item of order.items) {
+            if (item.product && item.quantity && item.size) {
+              await Product.updateOne(
+                { _id: item.product, "sizes.size": item.size },
+                {
+                  $inc: {
+                    "sizes.$.stock": item.quantity,
+                    stock: item.quantity,
+                  },
+                }
+              );
+            }
+          }
+        }
+
         order.status = status;
         await order.save();
 
@@ -285,6 +362,10 @@ exports.bulkUpdateStatus = async (req, res) => {
           reason: error.message,
         });
       }
+    }
+
+    if (status === "cancelled" && results.success.length > 0) {
+      await invalidateCache("products:*");
     }
 
     res.json({

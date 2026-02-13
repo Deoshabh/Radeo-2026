@@ -1,15 +1,43 @@
 export const SITE_SETTINGS_DEFAULTS = {
-  heroSection: {
-    enabled: true,
-    title: 'Step Into',
-    subtitle: 'Timeless Elegance',
-    description:
-      'Discover exquisite handcrafted shoes made with premium materials and timeless craftsmanship. Each pair is a masterpiece designed to elevate your style.',
-    primaryButtonText: 'Explore Collection',
-    primaryButtonLink: '/products',
-    secondaryButtonText: 'Our Story',
-    secondaryButtonLink: '/about',
-    backgroundGradient: 'from-primary-50 via-brand-cream/20 to-primary-100',
+  homeSections: {
+    heroSection: {
+      enabled: true,
+      title: 'Step Into',
+      subtitle: 'Timeless Elegance',
+      description:
+        'Discover exquisite handcrafted shoes made with premium materials and timeless craftsmanship. Each pair is a masterpiece designed to elevate your style.',
+      primaryButtonText: 'Explore Collection',
+      primaryButtonLink: '/products',
+      secondaryButtonText: 'Our Story',
+      secondaryButtonLink: '/about',
+      backgroundGradient: 'from-primary-50 via-brand-cream/20 to-primary-100',
+    },
+    featuredProducts: {
+      enabled: true,
+      title: 'Featured Collection',
+      description:
+        'Explore our handpicked selection of premium shoes crafted for the discerning gentleman.',
+      productLimit: 8,
+      productSelection: 'latest',
+      manualProductIds: [],
+      viewAllButtonText: 'View All Products',
+      viewAllButtonLink: '/products',
+    },
+    madeToOrder: {
+      enabled: true,
+      title: 'Made to Order',
+      description:
+        'All our shoes are crafted to order, ensuring perfect fit and uncompromising quality. Each pair takes 7-10 business days to create.',
+      features: ['Custom Crafted', 'Premium Leather', 'Expert Artisans', '7-10 Days Delivery'],
+    },
+    newsletter: {
+      enabled: true,
+      title: 'Join Our Community',
+      description:
+        'Be the first to know about new collections, exclusive offers, and styling tips.',
+      placeholder: 'Enter your email',
+      buttonText: 'Subscribe',
+    },
   },
   trustBadges: [
     {
@@ -38,34 +66,7 @@ export const SITE_SETTINGS_DEFAULTS = {
       order: 3,
     },
   ],
-  featuredProducts: {
-    enabled: true,
-    title: 'Featured Collection',
-    description:
-      'Explore our handpicked selection of premium shoes crafted for the discerning gentleman.',
-    productLimit: 8,
-    productSelection: 'latest',
-    manualProductIds: [],
-    viewAllButtonText: 'View All Products',
-    viewAllButtonLink: '/products',
-  },
-  homeSections: {
-    madeToOrder: {
-      enabled: true,
-      title: 'Made to Order',
-      description:
-        'All our shoes are crafted to order, ensuring perfect fit and uncompromising quality. Each pair takes 7-10 business days to create.',
-      features: ['Custom Crafted', 'Premium Leather', 'Expert Artisans', '7-10 Days Delivery'],
-    },
-    newsletter: {
-      enabled: true,
-      title: 'Join Our Community',
-      description:
-        'Be the first to know about new collections, exclusive offers, and styling tips.',
-      placeholder: 'Enter your email',
-      buttonText: 'Subscribe',
-    },
-  },
+
   bannerSystem: {
     enabled: true,
     banners: [],

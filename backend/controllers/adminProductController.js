@@ -4,21 +4,52 @@ const { invalidateCache } = require("../utils/cache");
 // @desc    Get all products (admin view)
 // @route   GET /api/admin/products
 // @access  Private/Admin
+// @desc    Get all products (admin view)
+// @route   GET /api/admin/products
+// @access  Private/Admin
 exports.getAllProducts = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const search = req.query.search || "";
+    const category = req.query.category || "";
+    const brand = req.query.brand || "";
+    const stockStatus = req.query.stockStatus || ""; // 'low', 'out'
+    const sortBy = req.query.sortBy || "createdAt";
+    const order = req.query.order === "asc" ? 1 : -1;
 
     const filter = {};
     if (search) {
       filter.name = { $regex: search, $options: "i" };
     }
 
+    if (category && category !== 'all') {
+      filter.category = category.toLowerCase();
+    }
+
+    if (brand && brand !== 'all') {
+      filter.brand = brand;
+    }
+
+    if (req.query.status && req.query.status !== 'all') {
+        filter.isActive = req.query.status === 'active';
+    }
+
+    if (stockStatus) {
+      if (stockStatus === 'low') {
+        filter.stock = { $lte: 10, $gt: 0 };
+      } else if (stockStatus === 'out') {
+        filter.stock = { $lte: 0 };
+      }
+    }
+
+    const sortOptions = {};
+    sortOptions[sortBy] = order;
+
     const total = await Product.countDocuments(filter);
     const skip = (page - 1) * limit;
     const products = await Product.find(filter)
-      .sort({ createdAt: -1 })
+      .sort(sortOptions)
       .skip(skip)
       .limit(limit);
 
@@ -36,6 +67,93 @@ exports.getAllProducts = async (req, res) => {
     });
   } catch (error) {
     console.error("Get all products error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ... (existing getProductById, createProduct, updateProduct, etc.)
+
+// @desc    Bulk delete products
+// @route   POST /api/admin/products/bulk-delete
+// @access  Private/Admin
+exports.bulkDeleteProducts = async (req, res) => {
+  try {
+    const { ids } = req.body; // Array of product IDs
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: "No product IDs provided" });
+    }
+
+    // 1. Find all products to be deleted to get their images
+    const products = await Product.find({ _id: { $in: ids } });
+
+    // 2. Delete images from MinIO
+    const { deleteObject } = require("../utils/minio");
+    let deletedImagesCount = 0;
+
+    for (const product of products) {
+        if (product.images && product.images.length > 0) {
+            for (const image of product.images) {
+                 try {
+                    const objectKey = image.key || (typeof image === 'string' ? image.split('/product-media/')[1] : null);
+                    if (objectKey) {
+                        await deleteObject(objectKey);
+                        deletedImagesCount++;
+                    }
+                 } catch (err) {
+                     console.error(`Failed to delete image for product ${product._id}:`, err);
+                 }
+            }
+        }
+    }
+
+    // 3. Delete products from DB
+    const result = await Product.deleteMany({ _id: { $in: ids } });
+
+    // 4. Invalidate cache
+    await invalidateCache("products:*");
+
+    res.json({
+      message: `Successfully deleted ${result.deletedCount} products and ${deletedImagesCount} images`,
+      deletedCount: result.deletedCount
+    });
+
+  } catch (error) {
+    console.error("Bulk delete products error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// @desc    Bulk update product status
+// @route   POST /api/admin/products/bulk-status
+// @access  Private/Admin
+exports.bulkUpdateStatus = async (req, res) => {
+  try {
+    const { ids, isActive } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: "No product IDs provided" });
+    }
+
+    if (isActive === undefined) {
+        return res.status(400).json({ message: "Status (isActive) is required" });
+    }
+
+    const result = await Product.updateMany(
+      { _id: { $in: ids } },
+      { $set: { isActive: isActive } }
+    );
+
+    // Invalidate cache
+    await invalidateCache("products:*");
+
+    res.json({
+      message: `Successfully updated status for ${result.modifiedCount} products`,
+      modifiedCount: result.modifiedCount
+    });
+
+  } catch (error) {
+    console.error("Bulk update status error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

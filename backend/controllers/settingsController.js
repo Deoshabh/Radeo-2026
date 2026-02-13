@@ -34,7 +34,7 @@ exports.getAllSettings = async (req, res, next) => {
 ===================== */
 exports.updateSettings = async (req, res, next) => {
   try {
-    const { branding, banners } = req.body;
+    const { branding, banners, announcementBar, homeSections } = req.body;
     
     // Validate inputs if necessary
     
@@ -47,9 +47,22 @@ exports.updateSettings = async (req, res, next) => {
     }
     
     if (banners) {
-      // Replace banners array or merge logic? 
       // Simple replacement is easier for reordering/editing list
       settings.banners = banners;
+    }
+
+    if (announcementBar) {
+      settings.announcementBar = { ...settings.announcementBar.toObject(), ...announcementBar };
+    }
+
+    if (homeSections) {
+      // Deep merge for homeSections to avoid overwriting partial updates if needed, 
+      // but usually the admin sends the whole object for a section.
+      // Let's assume we replace the specific sections provided.
+      if (homeSections.heroSection) settings.homeSections.heroSection = { ...settings.homeSections.heroSection.toObject(), ...homeSections.heroSection };
+      if (homeSections.featuredProducts) settings.homeSections.featuredProducts = { ...settings.homeSections.featuredProducts.toObject(), ...homeSections.featuredProducts };
+      if (homeSections.madeToOrder) settings.homeSections.madeToOrder = { ...settings.homeSections.madeToOrder.toObject(), ...homeSections.madeToOrder };
+      if (homeSections.newsletter) settings.homeSections.newsletter = { ...settings.homeSections.newsletter.toObject(), ...homeSections.newsletter };
     }
     
     await settings.save();
