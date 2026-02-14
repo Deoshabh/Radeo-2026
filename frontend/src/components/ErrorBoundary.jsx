@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { FiAlertTriangle, FiRefreshCw } from 'react-icons/fi';
-import Honeybadger from '@honeybadger-io/nextjs';
+import Honeybadger from '@honeybadger-io/react';
 
 // Initialize Honeybadger
 if (typeof window !== 'undefined') {
