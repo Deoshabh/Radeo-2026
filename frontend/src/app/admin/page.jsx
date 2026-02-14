@@ -1,24 +1,91 @@
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import AdminLayout from '@/components/AdminLayout';
 import AnimatedEntry from '@/components/ui/AnimatedEntry';
 import RevenueChart from '@/components/admin/charts/RevenueChart';
 import SalesCategoryPieChart from '@/components/admin/charts/SalesCategoryPieChart';
-
-// ... imports remain the same
+import { useAuth } from '@/context/AuthContext';
+import { adminAPI } from '@/utils/api';
+import { FiDollarSign, FiShoppingBag, FiUsers, FiBox, FiSettings, FiLayout, FiTruck } from 'react-icons/fi';
 
 export default function AdminDashboard() {
-  // ... (hooks remain)
+  const { user } = useAuth();
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // ... (realtime setup)
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await adminAPI.getAdminStats();
+        setStats(response.data);
+      } catch (error) {
+        console.error('Failed to fetch admin stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // ... (auth checks)
+    fetchStats();
+  }, []);
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+    }).format(amount || 0);
+  };
 
   const adminCards = [
-    // ... (cards remain the same)
+    {
+      title: 'Total Revenue',
+      value: loading ? '...' : formatCurrency(stats?.revenue?.total),
+      icon: FiDollarSign,
+      color: 'bg-green-500',
+      link: '/admin/orders'
+    },
+    {
+      title: 'Total Orders',
+      value: loading ? '...' : (stats?.orders?.total || 0),
+      icon: FiShoppingBag,
+      color: 'bg-blue-500',
+      link: '/admin/orders'
+    },
+    {
+      title: 'Products',
+      value: loading ? '...' : (stats?.products?.total || 0),
+      icon: FiBox,
+      color: 'bg-indigo-500',
+      link: '/admin/products'
+    },
+    {
+      title: 'Customers',
+      value: loading ? '...' : (stats?.users?.customers || 0),
+      icon: FiUsers,
+      color: 'bg-purple-500',
+      link: '/admin/users'
+    }
   ];
 
   const quickLinks = [
-    // ... (links remain the same)
+    {
+      title: 'Add New Product',
+      description: 'Create a new product listing',
+      icon: FiBox,
+      href: '/admin/products/new'
+    },
+    {
+      title: 'View Orders',
+      description: 'Manage customer orders',
+      icon: FiTruck,
+      href: '/admin/orders'
+    },
+    {
+      title: 'Visual Editor',
+      description: 'Customize homepage layout',
+      icon: FiLayout,
+      href: '/admin/visual-editor'
+    }
   ];
 
   return (
