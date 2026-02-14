@@ -9,10 +9,6 @@ export default function Product360Viewer({ images = [], aspectRatio = 'aspect-sq
     const startX = useRef(0);
     const containerRef = useRef(null);
 
-    // If no 360 images, don't render or render placeholder? 
-    // Should be handled by parent, but safe check here.
-    if (!images || images.length === 0) return null;
-
     const handleMouseDown = (e) => {
         setIsDragging(true);
         startX.current = e.clientX;
@@ -68,6 +64,10 @@ export default function Product360Viewer({ images = [], aspectRatio = 'aspect-sq
             window.removeEventListener('mouseup', onMouseUp);
         };
     }, []);
+
+    // If no 360 images, don't render or render placeholder? 
+    // Should be handled by parent, but safe check here.
+    if (!images || images.length === 0) return null;
 
     return (
         <div

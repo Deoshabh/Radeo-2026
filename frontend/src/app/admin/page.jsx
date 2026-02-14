@@ -1,3 +1,5 @@
+import Link from 'next/link';
+import AdminLayout from '@/components/admin/AdminLayout';
 import AnimatedEntry from '@/components/ui/AnimatedEntry';
 import RevenueChart from '@/components/admin/charts/RevenueChart';
 import SalesCategoryPieChart from '@/components/admin/charts/SalesCategoryPieChart';

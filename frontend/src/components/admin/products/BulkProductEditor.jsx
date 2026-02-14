@@ -217,7 +217,7 @@ export default function BulkProductEditor() {
 
                 {filteredProducts.length === 0 && (
                     <div className="p-8 text-center text-gray-500">
-                        No products found matching "{search}"
+                        No products found matching &quot;{search}&quot;
                     </div>
                 )}
             </div>
