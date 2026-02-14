@@ -8,6 +8,7 @@ import { useWishlist } from '@/context/WishlistContext';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import anime from 'animejs';
 
 // Tiny 1x1 neutral blur placeholder (avoids layout shift)
 const BLUR_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN89OhRPQAIhwMwaKSvfQAAAABJRU5ErkJggg==';
@@ -18,10 +19,50 @@ export default function ProductCard({ product, priority = false }) {
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { isAuthenticated } = useAuth();
 
-  const categoryLabel =
-    typeof product.category === 'object'
-      ? product.category?.name
-      : product.category;
+  typeof product.category === 'object'
+    ? product.category?.name
+    : product.category;
+
+  const flyToCart = (e) => {
+    try {
+      const card = e.currentTarget.closest('.card');
+      const img = card?.querySelector('img');
+      const cartIcon = document.getElementById('cart-icon-container');
+
+      if (!img || !cartIcon) return;
+
+      const imgRect = img.getBoundingClientRect();
+      const cartRect = cartIcon.getBoundingClientRect();
+
+      const clone = img.cloneNode();
+      clone.style.position = 'fixed';
+      clone.style.left = `${imgRect.left}px`;
+      clone.style.top = `${imgRect.top}px`;
+      clone.style.width = `${imgRect.width}px`;
+      clone.style.height = `${imgRect.height}px`;
+      clone.style.zIndex = '9999';
+      clone.style.borderRadius = '50%';
+      clone.style.opacity = '0.8';
+      clone.style.pointerEvents = 'none';
+      document.body.appendChild(clone);
+
+      anime({
+        targets: clone,
+        left: cartRect.left + cartRect.width / 2 - 20,
+        top: cartRect.top + cartRect.height / 2 - 20,
+        width: 40,
+        height: 40,
+        opacity: [0.8, 0],
+        duration: 800,
+        easing: 'cubicBezier(.5, .05, .1, .3)',
+        complete: () => {
+          clone.remove();
+        }
+      });
+    } catch (error) {
+      console.error("Animation error:", error);
+    }
+  };
 
   const handleAddToCart = async (e) => {
     e.preventDefault();
@@ -41,6 +82,10 @@ export default function ProductCard({ product, priority = false }) {
     // Add first available size - handle both string and object formats
     const firstSize =
       typeof product.sizes[0] === 'object' ? product.sizes[0].size : product.sizes[0];
+
+    // Trigger animation before async add to feel instant
+    flyToCart(e);
+
     const result = await addToCart(product._id, firstSize);
     return result.success;
   };

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import anime from 'animejs';
 import AdminLayout from '@/components/AdminLayout';
 import AnimatedEntry from '@/components/ui/AnimatedEntry';
 import RevenueChart from '@/components/admin/charts/RevenueChart';
@@ -36,6 +37,29 @@ export default function AdminDashboard() {
       currency: 'USD',
       minimumFractionDigits: 0,
     }).format(amount || 0);
+  };
+
+  const AnimeCounter = ({ value, format = (v) => v }) => {
+    const nodeRef = useRef(null);
+
+    useEffect(() => {
+      if (!nodeRef.current) return;
+
+      const controls = anime({
+        targets: nodeRef.current,
+        innerHTML: [0, value],
+        round: 1,
+        easing: 'easeOutExpo',
+        duration: 2000,
+        update: function (anim) {
+          nodeRef.current.innerHTML = format(anim.animations[0].currentValue);
+        }
+      });
+
+      return () => controls.pause();
+    }, [value, format]);
+
+    return <span ref={nodeRef}>0</span>;
   };
 
   const adminCards = [
@@ -113,7 +137,13 @@ export default function AdminDashboard() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-primary-600 text-sm mb-1">{card.title}</p>
-                      <p className="text-2xl font-bold text-primary-900">{card.value}</p>
+                      <p className="text-2xl font-bold text-primary-900">
+                        {loading ? '...' : (
+                          card.title === 'Total Revenue' ?
+                            <AnimeCounter value={stats?.revenue?.total || 0} format={formatCurrency} /> :
+                            <AnimeCounter value={parseInt(card.value) || 0} />
+                        )}
+                      </p>
                     </div>
                     <div className={`${card.color} p-3 rounded-lg`}>
                       <Icon className="w-6 h-6 text-white" />

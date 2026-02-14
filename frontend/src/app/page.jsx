@@ -8,6 +8,9 @@ import { JsonLd, generateWebsiteJsonLd, generateOrganizationJsonLd } from '@/uti
 import { getIconComponent } from '@/utils/iconMapper';
 import { SITE_SETTINGS_DEFAULTS } from '@/constants/siteSettingsDefaults';
 
+import HeroAnimate from '@/components/ui/HeroAnimate';
+import ScrollReveal from '@/components/ui/ScrollReveal';
+
 // Force dynamic rendering since we rely on external API data that changes
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -83,25 +86,24 @@ const HeroSection = ({ banners, heroSettings }) => {
     // A Client Component can hydrate this into a full carousel.
     const banner = activeBanners[0];
     return (
-      <section className="relative bg-primary-900 overflow-hidden h-[500px] lg:h-[600px]">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${banner.imageUrl || banner.image})` }}
-        >
-          <div className="absolute inset-0 bg-black/40" />
-        </div>
-        <div className="relative z-10 container-custom h-full flex items-center">
+      <HeroAnimate
+        backgroundUrl={banner.imageUrl || banner.image}
+        className="h-[500px] lg:h-[600px] flex items-center"
+      >
+        <div className="container-custom">
           <div className="max-w-2xl text-white">
             <h2 className="text-5xl lg:text-7xl font-bold mb-4 leading-tight">{banner.title}</h2>
             {banner.subtitle && <p className="text-xl text-white/90 mb-8">{banner.subtitle}</p>}
             {banner.link && (
-              <Link href={banner.link} className="btn bg-white text-primary-900 px-8 py-3 text-lg hover:bg-brand-brown hover:text-white border-none">
-                {banner.buttonText || 'Shop Now'} <FiArrowRight className="inline ml-2" />
-              </Link>
+              <div className="inline-block">
+                <Link href={banner.link} className="btn bg-white text-primary-900 px-8 py-3 text-lg hover:bg-brand-brown hover:text-white border-none">
+                  {banner.buttonText || 'Shop Now'} <FiArrowRight className="inline ml-2" />
+                </Link>
+              </div>
             )}
           </div>
         </div>
-      </section>
+      </HeroAnimate>
     );
   }
 
@@ -151,69 +153,75 @@ export default async function Home() {
 
       {/* Trust Badges */}
       {settings.trustBadges?.length > 0 && (
-        <section className="section-padding bg-white">
-          <div className="container-custom">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {settings.trustBadges.map(badge => {
-                const Icon = getIconComponent(badge.icon);
-                return (
-                  <div key={badge.id} className="text-center p-6">
-                    <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Icon className="w-8 h-8 text-brand-brown" />
+        <ScrollReveal>
+          <section className="section-padding bg-white">
+            <div className="container-custom">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {settings.trustBadges.map(badge => {
+                  const Icon = getIconComponent(badge.icon);
+                  return (
+                    <div key={badge.id} className="text-center p-6">
+                      <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Icon className="w-8 h-8 text-brand-brown" />
+                      </div>
+                      <h3 className="font-serif text-xl font-semibold mb-2">{badge.title}</h3>
+                      <p className="text-primary-600">{badge.description}</p>
                     </div>
-                    <h3 className="font-serif text-xl font-semibold mb-2">{badge.title}</h3>
-                    <p className="text-primary-600">{badge.description}</p>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </ScrollReveal>
       )}
 
       {/* Featured Products */}
       {featuredSection.enabled && (
-        <section className="section-padding bg-primary-50">
-          <div className="container-custom">
-            <div className="text-center mb-12">
-              <h2 className="font-serif text-4xl font-bold text-primary-900 mb-4">{featuredSection.title}</h2>
-              <p className="text-lg text-primary-600 max-w-2xl mx-auto">{featuredSection.description}</p>
+        <ScrollReveal delay={200}>
+          <section className="section-padding bg-primary-50">
+            <div className="container-custom">
+              <div className="text-center mb-12">
+                <h2 className="font-serif text-4xl font-bold text-primary-900 mb-4">{featuredSection.title}</h2>
+                <p className="text-lg text-primary-600 max-w-2xl mx-auto">{featuredSection.description}</p>
+              </div>
+
+              {products.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {products.map((product, idx) => (
+                    <ProductCard key={product._id} product={product} priority={idx < 4} />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-primary-600">No products available.</p>
+              )}
+
+              {featuredSection.viewAllButtonLink && (
+                <div className="text-center mt-12">
+                  <Link href={featuredSection.viewAllButtonLink} className="btn btn-primary">
+                    {featuredSection.viewAllButtonText} <FiArrowRight className="ml-2 inline" />
+                  </Link>
+                </div>
+              )}
             </div>
-
-            {products.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {products.map((product, idx) => (
-                  <ProductCard key={product._id} product={product} priority={idx < 4} />
-                ))}
-              </div>
-            ) : (
-              <p className="text-center text-primary-600">No products available.</p>
-            )}
-
-            {featuredSection.viewAllButtonLink && (
-              <div className="text-center mt-12">
-                <Link href={featuredSection.viewAllButtonLink} className="btn btn-primary">
-                  {featuredSection.viewAllButtonText} <FiArrowRight className="ml-2 inline" />
-                </Link>
-              </div>
-            )}
-          </div>
-        </section>
+          </section>
+        </ScrollReveal>
       )}
 
       {/* Made to Order */}
       {settings.homeSections?.madeToOrder?.enabled && (
-        <section className="section-padding bg-white text-center">
-          <div className="container-custom max-w-4xl">
-            <h2 className="font-serif text-4xl font-bold text-primary-900 mb-6">{settings.homeSections.madeToOrder.title}</h2>
-            <p className="text-lg text-primary-600 mb-8">{settings.homeSections.madeToOrder.description}</p>
-            <div className="flex flex-wrap justify-center gap-4 text-sm text-primary-600">
-              {settings.homeSections.madeToOrder.features.map(f => (
-                <span key={f} className="bg-primary-50 px-3 py-1 rounded-full">{f}</span>
-              ))}
+        <ScrollReveal delay={100}>
+          <section className="section-padding bg-white text-center">
+            <div className="container-custom max-w-4xl">
+              <h2 className="font-serif text-4xl font-bold text-primary-900 mb-6">{settings.homeSections.madeToOrder.title}</h2>
+              <p className="text-lg text-primary-600 mb-8">{settings.homeSections.madeToOrder.description}</p>
+              <div className="flex flex-wrap justify-center gap-4 text-sm text-primary-600">
+                {settings.homeSections.madeToOrder.features.map(f => (
+                  <span key={f} className="bg-primary-50 px-3 py-1 rounded-full">{f}</span>
+                ))}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </ScrollReveal>
       )}
     </>
   );

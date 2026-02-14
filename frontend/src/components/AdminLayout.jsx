@@ -1,9 +1,10 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
+import anime from 'animejs';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FiGrid, FiPackage, FiShoppingBag, FiUsers, FiTag, FiPercent, FiStar, FiEdit3, FiLayout, FiArrowLeft } from 'react-icons/fi';
-
 import { useRouter } from 'next/navigation';
 import { AdminProvider, useAdmin } from '@/context/AdminContext';
 import AdminCommandPalette from '@/components/admin/AdminCommandPalette';
@@ -53,6 +54,52 @@ const MobileAdminLink = ({ href, active, icon: Icon, label, className }) => {
       <Icon className="w-4 h-4" />
       <span className="text-sm">{label}</span>
     </a>
+  );
+};
+
+const Sidebar = ({ navItems, isActive }) => {
+  const sidebarRef = useRef(null);
+
+  useEffect(() => {
+    if (sidebarRef.current) {
+      anime({
+        targets: sidebarRef.current.children,
+        translateX: [-20, 0],
+        opacity: [0, 1],
+        delay: anime.stagger(50),
+        easing: 'easeOutQuad',
+        duration: 400
+      });
+    }
+  }, []);
+
+  return (
+    <aside className="hidden lg:block w-64 bg-white shadow-md fixed left-0 top-[80px] bottom-0 overflow-y-auto">
+      <div className="p-4 border-b border-primary-200">
+        <h2 className="text-xl font-bold text-primary-900">Admin Panel</h2>
+      </div>
+      <nav className="p-4">
+        <ul ref={sidebarRef} className="space-y-2">
+          {navItems.map((item) => {
+            const active = isActive(item.href, item.exact);
+            return (
+              <li key={item.href} className="opacity-0">
+                <AdminLink
+                  href={item.href}
+                  active={active}
+                  icon={item.icon}
+                  label={item.label}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors cursor-pointer ${active
+                    ? 'bg-primary-900 text-white'
+                    : 'text-primary-700 hover:bg-primary-100'
+                    }`}
+                />
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    </aside>
   );
 };
 
@@ -117,32 +164,7 @@ function AdminLayoutContent({ children }) {
 
       <div className="flex">
         {/* Sidebar - Hidden on mobile, visible on desktop */}
-        <aside className="hidden lg:block w-64 bg-white shadow-md fixed left-0 top-[80px] bottom-0 overflow-y-auto">
-          <div className="p-4 border-b border-primary-200">
-            <h2 className="text-xl font-bold text-primary-900">Admin Panel</h2>
-          </div>
-          <nav className="p-4">
-            <ul className="space-y-2">
-              {navItems.map((item) => {
-                const active = isActive(item.href, item.exact);
-                return (
-                  <li key={item.href}>
-                    <AdminLink
-                      href={item.href}
-                      active={active}
-                      icon={item.icon}
-                      label={item.label}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors cursor-pointer ${active
-                        ? 'bg-primary-900 text-white'
-                        : 'text-primary-700 hover:bg-primary-100'
-                        }`}
-                    />
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
-        </aside>
+        <Sidebar navItems={navItems} isActive={isActive} />
 
         {/* Mobile Navigation - Horizontal scroll on mobile */}
         <div className="lg:hidden fixed left-0 right-0 top-[80px] bg-white shadow-md z-40 overflow-x-auto">
