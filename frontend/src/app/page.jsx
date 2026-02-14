@@ -19,7 +19,7 @@ export const revalidate = 0;
 
 async function getSiteSettings() {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/settings/public`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/public`, {
       cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
@@ -41,12 +41,12 @@ async function getSiteSettings() {
 
 async function getFeaturedProducts(limit = 8, selection = 'latest', manualIds = []) {
   try {
-    let url = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/products?limit=${limit}`;
+    let url = `${process.env.NEXT_PUBLIC_API_URL}/products?limit=${limit}`;
 
     if (selection === 'top-rated') {
-      url = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/products/top-rated?limit=${limit}`;
+      url = `${process.env.NEXT_PUBLIC_API_URL}/products/top-rated?limit=${limit}`;
     } else if (selection === 'manual' && manualIds.length > 0) {
-      url = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/products?ids=${manualIds.join(',')}`;
+      url = `${process.env.NEXT_PUBLIC_API_URL}/products?ids=${manualIds.join(',')}`;
     }
 
     const res = await fetch(url, { cache: 'no-store' }); // Ensure fresh products

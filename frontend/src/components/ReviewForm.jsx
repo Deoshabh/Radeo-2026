@@ -16,7 +16,7 @@ export default function ReviewForm({ productId, onReviewSubmitted, onCancel }) {
 
   const handlePhotoUpload = (e) => {
     const files = Array.from(e.target.files);
-    
+
     // Check total (existing + new)
     if (photoFiles.length + files.length > 2) {
       toast.error('Maximum 2 photos allowed per review');
@@ -26,7 +26,7 @@ export default function ReviewForm({ productId, onReviewSubmitted, onCancel }) {
     // Validate file types
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     const invalidFiles = files.filter(file => !validTypes.includes(file.type.toLowerCase()));
-    
+
     if (invalidFiles.length > 0) {
       toast.error('Only JPEG, PNG, and WebP images are allowed');
       return;
@@ -41,7 +41,7 @@ export default function ReviewForm({ productId, onReviewSubmitted, onCancel }) {
 
     // Add files and create preview URLs
     setPhotoFiles(prev => [...prev, ...files]);
-    
+
     files.forEach(file => {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -76,20 +76,20 @@ export default function ReviewForm({ productId, onReviewSubmitted, onCancel }) {
 
     try {
       setSubmitting(true);
-      
+
       // Create FormData for multipart/form-data request
       const formData = new FormData();
       formData.append('rating', rating);
       formData.append('title', title);
       formData.append('comment', comment);
-      
+
       // Append photo files (not base64)
       photoFiles.forEach((file) => {
         formData.append('photos', file);
       });
 
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${API_URL}/api/v1/products/${productId}/reviews`, {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
+      const response = await fetch(`${API_URL}/products/${productId}/reviews`, {
         method: 'POST',
         credentials: 'include',
         body: formData, // Don't set Content-Type header - browser will set it with boundary
@@ -102,14 +102,14 @@ export default function ReviewForm({ productId, onReviewSubmitted, onCancel }) {
       }
 
       toast.success('Review submitted successfully!');
-      
+
       // Reset form
       setRating(0);
       setTitle('');
       setComment('');
       setPhotoFiles([]);
       setPhotoPreviews([]);
-      
+
       if (onReviewSubmitted) {
         onReviewSubmitted(data.review);
       }
@@ -218,7 +218,7 @@ export default function ReviewForm({ productId, onReviewSubmitted, onCancel }) {
               ))}
             </div>
           )}
-          
+
           {photoFiles.length < 2 && (
             <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-primary-300 rounded-lg cursor-pointer hover:border-brand-brown transition-colors">
               <FiCamera className="text-primary-500" />
