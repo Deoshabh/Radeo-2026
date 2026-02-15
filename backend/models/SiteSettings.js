@@ -89,7 +89,7 @@ const siteSettingsSchema = new mongoose.Schema(
     // Singleton pattern enforcement
     isDefault: { type: Boolean, default: true, unique: true },
   },
-  { timestamps: true },
+  { timestamps: true, strict: false },
 );
 
 // Ensure only one document exists
