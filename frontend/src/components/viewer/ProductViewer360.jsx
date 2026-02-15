@@ -3,7 +3,7 @@ import { use360Viewer } from '@/hooks/use360Viewer';
 // Hotspots would be implemented here
 
 export default function ProductViewer360({
-    frames = [],
+    images = [],
     sensitivity = 5,
     autoRotate = false,
     className = ""
@@ -18,7 +18,7 @@ export default function ProductViewer360({
         handleDragEnd,
         isDragging
     } = use360Viewer({
-        frames,
+        images,
         sensitivity,
         autoRotate
     });
@@ -46,7 +46,7 @@ export default function ProductViewer360({
         img.src = currentImageSrc;
     }, [currentImageSrc]);
 
-    if (!frames || frames.length === 0) {
+    if (!images || images.length === 0) {
         return <div className="w-full h-96 bg-gray-100 flex items-center justify-center text-gray-400">No frames loaded</div>;
     }
 
