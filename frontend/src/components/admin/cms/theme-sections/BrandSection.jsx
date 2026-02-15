@@ -1,9 +1,7 @@
 
 import React from 'react';
-import { FiImage, FiDroplet } from 'react-icons/fi';
+import React from 'react';
 import ImageUploader from '../ImageUploader';
-import { HexColorPicker } from 'react-colorful';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'; // Assuming shadcn/ui or simple custom popover
 
 // Simple color picker component if not available globally
 const ColorInput = ({ label, value, onChange }) => {
