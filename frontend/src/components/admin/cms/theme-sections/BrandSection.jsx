@@ -1,6 +1,5 @@
 
 import React from 'react';
-import React from 'react';
 import ImageUploader from '../ImageUploader';
 
 // Simple color picker component if not available globally
