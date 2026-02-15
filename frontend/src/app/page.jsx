@@ -1,11 +1,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import ProductCard from '@/components/ProductCard';
-import { FiArrowRight } from 'react-icons/fi';
-import { ProductCardSkeleton } from '@/components/LoadingSpinner';
 import { JsonLd, generateWebsiteJsonLd, generateOrganizationJsonLd } from '@/utils/seo';
-import { getIconComponent } from '@/utils/iconMapper';
 import { SITE_SETTINGS_DEFAULTS } from '@/constants/siteSettingsDefaults';
 
 import HeroAnimate from '@/components/ui/HeroAnimate';
