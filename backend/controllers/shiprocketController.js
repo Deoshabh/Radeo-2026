@@ -1,5 +1,8 @@
 const Order = require("../models/Order");
 const shiprocketService = require("../utils/shiprocket");
+const {
+  reconcileActiveShipments,
+} = require("../services/shiprocketReconciliationService");
 
 const sendShiprocketError = (res, error, fallbackMessage) => {
   const statusCode = error.statusCode || error.response?.status || 500;
@@ -9,6 +12,66 @@ const sendShiprocketError = (res, error, fallbackMessage) => {
     error: error.details || error.response?.data || error.message,
     code: error.code,
   });
+};
+
+const resolveOrderStatusFromShiprocket = (statusValue, shipmentStatusId) => {
+  const normalizedStatus = String(statusValue || "").toUpperCase();
+
+  if (
+    normalizedStatus.includes("CANCEL") ||
+    normalizedStatus.includes("RTO") ||
+    normalizedStatus.includes("LOST") ||
+    normalizedStatus.includes("DAMAGED")
+  ) {
+    return "cancelled";
+  }
+
+  if (normalizedStatus.includes("DELIVERED")) {
+    return "delivered";
+  }
+
+  if (
+    normalizedStatus.includes("OUT FOR DELIVERY") ||
+    normalizedStatus.includes("IN TRANSIT") ||
+    normalizedStatus.includes("SHIPPED")
+  ) {
+    return "shipped";
+  }
+
+  if (
+    normalizedStatus.includes("PICKED UP") ||
+    normalizedStatus.includes("AWB") ||
+    normalizedStatus.includes("PICKUP")
+  ) {
+    return "processing";
+  }
+
+  // Fallback for numeric shipment status IDs when status text is missing
+  if (shipmentStatusId === 7) return "delivered";
+  if ([2, 3, 4, 5, 6, 17, 18, 19, 20, 21, 22, 42].includes(Number(shipmentStatusId))) {
+    return "shipped";
+  }
+  if ([8, 9, 10, 11, 12, 13, 14, 15, 16].includes(Number(shipmentStatusId))) {
+    return "cancelled";
+  }
+
+  return null;
+};
+
+const toShiprocketRupees = (amount) => {
+  const value = Number(amount);
+
+  if (!Number.isFinite(value) || value <= 0) {
+    return 0;
+  }
+
+  // Some historical records are stored in paise/cents (x100), while newer ones are in rupees.
+  // Convert only when value strongly looks like paise/cents.
+  if (Number.isInteger(value) && value >= 10000 && value % 100 === 0) {
+    return value / 100;
+  }
+
+  return value;
 };
 
 /**
@@ -78,7 +141,7 @@ exports.createShipment = async (req, res) => {
       name: item.name,
       sku: item.product?.toString() || "SKU",
       units: item.quantity,
-      selling_price: (item.price / 100).toString(), // Convert from cents to rupees
+      selling_price: toShiprocketRupees(item.price).toFixed(2),
       discount: "",
       tax: "",
       hsn: "",
@@ -102,7 +165,7 @@ exports.createShipment = async (req, res) => {
       billing_phone: order.shippingAddress.phone,
       order_items: orderItems,
       payment_method: order.payment.method === "cod" ? "COD" : "Prepaid",
-      sub_total: (order.subtotal / 100).toFixed(2), // Convert from cents to rupees
+      sub_total: toShiprocketRupees(order.subtotal).toFixed(2),
       length: dimensions?.length || 10,
       breadth: dimensions?.breadth || 10,
       height: dimensions?.height || 10,
@@ -222,8 +285,28 @@ exports.trackShipment = async (req, res) => {
 
     // Update order with latest tracking info
     if (trackingData.tracking_data) {
-      order.shipping.current_status =
+      const latestStatus =
+        trackingData.tracking_data.current_status ||
+        trackingData.tracking_data.shipment_track?.[0]?.current_status ||
         trackingData.tracking_data.shipment_status;
+
+      order.shipping.current_status = latestStatus;
+
+      const trackedAwb =
+        trackingData.tracking_data.shipment_track?.[0]?.awb_code ||
+        trackingData.tracking_data.awb_code;
+      if (trackedAwb && !order.shipping.awb_code) {
+        order.shipping.awb_code = trackedAwb;
+      }
+
+      const mappedOrderStatus = resolveOrderStatusFromShiprocket(
+        latestStatus,
+        trackingData.tracking_data.shipment_status,
+      );
+      if (mappedOrderStatus && mappedOrderStatus !== order.status) {
+        order.status = mappedOrderStatus;
+      }
+
       order.shipping.last_tracking_update = new Date();
       await order.save();
     }
@@ -298,6 +381,29 @@ exports.getShiprocketHealth = async (req, res) => {
   } catch (error) {
     console.error("Shiprocket health check error:", error);
     return sendShiprocketError(res, error, "Shiprocket health check failed");
+  }
+};
+
+/**
+ * Trigger Shiprocket reconciliation manually
+ * POST /api/admin/shiprocket/reconcile
+ */
+exports.triggerShiprocketReconciliation = async (_req, res) => {
+  try {
+    const summary = await reconcileActiveShipments();
+
+    return res.json({
+      success: true,
+      message: "Shiprocket reconciliation completed",
+      data: summary,
+    });
+  } catch (error) {
+    console.error("Trigger Shiprocket reconciliation error:", error);
+    return sendShiprocketError(
+      res,
+      error,
+      "Failed to run Shiprocket reconciliation",
+    );
   }
 };
 

@@ -35,6 +35,7 @@ import {
   FiCheckCircle,
   FiX,
   FiDownload,
+  FiRefreshCw,
 } from 'react-icons/fi';
 
 export default function AdminOrdersDashboard() {
@@ -66,6 +67,7 @@ export default function AdminOrdersDashboard() {
   const [showUserHistory, setShowUserHistory] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [expandedRow, setExpandedRow] = useState(null);
+  const [syncingShiprocket, setSyncingShiprocket] = useState(false);
 
   useEffect(() => {
     if (!loading && (!isAuthenticated || user?.role !== 'admin')) {
@@ -206,9 +208,17 @@ export default function AdminOrdersDashboard() {
     toast.success('Opening label...');
   };
 
-  const handleViewTracking = (order) => {
-    setSelectedOrder(order);
-    setExpandedRow(expandedRow === order._id ? null : order._id);
+  const handleViewTracking = async (order) => {
+    try {
+      await adminAPI.trackShipment(order._id);
+      await fetchOrders();
+      toast.success('Tracking synced from Shiprocket');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to sync tracking from Shiprocket');
+    } finally {
+      setSelectedOrder(order);
+      setExpandedRow(expandedRow === order._id ? null : order._id);
+    }
   };
 
   const handleViewAddress = (order) => {
@@ -251,6 +261,22 @@ export default function AdminOrdersDashboard() {
     } catch (error) {
       console.error('Export error:', error);
       toast.error('Failed to export orders');
+    }
+  };
+
+  const handleRunShiprocketSync = async () => {
+    try {
+      setSyncingShiprocket(true);
+      const response = await adminAPI.triggerShiprocketReconciliation();
+      const summary = response.data?.data || {};
+      await fetchOrders();
+      toast.success(
+        `Sync done: ${summary.updated || 0} updated, ${summary.failed || 0} failed`,
+      );
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to run Shiprocket sync');
+    } finally {
+      setSyncingShiprocket(false);
     }
   };
 
@@ -337,14 +363,24 @@ export default function AdminOrdersDashboard() {
               {selectedOrders.length > 0 && ` • ${selectedOrders.length} selected`}
             </p>
           </div>
-          <button
-            onClick={handleExportCSV}
-            disabled={orders.length === 0}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <FiDownload />
-            Export CSV
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleRunShiprocketSync}
+              disabled={syncingShiprocket}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FiRefreshCw className={syncingShiprocket ? 'animate-spin' : ''} />
+              {syncingShiprocket ? 'Syncing...' : 'Run Sync Now'}
+            </button>
+            <button
+              onClick={handleExportCSV}
+              disabled={orders.length === 0}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FiDownload />
+              Export CSV
+            </button>
+          </div>
         </div>
 
         {/* Search and Filters */}

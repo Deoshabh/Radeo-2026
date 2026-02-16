@@ -165,6 +165,7 @@ export const adminAPI = {
   markAsShipped: (orderId) =>
     api.post(`/admin/shiprocket/mark-shipped/${orderId}`),
   getShiprocketHealth: () => api.get('/admin/shiprocket/health'),
+  triggerShiprocketReconciliation: () => api.post('/admin/shiprocket/reconcile'),
   getPickupAddresses: () => api.get("/admin/shiprocket/pickup-addresses"),
 
   // Users

@@ -18,6 +18,9 @@ const { initializeBucket } = require("./utils/minio");
 const { logger, log } = require("./utils/logger");
 const { errorHandler, notFoundHandler } = require("./middleware/errorHandler");
 const { preventCaching } = require("./middleware/security");
+const {
+  startShiprocketReconciliationWorker,
+} = require("./services/shiprocketReconciliationService");
 
 // ===============================
 // NoSQL injection sanitizer (Express 5 compatible)
@@ -202,7 +205,9 @@ app.use("/api/v1/contact", require("./routes/contactRoutes"));
 app.use("/api/v1", require("./routes/reviewRoutes"));
 
 // Webhook routes (must be before other middleware that might interfere)
-app.use("/api/webhooks", require("./routes/webhookRoutes"));
+const webhookRoutes = require("./routes/webhookRoutes");
+app.use("/api/webhooks", webhookRoutes);
+app.use("/api/v1/webhooks", webhookRoutes);
 
 // Apply robust cache prevention for all Admin APIs
 app.use("/api/v1/admin", preventCaching);
@@ -263,6 +268,7 @@ async function startServer() {
     app.listen(PORT, "0.0.0.0", () => {
       log.success(`Server running on port ${PORT}`);
       log.info("CORS allowed origins", { origins: allowedOrigins });
+      startShiprocketReconciliationWorker();
     });
   } catch (err) {
     log.error("Fatal startup error", err);

@@ -4,6 +4,7 @@ const { authenticate } = require('../middleware/auth');
 const admin = require('../middleware/admin');
 const {
   getShiprocketHealth,
+  triggerShiprocketReconciliation,
   getShippingRates,
   createShipment,
   generateLabel,
@@ -21,6 +22,9 @@ router.use(admin);
 
 // GET /health → check shiprocket configuration/auth status
 router.get('/health', getShiprocketHealth);
+
+// POST /reconcile → run immediate Shiprocket status reconciliation
+router.post('/reconcile', triggerShiprocketReconciliation);
 
 // GET /pickup-addresses → get all pickup addresses
 router.get('/pickup-addresses', getPickupAddresses);

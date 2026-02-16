@@ -21,6 +21,7 @@ const STATUS_MAPPING = {
   SHIPPED: "shipped",
   "OUT FOR DELIVERY": "shipped",
   DELIVERED: "delivered",
+  CANCELED: "cancelled",
   CANCELLED: "cancelled",
   "RTO INITIATED": "cancelled",
   "RTO DELIVERED": "cancelled",
@@ -48,7 +49,23 @@ const LIFECYCLE_MAPPING = {
   "RTO DELIVERED": "rto_delivered",
   "RTO IN TRANSIT": "rto_initiated",
   RTO: "rto_initiated",
+  CANCELED: "cancelled",
   CANCELLED: "cancelled",
+};
+
+const mapStatusFromShipmentStatusId = (shipmentStatusId) => {
+  const statusId = Number(shipmentStatusId);
+  if (!Number.isFinite(statusId)) return null;
+
+  if (statusId === 7) return "delivered";
+  if ([2, 3, 4, 5, 6, 17, 18, 19, 20, 21, 22, 42].includes(statusId)) {
+    return "shipped";
+  }
+  if ([8, 9, 10, 11, 12, 13, 14, 15, 16].includes(statusId)) {
+    return "cancelled";
+  }
+
+  return null;
 };
 
 /**
@@ -78,6 +95,7 @@ const processWebhookAsync = async (webhookLog) => {
     const awbCode = payload.awb || payload.awb_code;
     const currentStatus =
       payload.current_status || payload.shipment_status || payload.status;
+    const shipmentStatusId = payload.shipment_status_id;
     const location = payload.location || payload.current_location;
     const scanType = payload.scan_type;
     const description = payload.activities || payload.comment;
@@ -141,7 +159,14 @@ const processWebhookAsync = async (webhookLog) => {
     }
 
     // Update order status based on shipment status
-    const newOrderStatus = STATUS_MAPPING[currentStatus?.toUpperCase()];
+    const normalizedStatus = String(currentStatus || "").toUpperCase();
+    const derivedFromText =
+      STATUS_MAPPING[normalizedStatus] ||
+      (normalizedStatus.includes("CANCEL") || normalizedStatus.includes("RTO")
+        ? "cancelled"
+        : null);
+    const newOrderStatus =
+      derivedFromText || mapStatusFromShipmentStatusId(shipmentStatusId);
     if (newOrderStatus && newOrderStatus !== order.status) {
       console.log(
         `📦 Order ${order.orderId}: Status ${order.status} → ${newOrderStatus}`,
