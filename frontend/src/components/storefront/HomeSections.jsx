@@ -7,7 +7,7 @@ import HeroAnimate from '@/components/ui/HeroAnimate';
 import ScrollReveal from '@/components/ui/ScrollReveal';
 import { getIconComponent } from '@/utils/iconMapper';
 import { useSiteSettings } from '@/context/SiteSettingsContext';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
 // --- Sub-components ---
 
@@ -219,10 +219,49 @@ export default function HomeSections({ initialSettings, initialProducts }) {
         }
     };
 
+    useEffect(() => {
+        const isEmbeddedPreview =
+            typeof window !== 'undefined' &&
+            window.parent !== window &&
+            new URLSearchParams(window.location.search).get('visualEditor') === '1';
+
+        if (!isEmbeddedPreview) return;
+
+        const onClickCapture = (event) => {
+            const target = event.target;
+            if (!(target instanceof Element)) return;
+
+            const sectionEl = target.closest('[data-editor-section]');
+            if (!sectionEl) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            window.parent.postMessage(
+                {
+                    type: 'SECTION_CLICKED',
+                    payload: {
+                        id: sectionEl.getAttribute('data-section-id') || null,
+                        sectionType: sectionEl.getAttribute('data-section-type') || null,
+                    },
+                },
+                '*',
+            );
+        };
+
+        document.addEventListener('click', onClickCapture, true);
+        return () => document.removeEventListener('click', onClickCapture, true);
+    }, []);
+
     return (
         <>
             {renderOrder.map(section => (
-                <div key={section.id}>
+                <div
+                    key={section.id}
+                    data-editor-section="true"
+                    data-section-id={section.id}
+                    data-section-type={section.type}
+                >
                     {renderSection(section)}
                     {/* Inject Trust Badges after Hero if it's the first render (or check type) */}
                     {section.type === 'hero' && <TrustBadgesSection settings={activeSettings} />}

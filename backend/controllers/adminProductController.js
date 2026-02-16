@@ -199,6 +199,8 @@ exports.createProduct = async (req, res) => {
       colors,
       tags,
       images,
+      images360,
+      hotspots360,
       featured,
       isActive,
     } = req.body;
@@ -313,6 +315,36 @@ exports.createProduct = async (req, res) => {
       }
     }
 
+    // Parse 360 images if it's a string
+    let parsedImages360 = [];
+    if (images360) {
+      if (typeof images360 === "string") {
+        try {
+          parsedImages360 = JSON.parse(images360);
+        } catch (e) {
+          console.error("Failed to parse images360:", e);
+          parsedImages360 = [];
+        }
+      } else if (Array.isArray(images360)) {
+        parsedImages360 = images360;
+      }
+    }
+
+    // Parse 360 hotspots if it's a string
+    let parsedHotspots360 = [];
+    if (hotspots360) {
+      if (typeof hotspots360 === "string") {
+        try {
+          parsedHotspots360 = JSON.parse(hotspots360);
+        } catch (e) {
+          console.error("Failed to parse hotspots360:", e);
+          parsedHotspots360 = [];
+        }
+      } else if (Array.isArray(hotspots360)) {
+        parsedHotspots360 = hotspots360;
+      }
+    }
+
     // Validate images have required fields
     if (parsedImages.length > 0) {
       const validImages = parsedImages.every((img) => img.url && img.key);
@@ -343,6 +375,8 @@ exports.createProduct = async (req, res) => {
       colors: parsedColors,
       tags: parsedTags,
       images: parsedImages,
+      images360: parsedImages360,
+      hotspots360: parsedHotspots360,
       featured: featured || false,
       isActive: isActive !== undefined ? isActive : true,
       isOutOfStock: false, // Default to not out of stock
@@ -359,6 +393,7 @@ exports.createProduct = async (req, res) => {
 
     // Invalidate product cache
     await invalidateCache("products:*");
+    await invalidateCache(`frame-manifest:${slug}`);
 
     res.status(201).json(product);
   } catch (error) {
@@ -407,6 +442,8 @@ exports.updateProduct = async (req, res) => {
       colors,
       tags,
       images,
+      images360,
+      hotspots360,
       featured,
       isActive,
       gstPercentage,
@@ -448,6 +485,8 @@ exports.updateProduct = async (req, res) => {
     if (colors !== undefined) product.colors = colors;
     if (tags !== undefined) product.tags = tags;
     if (images !== undefined) product.images = images;
+    if (images360 !== undefined) product.images360 = images360;
+    if (hotspots360 !== undefined) product.hotspots360 = hotspots360;
     if (featured !== undefined) product.featured = featured;
     if (isActive !== undefined) product.isActive = isActive;
     if (req.body.isOutOfStock !== undefined)
@@ -462,6 +501,7 @@ exports.updateProduct = async (req, res) => {
 
     // Invalidate product cache
     await invalidateCache("products:*");
+    await invalidateCache(`frame-manifest:${product.slug}`);
 
     res.json(product);
   } catch (error) {

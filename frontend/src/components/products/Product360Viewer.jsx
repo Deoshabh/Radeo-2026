@@ -3,8 +3,9 @@
 import { useRef, useEffect, useState } from 'react';
 import { use360Viewer } from '@/hooks/use360Viewer';
 import { FiMove, FiZoomIn } from 'react-icons/fi';
+import HotspotAnnotationEditor from '@/components/viewer/HotspotAnnotationEditor';
 
-export default function Product360Viewer({ images, aspectRatio = 'aspect-square', autoRotate = true }) {
+export default function Product360Viewer({ images, hotspots = [], aspectRatio = 'aspect-square', autoRotate = true }) {
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
     const [isLoaded, setIsLoaded] = useState(false);
@@ -117,6 +118,12 @@ export default function Product360Viewer({ images, aspectRatio = 'aspect-square'
             <canvas
                 ref={canvasRef}
                 className="w-full h-full object-contain pointer-events-none"
+            />
+
+            <HotspotAnnotationEditor
+                hotspots={hotspots}
+                currentFrame={currentFrame}
+                editable={false}
             />
 
             <div className="absolute bottom-4 left-0 right-0 flex justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">

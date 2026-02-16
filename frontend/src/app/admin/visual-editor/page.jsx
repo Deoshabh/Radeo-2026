@@ -20,7 +20,7 @@ import SortableSection from '@/components/admin/cms/SortableSection';
 import EditSectionPanel from '@/components/admin/cms/EditSectionPanel';
 import ThemeCustomizer from '@/components/admin/cms/ThemeCustomizer'; // NEW
 import { SECTION_TEMPLATES } from '@/constants/section-registry';
-import { FiLayout, FiPlus, FiSave, FiMonitor, FiSmartphone, FiX, FiDroplet } from 'react-icons/fi';
+import { FiLayout, FiPlus, FiSave, FiMonitor, FiSmartphone, FiX, FiDroplet, FiUpload, FiDownload, FiRotateCcw } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 // Initial placeholder data (will be replaced by API data)
@@ -49,6 +49,8 @@ export default function VisualEditorPage() {
     const [editingSectionId, setEditingSectionId] = useState(null);
     const [isAddingSection, setIsAddingSection] = useState(false);
     const [iframeLoading, setIframeLoading] = useState(true);
+    const [versionHistory, setVersionHistory] = useState([]);
+    const [isRestoring, setIsRestoring] = useState(false);
 
     // Derived state
     const editingSection = layout.find(s => s.id === editingSectionId) || null;
@@ -76,6 +78,10 @@ export default function VisualEditorPage() {
                 setLayout(currentLayout.length > 0 ? currentLayout : initialLayout);
                 setTheme(settings.theme || SITE_SETTINGS_DEFAULTS.theme);
                 setBranding(settings.branding || SITE_SETTINGS_DEFAULTS.branding || {});
+                setAnnouncementBar(settings.announcementBar || {});
+
+                const historyResponse = await adminAPI.getThemeVersionHistory();
+                setVersionHistory(historyResponse.data?.history || []);
             } catch (error) {
                 console.error("Failed to load settings:", error);
                 toast.error("Failed to load settings");
@@ -85,6 +91,25 @@ export default function VisualEditorPage() {
         };
         fetchSettings();
     }, []);
+
+    useEffect(() => {
+        const handlePreviewSectionClick = (event) => {
+            if (event.data?.type !== 'SECTION_CLICKED') return;
+            const sectionType = event.data?.payload?.sectionType;
+            if (!sectionType) return;
+
+            const sectionToEdit = layout.find((item) => item.type === sectionType);
+            if (sectionToEdit) {
+                setEditingSectionId(sectionToEdit.id);
+                setIsAddingSection(false);
+                setActiveTab('layout');
+                toast.success(`Editing ${sectionType} section`);
+            }
+        };
+
+        window.addEventListener('message', handlePreviewSectionClick);
+        return () => window.removeEventListener('message', handlePreviewSectionClick);
+    }, [layout]);
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -136,12 +161,84 @@ export default function VisualEditorPage() {
             };
 
             await adminAPI.updateSettings(updateData);
+
+            const historyResponse = await adminAPI.getThemeVersionHistory();
+            setVersionHistory(historyResponse.data?.history || []);
             toast.success('Layout and Theme saved successfully!');
         } catch (error) {
             console.error("Failed to save settings:", error);
             toast.error("Failed to save settings");
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleExportTheme = async () => {
+        try {
+            const response = await adminAPI.exportThemeJson();
+            const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = `theme-export-${new Date().toISOString().slice(0, 10)}.json`;
+            anchor.click();
+            URL.revokeObjectURL(url);
+            toast.success('Theme exported');
+        } catch (error) {
+            console.error(error);
+            toast.error('Failed to export theme');
+        }
+    };
+
+    const handleImportTheme = async (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        try {
+            const text = await file.text();
+            const json = JSON.parse(text);
+            const response = await adminAPI.importThemeJson(json);
+            const settings = response.data?.settings;
+
+            if (settings) {
+                setLayout(settings.layout || layout);
+                setTheme(settings.theme || theme);
+                setBranding(settings.branding || branding);
+                setAnnouncementBar(settings.announcementBar || announcementBar);
+            }
+
+            const historyResponse = await adminAPI.getThemeVersionHistory();
+            setVersionHistory(historyResponse.data?.history || []);
+            toast.success('Theme imported successfully');
+        } catch (error) {
+            console.error(error);
+            toast.error('Failed to import theme JSON');
+        } finally {
+            event.target.value = '';
+        }
+    };
+
+    const handleRestoreVersion = async (historyId) => {
+        try {
+            setIsRestoring(true);
+            const response = await adminAPI.restoreThemeVersion(historyId);
+            const settings = response.data?.settings;
+
+            if (settings) {
+                setLayout(settings.layout || []);
+                setTheme(settings.theme || {});
+                setBranding(settings.branding || {});
+                setAnnouncementBar(settings.announcementBar || {});
+            }
+
+            const historyResponse = await adminAPI.getThemeVersionHistory();
+            setVersionHistory(historyResponse.data?.history || []);
+            toast.success('Version restored');
+        } catch (error) {
+            console.error(error);
+            toast.error('Failed to restore version');
+        } finally {
+            setIsRestoring(false);
         }
     };
 
@@ -382,6 +479,44 @@ export default function VisualEditorPage() {
                     </div>
 
                     <div className="p-4 border-t border-gray-100 bg-gray-50">
+                        <div className="grid grid-cols-2 gap-2 mb-3">
+                            <button
+                                onClick={handleExportTheme}
+                                className="btn btn-secondary flex items-center justify-center gap-2"
+                            >
+                                <FiDownload /> Export
+                            </button>
+                            <label className="btn btn-secondary flex items-center justify-center gap-2 cursor-pointer">
+                                <FiUpload /> Import
+                                <input
+                                    type="file"
+                                    accept="application/json"
+                                    className="hidden"
+                                    onChange={handleImportTheme}
+                                />
+                            </label>
+                        </div>
+
+                        <div className="mb-3 max-h-32 overflow-y-auto border border-gray-200 rounded p-2 bg-white">
+                            <p className="text-[11px] font-semibold text-gray-500 mb-2 uppercase tracking-wider">Version History</p>
+                            {versionHistory.length === 0 && (
+                                <p className="text-xs text-gray-400">No snapshots yet</p>
+                            )}
+                            {versionHistory.slice(0, 8).map((item) => (
+                                <div key={item.id} className="flex items-center justify-between text-xs py-1">
+                                    <span className="truncate pr-2">{item.label || 'Snapshot'}</span>
+                                    <button
+                                        onClick={() => handleRestoreVersion(item.id)}
+                                        disabled={isRestoring}
+                                        className="text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                                        title="Restore this version"
+                                    >
+                                        <FiRotateCcw />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+
                         <button
                             onClick={handleSave}
                             disabled={isSaving}
@@ -434,7 +569,7 @@ export default function VisualEditorPage() {
                                 }`}
                         >
                             <iframe
-                                src="/"
+                                src="/?visualEditor=1"
                                 className={`w-full h-full bg-white transition-opacity duration-300 ${iframeLoading ? 'opacity-0' : 'opacity-100'}`}
                                 title="Live Preview"
                                 onLoad={() => setIframeLoading(false)}

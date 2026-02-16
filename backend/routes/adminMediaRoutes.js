@@ -9,7 +9,8 @@ const upload = multer({
 const {
   getUploadUrl,
   deleteMedia,
-  uploadFrames
+  uploadFrames,
+  getFrameManifest,
 } = require("../controllers/adminMediaController");
 const { authenticate } = require("../middleware/auth");
 const admin = require("../middleware/admin");
@@ -26,5 +27,8 @@ router.delete("/", deleteMedia);
 
 // POST /api/v1/admin/media/frames - Upload 360 viewer frames
 router.post("/frames", upload.array("frames", 72), uploadFrames);
+
+// GET /api/v1/admin/media/frames/:slug/manifest - Get cached frame manifest
+router.get("/frames/:slug/manifest", getFrameManifest);
 
 module.exports = router;

@@ -86,6 +86,18 @@ const siteSettingsSchema = new mongoose.Schema(
         borderRadius: '8px',
       }
     },
+    versionHistory: [
+      {
+        label: { type: String, default: 'Snapshot' },
+        snapshot: { type: mongoose.Schema.Types.Mixed, required: true },
+        savedAt: { type: Date, default: Date.now },
+        savedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+      },
+    ],
+    currentVersion: { type: Number, default: 1 },
     // Singleton pattern enforcement
     isDefault: { type: Boolean, default: true, unique: true },
   },

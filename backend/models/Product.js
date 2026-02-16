@@ -119,6 +119,15 @@ const productSchema = new mongoose.Schema(
         order: { type: Number, default: 0 },
       }
     ],
+    hotspots360: [
+      {
+        id: { type: String, required: true },
+        frame: { type: Number, required: true },
+        x: { type: Number, required: true, min: 0, max: 100 },
+        y: { type: Number, required: true, min: 0, max: 100 },
+        label: { type: String, default: '' },
+      },
+    ],
     isActive: {
       type: Boolean,
       default: true,

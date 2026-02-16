@@ -202,9 +202,21 @@ export const adminAPI = {
   // Media
   getUploadUrl: (data) => api.post("/admin/media/upload-url", data),
   deleteMedia: (key) => api.delete("/admin/media", { data: { key } }),
+  uploadFrames: (formData) =>
+    api.post("/admin/media/frames", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+  getFrameManifest: (slug) => api.get(`/admin/media/frames/${slug}/manifest`),
 
   // Stats
   getAdminStats: () => api.get("/admin/stats"),
+
+  // Theme Builder
+  getThemeVersionHistory: () => api.get("/settings/history"),
+  restoreThemeVersion: (historyId) =>
+    api.post("/settings/history/restore", { historyId }),
+  exportThemeJson: () => api.get("/settings/export"),
+  importThemeJson: (payload) => api.post("/settings/import", payload),
 
   // Site Settings
   getSettingHistory: (key, limit) =>

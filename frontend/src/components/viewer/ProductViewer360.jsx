@@ -1,11 +1,14 @@
 import React, { useRef, useEffect } from 'react';
 import { use360Viewer } from '@/hooks/use360Viewer';
-// Hotspots would be implemented here
+import HotspotAnnotationEditor from '@/components/viewer/HotspotAnnotationEditor';
 
 export default function ProductViewer360({
     images = [],
     sensitivity = 5,
     autoRotate = false,
+    hotspots = [],
+    editableHotspots = false,
+    onHotspotsChange,
     className = ""
 }) {
     const canvasRef = useRef(null);
@@ -22,6 +25,20 @@ export default function ProductViewer360({
         sensitivity,
         autoRotate
     });
+
+    const handleAddHotspot = (hotspot) => {
+        if (!onHotspotsChange) return;
+        const newHotspot = {
+            ...hotspot,
+            id: `hotspot-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        };
+        onHotspotsChange([...(hotspots || []), newHotspot]);
+    };
+
+    const handleRemoveHotspot = (id) => {
+        if (!onHotspotsChange) return;
+        onHotspotsChange((hotspots || []).filter((item) => item.id !== id));
+    };
 
     // Draw to canvas
     useEffect(() => {
@@ -70,6 +87,14 @@ export default function ProductViewer360({
                 width={800}
                 height={800}
                 className="w-full h-auto object-contain pointer-events-none"
+            />
+
+            <HotspotAnnotationEditor
+                hotspots={hotspots}
+                currentFrame={currentFrame}
+                editable={editableHotspots}
+                onAddHotspot={handleAddHotspot}
+                onRemoveHotspot={handleRemoveHotspot}
             />
 
             {/* Loading State or 360 Badge could go here */}

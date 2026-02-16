@@ -11,6 +11,7 @@ import AdminLayout from '@/components/AdminLayout';
 import ColorPicker from '@/components/ColorPicker';
 import ImageUploadWithEditor from '@/components/ImageUploadWithEditor';
 import Image360Upload from '@/components/Image360Upload';
+import ProductViewer360 from '@/components/viewer/ProductViewer360';
 import toast from 'react-hot-toast';
 import { FiPlus, FiX } from 'react-icons/fi';
 
@@ -28,6 +29,7 @@ function ProductFormContent() {
   const [existingImages, setExistingImages] = useState([]);
   const [images360, setImages360] = useState([]); // New 360 images
   const [existingImages360, setExistingImages360] = useState([]); // Existing 360 images
+  const [hotspots360, setHotspots360] = useState([]);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const isDirty = useRef(false);
@@ -143,6 +145,10 @@ function ProductFormContent() {
       // Set existing 360 images
       if (product.images360 && product.images360.length > 0) {
         setExistingImages360(product.images360);
+      }
+
+      if (product.hotspots360 && Array.isArray(product.hotspots360)) {
+        setHotspots360(product.hotspots360);
       }
     } catch (error) {
       console.error('Failed to fetch product:', error);
@@ -418,6 +424,7 @@ function ProductFormContent() {
         averageDeliveryCost: Number(formData.averageDeliveryCost) || 0,
         images: allImages,
         images360: allImages360,
+        hotspots360,
         featured: formData.isFeatured,
         stock: totalStock, // Use calculated total stock
       };
@@ -519,6 +526,21 @@ function ProductFormContent() {
               images={[...existingImages360, ...images360]}
               onImagesChange={handleImages360Change}
             />
+
+            {[...existingImages360, ...images360].length > 0 && (
+              <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+                <h2 className="text-lg font-semibold text-primary-900 mb-2">360° Hotspot Annotation Editor</h2>
+                <p className="text-sm text-primary-600 mb-4">Click on the 360 viewer to add hotspot annotations for the current frame.</p>
+                <ProductViewer360
+                  images={[...existingImages360, ...images360].map((img) => img.url)}
+                  editableHotspots
+                  hotspots={hotspots360}
+                  onHotspotsChange={setHotspots360}
+                  className="max-w-xl mx-auto"
+                />
+                <p className="text-xs text-primary-500 mt-3">Total hotspots: {hotspots360.length}</p>
+              </div>
+            )}
 
             {/* Basic Information */}
             <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">

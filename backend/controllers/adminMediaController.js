@@ -1,5 +1,7 @@
 const { generateSignedUploadUrl, deleteObject, uploadBuffer } = require("../utils/minio");
 const sharp = require("sharp");
+const Product = require("../models/Product");
+const { getOrSetCache, invalidateCache } = require("../utils/cache");
 
 /**
  * Generate signed upload URL for admin
@@ -137,6 +139,10 @@ exports.uploadFrames = async (req, res) => {
     results.sort((a, b) => a.index - b.index);
     const urls = results.map(r => r.url);
 
+    if (productSlug) {
+      await invalidateCache(`frame-manifest:${productSlug}`);
+    }
+
     res.json({
       success: true,
       message: `Successfully uploaded ${urls.length} frames`,
@@ -150,6 +156,72 @@ exports.uploadFrames = async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message || "Failed to upload frames",
+    });
+  }
+};
+
+/**
+ * Get 360 frame manifest for a product (cached in Redis)
+ * GET /api/v1/admin/media/frames/:slug/manifest
+ */
+exports.getFrameManifest = async (req, res) => {
+  try {
+    const { slug } = req.params;
+
+    if (!slug) {
+      return res.status(400).json({
+        success: false,
+        message: "Product slug is required",
+      });
+    }
+
+    const cacheKey = `frame-manifest:${slug}`;
+
+    const manifest = await getOrSetCache(
+      cacheKey,
+      async () => {
+        const product = await Product.findOne({ slug }).select("slug images360 updatedAt").lean();
+
+        if (!product) {
+          return null;
+        }
+
+        const frames = (product.images360 || [])
+          .slice()
+          .sort((a, b) => (a.order || 0) - (b.order || 0))
+          .map((frame, index) => ({
+            index,
+            order: frame.order || index,
+            url: frame.url,
+            key: frame.key,
+          }));
+
+        return {
+          slug: product.slug,
+          frameCount: frames.length,
+          frames,
+          updatedAt: product.updatedAt,
+        };
+      },
+      600,
+    );
+
+    if (!manifest) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: manifest,
+    });
+  } catch (error) {
+    console.error("Error fetching frame manifest:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch frame manifest",
     });
   }
 };

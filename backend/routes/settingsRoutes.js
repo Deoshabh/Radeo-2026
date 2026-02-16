@@ -12,5 +12,9 @@ router.use(authorize('admin'));
 
 router.get('/', settingsController.getAllSettings);
 router.put('/', settingsController.updateSettings);
+router.get('/history', settingsController.getThemeVersionHistory);
+router.post('/history/restore', settingsController.restoreThemeVersion);
+router.get('/export', settingsController.exportThemeJson);
+router.post('/import', settingsController.importThemeJson);
 
 module.exports = router;

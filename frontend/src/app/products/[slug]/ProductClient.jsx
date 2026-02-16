@@ -175,6 +175,7 @@ export default function ProductClient({ product }) {
                                     </div>
                                     <Product360Viewer
                                         images={product.images360.map(img => img.url)}
+                                        hotspots={product.hotspots360 || []}
                                         aspectRatio="aspect-square"
                                     />
                                 </div>
