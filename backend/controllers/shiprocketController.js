@@ -290,6 +290,33 @@ exports.cancelShipment = async (req, res) => {
 };
 
 /**
+ * Shiprocket health check
+ * GET /api/admin/shiprocket/health
+ */
+exports.getShiprocketHealth = async (req, res) => {
+  try {
+    const health = await shiprocketService.checkHealth();
+
+    res.json({
+      success: true,
+      message: "Shiprocket is configured and reachable",
+      data: health,
+    });
+  } catch (error) {
+    console.error("Shiprocket health check error:", error);
+
+    const statusCode = error.statusCode || error.response?.status || 500;
+
+    res.status(statusCode).json({
+      success: false,
+      message: error.message || "Shiprocket health check failed",
+      error: error.details || error.response?.data || error.message,
+      code: error.code,
+    });
+  }
+};
+
+/**
  * Get pickup addresses
  * GET /api/admin/shiprocket/pickup-addresses
  */
@@ -303,10 +330,14 @@ exports.getPickupAddresses = async (req, res) => {
     });
   } catch (error) {
     console.error("Get pickup addresses error:", error);
-    res.status(500).json({
+
+    const statusCode = error.statusCode || error.response?.status || 500;
+
+    res.status(statusCode).json({
       success: false,
       message: error.message || "Failed to get pickup addresses",
-      error: error.response?.data || error.message,
+      error: error.details || error.response?.data || error.message,
+      code: error.code,
     });
   }
 };

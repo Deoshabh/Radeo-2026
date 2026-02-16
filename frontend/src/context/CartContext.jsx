@@ -41,7 +41,6 @@ export const CartProvider = ({ children }) => {
       setLoading(true);
       const response = await cartAPI.get();
       // Backend returns {items, totalItems, totalAmount} directly, not wrapped in {cart: {...}}
-      console.log('📦 Cart API response:', response.data);
       setCart(response.data);
     } catch (error) {
       console.error('Failed to fetch cart:', error);

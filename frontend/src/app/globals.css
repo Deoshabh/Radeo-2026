@@ -7,6 +7,12 @@
 :root {
   --font-inter: 'Inter', sans-serif;
   --font-playfair: 'Playfair Display', serif;
+  --theme-font-family: var(--font-inter);
+  --theme-font-scale: 1;
+  --theme-border-radius: 0.5rem;
+  --theme-container-width: 1280px;
+  --theme-bg-color: #fafaf9;
+  --theme-text-color: #1c1917;
   
   /* Spacing scale */
   --spacing-xs: 0.5rem;
@@ -30,6 +36,7 @@
   --color-text-secondary: #57534e;
   --color-brand-brown: #3d2f28;
   --color-brand-tan: #8b7355;
+  --color-brand-cream: #d4c4b0;
   --color-border: #e7e5e4;
 
   /* Primary Palette (Dynamic) */
@@ -55,10 +62,21 @@ html {
   scroll-behavior: smooth;
 }
 
+html[data-theme-custom-cursor='true'],
+html[data-theme-custom-cursor='true'] body,
+html[data-theme-custom-cursor='true'] a,
+html[data-theme-custom-cursor='true'] button,
+html[data-theme-custom-cursor='true'] input,
+html[data-theme-custom-cursor='true'] textarea,
+html[data-theme-custom-cursor='true'] select {
+  cursor: none !important;
+}
+
 body {
-  font-family: var(--font-inter);
-  background-color: var(--color-background);
-  color: var(--color-text-primary);
+  font-family: var(--theme-font-family, var(--font-inter));
+  font-size: calc(1rem * var(--theme-font-scale, 1));
+  background-color: var(--theme-bg-color, var(--color-background));
+  color: var(--theme-text-color, var(--color-text-primary));
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -96,7 +114,7 @@ body {
   }
   
   .gradient-primary {
-    background: linear-gradient(135deg, #3d2f28 0%, #8b7355 100%);
+    background: linear-gradient(135deg, var(--color-brand-brown) 0%, var(--color-brand-tan) 100%);
   }
   
   .gradient-overlay {
@@ -107,7 +125,8 @@ body {
 /* Component styles */
 @layer components {
   .btn {
-    @apply px-6 py-3 rounded-lg font-medium transition-all duration-300 inline-flex items-center justify-center gap-2;
+    @apply px-6 py-3 font-medium transition-all duration-300 inline-flex items-center justify-center gap-2;
+    border-radius: var(--theme-border-radius, 0.5rem);
   }
   
   .btn-primary {
@@ -123,11 +142,13 @@ body {
   }
   
   .input {
-    @apply w-full px-4 py-3 border border-primary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all;
+    @apply w-full px-4 py-3 border border-primary-200 focus:outline-none focus:ring-2 focus:ring-primary-900 focus:border-transparent transition-all;
+    border-radius: var(--theme-border-radius, 0.5rem);
   }
   
   .card {
-    @apply bg-white rounded-lg shadow-md hover:shadow-2xl transition-all duration-300;
+    @apply bg-white shadow-md hover:shadow-2xl transition-all duration-300;
+    border-radius: var(--theme-border-radius, 0.5rem);
   }
   
   .badge {
@@ -135,7 +156,8 @@ body {
   }
   
   .container-custom {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+    @apply mx-auto px-4 sm:px-6 lg:px-8;
+    max-width: var(--theme-container-width, 1280px);
   }
   
   .section-padding {
@@ -163,6 +185,14 @@ body {
 
 .animate-scale-in {
   animation: scaleIn 0.2s ease-out;
+}
+
+html[data-theme-page-transition='fade'] .page-transition {
+  animation: fadeIn 0.25s ease-in-out;
+}
+
+html[data-theme-page-transition='slide'] .page-transition {
+  animation: slideUp 0.3s ease-out;
 }
 
 @keyframes fadeIn {
@@ -215,12 +245,12 @@ img {
 
 /* Focus visible for accessibility */
 :focus-visible {
-  outline: 2px solid #3d2f28;
+  outline: 2px solid var(--color-brand-brown);
   outline-offset: 2px;
 }
 
 /* Selection */
 ::selection {
-  background-color: #3d2f28;
+  background-color: var(--color-brand-brown);
   color: white;
 }

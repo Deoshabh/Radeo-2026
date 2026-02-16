@@ -20,6 +20,13 @@ export default function Navbar() {
   const { cartCount } = useCart();
   const { wishlistCount } = useWishlist();
   const { settings } = useSiteSettings();
+  const theme = settings?.theme || {};
+  const stickyHeader = theme.stickyHeader !== false;
+  const headerVariant = theme.headerVariant || 'minimal';
+  const isCenteredHeader = headerVariant === 'centered';
+  const isTransparentHeader = headerVariant === 'transparent';
+  const logoWidth = settings?.branding?.logo?.width || 120;
+  const logoHeight = settings?.branding?.logo?.height || 40;
 
   // Hide navbar on admin routes check moved to after hooks
 
@@ -36,6 +43,7 @@ export default function Navbar() {
   const cartRef = useRef(null);
   const wishlistRef = useRef(null);
   const categoriesDropdownRef = useRef(null);
+  const searchRequestIdRef = useRef(0);
 
   const [prevCartCount, setPrevCartCount] = useState(cartCount);
   const [prevWishlistCount, setPrevWishlistCount] = useState(wishlistCount);
@@ -124,16 +132,21 @@ export default function Navbar() {
   useEffect(() => {
     const searchProducts = async () => {
       if (searchQuery.length < 2) {
+        searchRequestIdRef.current += 1;
         setSearchResults([]);
         return;
       }
 
+      const requestId = ++searchRequestIdRef.current;
+
       try {
         const response = await productAPI.getAllProducts({ search: searchQuery, limit: 6 });
+        if (requestId !== searchRequestIdRef.current) return;
         // Backend returns array directly, not wrapped in {products: [...]}
         const productsData = Array.isArray(response.data) ? response.data : (response.data.products || []);
         setSearchResults(productsData);
       } catch (error) {
+        if (requestId !== searchRequestIdRef.current) return;
         console.error('Search failed:', error);
       }
     };
@@ -164,15 +177,22 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'glass shadow-lg' : 'bg-transparent'
+      className={`${stickyHeader ? 'fixed' : 'absolute'} top-0 left-0 right-0 z-50 transition-all duration-300 ${isTransparentHeader
+          ? 'bg-transparent'
+          : isScrolled
+            ? 'glass shadow-lg'
+            : 'bg-white/90 backdrop-blur-sm'
         }`}
     >
       <div className="container-custom">
-        <div className="flex items-center justify-between py-4">
+        <div className={`relative flex items-center justify-between py-4 ${isCenteredHeader ? 'lg:min-h-[72px]' : ''}`}>
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
+          <Link
+            href="/"
+            className={`flex items-center gap-2 ${isCenteredHeader ? 'lg:absolute lg:left-1/2 lg:-translate-x-1/2 lg:z-20' : ''}`}
+          >
             {settings?.branding?.logo?.url ? (
-              <div className="relative h-10 w-auto aspect-[3/1]">
+              <div className="relative" style={{ width: `${logoWidth}px`, height: `${logoHeight}px` }}>
                 <Image
                   src={settings.branding.logo.url}
                   alt={settings.branding.logo.alt || 'Radeo'}
@@ -189,7 +209,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center gap-8">
+          <div className={`hidden lg:flex items-center gap-8 ${isCenteredHeader ? 'flex-1' : ''}`}>
             {['/', '/products'].map((path) => {
               const label = path === '/' ? 'Home' : 'Products';
               const isActive = pathname === path;
@@ -284,7 +304,7 @@ export default function Navbar() {
           </div>
 
           {/* Search Bar */}
-          <div ref={searchRef} className="hidden lg:block relative flex-1 max-w-2xl mx-8">
+          <div ref={searchRef} className={`${isCenteredHeader ? 'hidden' : 'hidden lg:block'} relative flex-1 max-w-2xl mx-8`}>
             <form onSubmit={handleSearch}>
               <div className="relative">
                 <input
@@ -349,7 +369,7 @@ export default function Navbar() {
           </div>
 
           {/* Icons */}
-          <div className="flex items-center gap-4">
+          <div className={`flex items-center gap-4 ${isCenteredHeader ? 'lg:ml-auto' : ''}`}>
             {/* Wishlist */}
             <Link href="/wishlist" className="relative hover:text-brand-brown transition-colors" aria-label="Wishlist">
               <div ref={wishlistRef}>

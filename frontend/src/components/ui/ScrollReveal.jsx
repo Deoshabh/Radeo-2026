@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import anime from 'animejs';
+import { useSiteSettings } from '@/context/SiteSettingsContext';
 
 export default function ScrollReveal({
     children,
@@ -14,8 +15,34 @@ export default function ScrollReveal({
 }) {
     const elementRef = useRef(null);
     const hasAnimated = useRef(false);
+    const { settings } = useSiteSettings();
+
+    const themeEffects = settings?.theme?.effects || {};
+    const animationsEnabled = themeEffects.scrollAnimations !== false;
+    const animationType = themeEffects.scrollAnimationType || 'fade-in';
+
+    const effectiveDirection = direction === 'up'
+        ? ({
+            'fade-in': 'up',
+            'slide-up': 'up',
+            'scale-in': 'up',
+            none: 'up',
+        }[animationType] || 'up')
+        : direction;
+
+    const effectiveDistance = animationType === 'none' ? 0 : distance;
+    const effectiveDuration = animationType === 'none' ? 0 : duration;
 
     useEffect(() => {
+        if (!animationsEnabled) {
+            const element = elementRef.current;
+            if (element) {
+                element.style.opacity = '1';
+                element.style.transform = 'none';
+            }
+            return;
+        }
+
         const element = elementRef.current;
         if (!element) return;
 
@@ -23,11 +50,11 @@ export default function ScrollReveal({
         let initialTranslateY = 0;
         let initialTranslateX = 0;
 
-        switch (direction) {
-            case 'up': initialTranslateY = distance; break;
-            case 'down': initialTranslateY = -distance; break;
-            case 'left': initialTranslateX = distance; break;
-            case 'right': initialTranslateX = -distance; break;
+        switch (effectiveDirection) {
+            case 'up': initialTranslateY = effectiveDistance; break;
+            case 'down': initialTranslateY = -effectiveDistance; break;
+            case 'left': initialTranslateX = effectiveDistance; break;
+            case 'right': initialTranslateX = -effectiveDistance; break;
         }
 
         // Apply initial styles immediately
@@ -47,7 +74,7 @@ export default function ScrollReveal({
                         translateX: [initialTranslateX, 0],
                         translateY: [initialTranslateY, 0],
                         easing: 'easeOutCubic',
-                        duration: duration,
+                        duration: effectiveDuration,
                         delay: delay
                     });
 
@@ -62,7 +89,7 @@ export default function ScrollReveal({
         return () => {
             if (element) observer.unobserve(element);
         };
-    }, [delay, direction, distance, duration, threshold]);
+    }, [delay, effectiveDirection, effectiveDistance, effectiveDuration, threshold, animationsEnabled]);
 
     return (
         <div ref={elementRef} className={className}>

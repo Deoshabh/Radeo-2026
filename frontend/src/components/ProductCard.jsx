@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { FiHeart, FiShoppingCart } from 'react-icons/fi';
+import { FiHeart, FiShoppingCart, FiStar } from 'react-icons/fi';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { useAuth } from '@/context/AuthContext';
@@ -24,8 +24,20 @@ export default function ProductCard({ product, priority = false }) {
   const cardStyle = themeProducts.cardStyle || 'shadow';
   const hoverEffect = themeProducts.hoverEffect || 'lift';
   const showSaleBadge = themeProducts.showSaleBadge !== false;
-  // const showRating = themeProducts.showRating !== false; // Not implemented in UI yet
+  const showRating = themeProducts.showRating !== false;
   const showInstallment = themeProducts.showInstallmentText !== false;
+
+  const rawAverageRating =
+    product?.averageRating ?? product?.ratings?.average ?? product?.rating ?? 0;
+  const averageRating = Number.isFinite(Number(rawAverageRating))
+    ? Number(rawAverageRating)
+    : 0;
+  const rawReviewCount =
+    product?.numReviews ?? product?.ratings?.count ?? product?.reviewCount ?? 0;
+  const reviewCount = Number.isFinite(Number(rawReviewCount))
+    ? Number(rawReviewCount)
+    : 0;
+  const shouldShowRating = showRating && averageRating > 0;
 
   const categoryLabel = typeof product.category === 'object'
     ? product.category?.name
@@ -234,6 +246,26 @@ export default function ProductCard({ product, priority = false }) {
           <h3 className="font-serif text-sm sm:text-base md:text-lg font-semibold text-primary-900 mb-1.5 sm:mb-2 group-hover:text-brand-brown transition-colors line-clamp-2">
             {product.name}
           </h3>
+
+          {shouldShowRating && (
+            <div className="flex items-center gap-1.5 mb-2">
+              <div className="flex items-center text-amber-500">
+                {Array.from({ length: 5 }).map((_, index) => {
+                  const filled = index < Math.round(averageRating);
+                  return (
+                    <FiStar
+                      key={`rating-star-${product._id || product.slug || index}-${index}`}
+                      className={`w-3.5 h-3.5 ${filled ? 'fill-current' : ''}`}
+                    />
+                  );
+                })}
+              </div>
+              <span className="text-xs text-primary-600">
+                {averageRating.toFixed(1)}
+                {reviewCount > 0 ? ` (${reviewCount})` : ''}
+              </span>
+            </div>
+          )}
 
           {/* Description - Hidden on mobile */}
           {product.description && (

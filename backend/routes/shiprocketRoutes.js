@@ -3,6 +3,7 @@ const router = express.Router();
 const { authenticate } = require('../middleware/auth');
 const admin = require('../middleware/admin');
 const {
+  getShiprocketHealth,
   getShippingRates,
   createShipment,
   generateLabel,
@@ -17,6 +18,9 @@ const {
 // Protect all other routes with authentication and admin check
 router.use(authenticate);
 router.use(admin);
+
+// GET /health → check shiprocket configuration/auth status
+router.get('/health', getShiprocketHealth);
 
 // GET /pickup-addresses → get all pickup addresses
 router.get('/pickup-addresses', getPickupAddresses);

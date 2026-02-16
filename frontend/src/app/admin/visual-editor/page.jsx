@@ -52,6 +52,19 @@ export default function VisualEditorPage() {
     const [versionHistory, setVersionHistory] = useState([]);
     const [isRestoring, setIsRestoring] = useState(false);
 
+    const postPreviewUpdate = (payload) => {
+        const iframe = document.querySelector('iframe');
+        if (iframe && iframe.contentWindow) {
+            iframe.contentWindow.postMessage(
+                {
+                    type: 'THEME_UPDATE',
+                    payload,
+                },
+                '*',
+            );
+        }
+    };
+
     // Derived state
     const editingSection = layout.find(s => s.id === editingSectionId) || null;
 
@@ -95,15 +108,18 @@ export default function VisualEditorPage() {
     useEffect(() => {
         const handlePreviewSectionClick = (event) => {
             if (event.data?.type !== 'SECTION_CLICKED') return;
+            const sectionId = event.data?.payload?.id;
             const sectionType = event.data?.payload?.sectionType;
-            if (!sectionType) return;
+            if (!sectionId && !sectionType) return;
 
-            const sectionToEdit = layout.find((item) => item.type === sectionType);
+            const sectionToEdit = sectionId
+                ? layout.find((item) => item.id === sectionId)
+                : layout.find((item) => item.type === sectionType);
             if (sectionToEdit) {
                 setEditingSectionId(sectionToEdit.id);
                 setIsAddingSection(false);
                 setActiveTab('layout');
-                toast.success(`Editing ${sectionType} section`);
+                toast.success(`Editing ${sectionToEdit.type} section`);
             }
         };
 
@@ -121,6 +137,8 @@ export default function VisualEditorPage() {
     const handleDragEnd = (event) => {
         const { active, over } = event;
 
+        if (!over) return;
+
         if (active.id !== over.id) {
             setLayout((items) => {
                 const oldIndex = items.findIndex((item) => item.id === active.id);
@@ -128,13 +146,7 @@ export default function VisualEditorPage() {
                 const newLayout = arrayMove(items, oldIndex, newIndex);
 
                 // Sync to preview
-                const iframe = document.querySelector('iframe');
-                if (iframe && iframe.contentWindow) {
-                    iframe.contentWindow.postMessage({
-                        type: 'THEME_UPDATE',
-                        payload: { layout: newLayout }
-                    }, '*');
-                }
+                postPreviewUpdate({ layout: newLayout });
 
                 return newLayout;
             });
@@ -205,6 +217,13 @@ export default function VisualEditorPage() {
                 setTheme(settings.theme || theme);
                 setBranding(settings.branding || branding);
                 setAnnouncementBar(settings.announcementBar || announcementBar);
+
+                postPreviewUpdate({
+                    layout: settings.layout || layout,
+                    theme: settings.theme || theme,
+                    branding: settings.branding || branding,
+                    announcementBar: settings.announcementBar || announcementBar,
+                });
             }
 
             const historyResponse = await adminAPI.getThemeVersionHistory();
@@ -229,6 +248,13 @@ export default function VisualEditorPage() {
                 setTheme(settings.theme || {});
                 setBranding(settings.branding || {});
                 setAnnouncementBar(settings.announcementBar || {});
+
+                postPreviewUpdate({
+                    layout: settings.layout || [],
+                    theme: settings.theme || {},
+                    branding: settings.branding || {},
+                    announcementBar: settings.announcementBar || {},
+                });
             }
 
             const historyResponse = await adminAPI.getThemeVersionHistory();
@@ -246,12 +272,20 @@ export default function VisualEditorPage() {
     const handleDelete = (id) => {
         // visual delete only, effectively disables it until saved? 
         // Or strictly removes from the list.
-        setLayout(items => items.filter(item => item.id !== id));
+        setLayout(items => {
+            const newLayout = items.filter(item => item.id !== id);
+            postPreviewUpdate({ layout: newLayout });
+            return newLayout;
+        });
         toast.success('Section removed (Save to apply)');
     };
 
     const handleToggle = (id) => {
-        setLayout(items => items.map(item => item.id === id ? { ...item, enabled: !item.enabled } : item));
+        setLayout(items => {
+            const newLayout = items.map(item => item.id === id ? { ...item, enabled: !item.enabled } : item);
+            postPreviewUpdate({ layout: newLayout });
+            return newLayout;
+        });
     };
 
     const handleEdit = (section) => {
@@ -264,17 +298,7 @@ export default function VisualEditorPage() {
             const newLayout = items.map(item => item.id === id ? { ...item, data: newData } : item);
 
             // Sync to preview
-            const iframe = document.querySelector('iframe');
-            if (iframe && iframe.contentWindow) {
-                // We need to map layout back to 'homeSections' for the legacy components if they rely on it, 
-                // OR ensure the frontend uses 'layout' prop correctly.
-                // Our updated page.jsx uses 'layout' OR legacy.
-                // Sending 'layout' is safer.
-                iframe.contentWindow.postMessage({
-                    type: 'THEME_UPDATE',
-                    payload: { layout: newLayout }
-                }, '*');
-            }
+            postPreviewUpdate({ layout: newLayout });
 
             return newLayout;
         });
@@ -293,7 +317,11 @@ export default function VisualEditorPage() {
             data: { ...template.defaultData }
         };
 
-        setLayout(prev => [...prev, newSection]);
+        setLayout(prev => {
+            const newLayout = [...prev, newSection];
+            postPreviewUpdate({ layout: newLayout });
+            return newLayout;
+        });
         setIsAddingSection(false);
         setEditingSectionId(newSection.id);
         toast.success(`Added ${template.label}`);
@@ -364,13 +392,7 @@ export default function VisualEditorPage() {
                                         });
 
                                         // Sync to preview
-                                        const iframe = document.querySelector('iframe');
-                                        if (iframe && iframe.contentWindow) {
-                                            iframe.contentWindow.postMessage({
-                                                type: 'THEME_UPDATE',
-                                                payload: { layout: newLayout }
-                                            }, '*');
-                                        }
+                                        postPreviewUpdate({ layout: newLayout });
 
                                         return newLayout;
                                     });
@@ -378,34 +400,16 @@ export default function VisualEditorPage() {
                                 onChange={(newTheme) => {
                                     setTheme(newTheme);
                                     // Send update to preview
-                                    const iframe = document.querySelector('iframe');
-                                    if (iframe && iframe.contentWindow) {
-                                        iframe.contentWindow.postMessage({
-                                            type: 'THEME_UPDATE',
-                                            payload: { theme: newTheme }
-                                        }, '*');
-                                    }
+                                    postPreviewUpdate({ theme: newTheme });
                                 }}
                                 onBrandingChange={(newBranding) => {
                                     setBranding(newBranding);
-                                    const iframe = document.querySelector('iframe');
-                                    if (iframe && iframe.contentWindow) {
-                                        iframe.contentWindow.postMessage({
-                                            type: 'THEME_UPDATE',
-                                            payload: { branding: newBranding }
-                                        }, '*');
-                                    }
+                                    postPreviewUpdate({ branding: newBranding });
                                 }}
                                 announcementBar={announcementBar}
                                 onAnnouncementChange={(newBar) => {
                                     setAnnouncementBar(newBar);
-                                    const iframe = document.querySelector('iframe');
-                                    if (iframe && iframe.contentWindow) {
-                                        iframe.contentWindow.postMessage({
-                                            type: 'THEME_UPDATE',
-                                            payload: { announcementBar: newBar }
-                                        }, '*');
-                                    }
+                                    postPreviewUpdate({ announcementBar: newBar });
                                 }}
                             />
                         )}
@@ -572,7 +576,15 @@ export default function VisualEditorPage() {
                                 src="/?visualEditor=1"
                                 className={`w-full h-full bg-white transition-opacity duration-300 ${iframeLoading ? 'opacity-0' : 'opacity-100'}`}
                                 title="Live Preview"
-                                onLoad={() => setIframeLoading(false)}
+                                onLoad={() => {
+                                    setIframeLoading(false);
+                                    postPreviewUpdate({
+                                        layout,
+                                        theme,
+                                        branding,
+                                        announcementBar,
+                                    });
+                                }}
                             />
                         </div>
                     </div>

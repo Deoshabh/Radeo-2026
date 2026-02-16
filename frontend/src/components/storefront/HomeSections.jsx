@@ -44,6 +44,11 @@ const HeroSection = ({ banners, heroSettings }) => {
     // Fallback to Admin-defined Hero Section
     if (!heroSettings?.enabled) return null;
 
+    const primaryButtonText =
+        heroSettings.primaryButtonText || heroSettings.buttonText || 'Shop Collection';
+    const primaryButtonLink =
+        heroSettings.primaryButtonLink || heroSettings.buttonLink || '/products';
+
     return (
         <section className={`relative min-h-[calc(100vh-80px)] flex items-center justify-center overflow-hidden bg-gradient-to-br ${heroSettings.backgroundGradient || 'from-primary-50 via-brand-cream/20 to-primary-100'}`}>
             <div className="container mx-auto px-4 text-center z-10">
@@ -55,9 +60,9 @@ const HeroSection = ({ banners, heroSettings }) => {
                     <p className="text-xl text-primary-700 mb-8 max-w-2xl mx-auto">{heroSettings.description}</p>
                 )}
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    {heroSettings.primaryButtonLink && (
-                        <Link href={heroSettings.primaryButtonLink} className="btn btn-primary text-lg px-8 py-4">
-                            {heroSettings.primaryButtonText} <FiArrowRight className="inline ml-2" />
+                    {primaryButtonLink && (
+                        <Link href={primaryButtonLink} className="btn btn-primary text-lg px-8 py-4">
+                            {primaryButtonText} <FiArrowRight className="inline ml-2" />
                         </Link>
                     )}
                 </div>
@@ -65,6 +70,22 @@ const HeroSection = ({ banners, heroSettings }) => {
         </section>
     );
 }
+
+const TextSection = ({ sectionData }) => {
+    if (!sectionData?.content) return null;
+
+    return (
+        <ScrollReveal delay={100}>
+            <section className="section-padding bg-white">
+                <div className="container-custom max-w-4xl">
+                    <div className="prose prose-stone max-w-none whitespace-pre-wrap text-primary-700">
+                        {sectionData.content}
+                    </div>
+                </div>
+            </section>
+        </ScrollReveal>
+    );
+};
 
 const FeaturedProductsSection = ({ settings, products }) => {
     const sectionData = settings.homeSections?.featuredProducts || {};
@@ -214,6 +235,8 @@ export default function HomeSections({ initialSettings, initialProducts }) {
                 return <MadeToOrderSection key={section.id} settings={activeSettings} />;
             case 'newsletter':
                 return <NewsletterSection key={section.id} settings={activeSettings} />;
+            case 'text':
+                return <TextSection key={section.id} sectionData={section.data || {}} />;
             default:
                 return null;
         }

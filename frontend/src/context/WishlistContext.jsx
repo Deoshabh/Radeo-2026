@@ -25,7 +25,6 @@ export const WishlistProvider = ({ children }) => {
       setLoading(true);
       const response = await wishlistAPI.get();
       // Backend returns wishlist object directly: {_id, user, products: [...]}
-      console.log('📦 Wishlist API response:', response.data);
       setWishlist(response.data?.products || []);
     } catch (error) {
       console.error('Failed to fetch wishlist:', error);

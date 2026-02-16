@@ -346,6 +346,113 @@ export default function AdminCMSPage() {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-900"></div>
             </div>
         );
+                    {/* Announcement Tab */}
+                    {
+                        activeTab === 'announcement' && (
+                            <div className="bg-white rounded-lg shadow-md p-6 space-y-6 animate-fade-in">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-primary-900">Announcement Bar</h3>
+                                        <p className="text-sm text-gray-500">Edit top-site announcement text and visibility.</p>
+                                    </div>
+                                    <button
+                                        onClick={() => router.push('/admin/visual-editor')}
+                                        className="btn btn-secondary"
+                                    >
+                                        Open Theme Editor
+                                    </button>
+                                </div>
+
+                                <div className="space-y-4 border rounded-lg p-4 bg-primary-50/40">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={announcementBar.enabled !== false}
+                                            onChange={(e) =>
+                                                setAnnouncementBar((prev) => ({ ...prev, enabled: e.target.checked }))
+                                            }
+                                            className="accent-primary-900"
+                                        />
+                                        <span className="text-sm font-medium text-primary-900">Enable Announcement Bar</span>
+                                    </label>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-primary-900 mb-2">Announcement Text</label>
+                                        <input
+                                            type="text"
+                                            className="input w-full"
+                                            value={announcementBar.text || ''}
+                                            onChange={(e) =>
+                                                setAnnouncementBar((prev) => ({ ...prev, text: e.target.value }))
+                                            }
+                                            placeholder="Free shipping on all orders above ₹999"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-primary-900 mb-2">Optional Link</label>
+                                        <input
+                                            type="text"
+                                            className="input w-full"
+                                            value={announcementBar.link || ''}
+                                            onChange={(e) =>
+                                                setAnnouncementBar((prev) => ({ ...prev, link: e.target.value }))
+                                            }
+                                            placeholder="/products"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-primary-900 mb-2">Background Color</label>
+                                            <input
+                                                type="color"
+                                                value={announcementBar.backgroundColor || '#10b981'}
+                                                onChange={(e) =>
+                                                    setAnnouncementBar((prev) => ({ ...prev, backgroundColor: e.target.value }))
+                                                }
+                                                className="h-10 w-20 border border-primary-200 rounded"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-primary-900 mb-2">Text Color</label>
+                                            <input
+                                                type="color"
+                                                value={announcementBar.textColor || '#ffffff'}
+                                                onChange={(e) =>
+                                                    setAnnouncementBar((prev) => ({ ...prev, textColor: e.target.value }))
+                                                }
+                                                className="h-10 w-20 border border-primary-200 rounded"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={announcementBar.dismissible !== false}
+                                            onChange={(e) =>
+                                                setAnnouncementBar((prev) => ({ ...prev, dismissible: e.target.checked }))
+                                            }
+                                            className="accent-primary-900"
+                                        />
+                                        <span className="text-sm text-primary-900">Allow users to dismiss</span>
+                                    </label>
+                                </div>
+
+                                <div className="pt-4 border-t flex justify-end">
+                                    <button
+                                        onClick={handleSaveAnnouncement}
+                                        disabled={saving}
+                                        className="btn btn-primary flex items-center gap-2"
+                                    >
+                                        <FiSave /> {saving ? 'Saving...' : 'Save Announcement'}
+                                    </button>
+                                </div>
+                            </div>
+                        )
+                    }
+
     }
 
     return (

@@ -13,6 +13,16 @@ class ShiprocketService {
     }
   }
 
+  isPlaceholderCredential(value) {
+    if (!value || typeof value !== "string") {
+      return true;
+    }
+
+    return /^(replace-with|your-shiprocket-|changeme|example)/i.test(
+      value.trim(),
+    );
+  }
+
   /**
    * Authenticate and get token
    * Token is valid for 10 days (240 hours)
@@ -24,8 +34,18 @@ class ShiprocketService {
         return this.token;
       }
 
-      if (!this.email || !this.password) {
-        throw new Error("Shiprocket credentials are not configured.");
+      if (
+        !this.email ||
+        !this.password ||
+        this.isPlaceholderCredential(this.email) ||
+        this.isPlaceholderCredential(this.password)
+      ) {
+        const error = new Error(
+          "Shiprocket credentials are missing or still using placeholder values.",
+        );
+        error.statusCode = 503;
+        error.code = "SHIPROCKET_CONFIG_ERROR";
+        throw error;
       }
 
       const response = await axios.post(`${this.baseURL}/auth/login`, {
@@ -44,7 +64,18 @@ class ShiprocketService {
         "❌ Shiprocket authentication failed:",
         error.response?.data || error.message,
       );
-      throw new Error("Shiprocket authentication failed");
+
+      if (error.code === "SHIPROCKET_CONFIG_ERROR") {
+        throw error;
+      }
+
+      const authError = new Error(
+        error.response?.data?.message || "Shiprocket authentication failed",
+      );
+      authError.statusCode = error.response?.status || 502;
+      authError.code = "SHIPROCKET_AUTH_ERROR";
+      authError.details = error.response?.data || error.message;
+      throw authError;
     }
   }
 
@@ -57,6 +88,23 @@ class ShiprocketService {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     };
+  }
+
+  /**
+   * Health check for Shiprocket credentials and auth
+   */
+  async checkHealth() {
+    try {
+      await this.authenticate();
+
+      return {
+        configured: true,
+        authenticated: true,
+        tokenExpiry: this.tokenExpiry,
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 
   /**
@@ -397,6 +445,21 @@ class ShiprocketService {
         "❌ Get pickup addresses failed:",
         error.response?.data || error.message,
       );
+
+      if (error.code === "SHIPROCKET_CONFIG_ERROR") {
+        throw error;
+      }
+
+      if (error.response) {
+        const pickupError = new Error(
+          error.response?.data?.message || "Failed to fetch pickup addresses",
+        );
+        pickupError.statusCode = error.response.status;
+        pickupError.code = "SHIPROCKET_PICKUP_FETCH_ERROR";
+        pickupError.details = error.response.data;
+        throw pickupError;
+      }
+
       throw error;
     }
   }

@@ -50,6 +50,48 @@ const deepMerge = (base, incoming) => {
 
 const normalizeSettings = (incoming) => deepMerge(SITE_SETTINGS_DEFAULTS, incoming || {});
 
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+const hexToRgb = (hex) => {
+  const normalized = String(hex || '').replace('#', '').trim();
+  if (!/^[0-9a-fA-F]{6}$/.test(normalized)) return null;
+  return {
+    r: parseInt(normalized.slice(0, 2), 16),
+    g: parseInt(normalized.slice(2, 4), 16),
+    b: parseInt(normalized.slice(4, 6), 16),
+  };
+};
+
+const rgbToHex = ({ r, g, b }) =>
+  `#${[r, g, b]
+    .map((channel) => clamp(Math.round(channel), 0, 255).toString(16).padStart(2, '0'))
+    .join('')}`;
+
+const mixRgb = (base, target, amount) => ({
+  r: base.r + (target.r - base.r) * amount,
+  g: base.g + (target.g - base.g) * amount,
+  b: base.b + (target.b - base.b) * amount,
+});
+
+const buildPrimaryScale = (baseHex) => {
+  const base = hexToRgb(baseHex) || { r: 59, g: 47, b: 47 };
+  const white = { r: 255, g: 255, b: 255 };
+  const black = { r: 0, g: 0, b: 0 };
+
+  return {
+    50: rgbToHex(mixRgb(base, white, 0.9)),
+    100: rgbToHex(mixRgb(base, white, 0.82)),
+    200: rgbToHex(mixRgb(base, white, 0.68)),
+    300: rgbToHex(mixRgb(base, white, 0.52)),
+    400: rgbToHex(mixRgb(base, white, 0.32)),
+    500: rgbToHex(mixRgb(base, white, 0.12)),
+    600: rgbToHex(mixRgb(base, black, 0.08)),
+    700: rgbToHex(mixRgb(base, black, 0.18)),
+    800: rgbToHex(mixRgb(base, black, 0.32)),
+    900: rgbToHex(mixRgb(base, black, 0.45)),
+  };
+};
+
 const readCache = () => {
   if (typeof window === 'undefined') {
     return null;
@@ -129,6 +171,96 @@ export function SiteSettingsProvider({ children }) {
   useEffect(() => {
     fetchSettings();
   }, [fetchSettings]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    const root = document.documentElement;
+    const theme = settings?.theme || {};
+    const effects = theme.effects || {};
+    const primaryScale = buildPrimaryScale(theme.primaryColor || '#3B2F2F');
+
+    root.style.setProperty('--theme-font-family', theme.fontFamily || 'var(--font-inter)');
+    root.style.setProperty('--theme-font-scale', String(theme.fontScale || 1));
+    root.style.setProperty('--theme-border-radius', theme.borderRadius || '0.5rem');
+    root.style.setProperty('--theme-container-width', theme.containerWidth || '1280px');
+    root.style.setProperty('--theme-bg-color', theme.backgroundColor || '#fafaf9');
+    root.style.setProperty('--theme-text-color', theme.textColor || '#1c1917');
+    root.style.setProperty('--theme-primary-color', theme.primaryColor || '#3B2F2F');
+    root.style.setProperty('--theme-secondary-color', theme.secondaryColor || '#E5D3B3');
+    root.style.setProperty('--color-brand-brown', theme.primaryColor || '#3d2f28');
+    root.style.setProperty('--color-brand-tan', theme.secondaryColor || '#8b7355');
+    root.style.setProperty('--color-brand-cream', theme.secondaryColor || '#d4c4b0');
+    root.style.setProperty('--color-primary-50', primaryScale[50]);
+    root.style.setProperty('--color-primary-100', primaryScale[100]);
+    root.style.setProperty('--color-primary-200', primaryScale[200]);
+    root.style.setProperty('--color-primary-300', primaryScale[300]);
+    root.style.setProperty('--color-primary-400', primaryScale[400]);
+    root.style.setProperty('--color-primary-500', primaryScale[500]);
+    root.style.setProperty('--color-primary-600', primaryScale[600]);
+    root.style.setProperty('--color-primary-700', primaryScale[700]);
+    root.style.setProperty('--color-primary-800', primaryScale[800]);
+    root.style.setProperty('--color-primary-900', primaryScale[900]);
+
+    root.dataset.themeHeaderVariant = theme.headerVariant || 'minimal';
+    root.dataset.themePageTransition = effects.pageTransitions || 'fade';
+    root.dataset.themeScrollAnimations = effects.scrollAnimations === false ? 'false' : 'true';
+    root.dataset.themeScrollAnimationType = effects.scrollAnimationType || 'fade-in';
+    root.dataset.themeCustomCursor = effects.customCursor ? 'true' : 'false';
+
+    const cursorId = 'theme-custom-cursor';
+    const existingCursor = document.getElementById(cursorId);
+    const cursorEnabled = effects.customCursor && window.matchMedia('(pointer:fine)').matches;
+
+    if (!cursorEnabled) {
+      if (existingCursor) existingCursor.remove();
+      return;
+    }
+
+    const cursorSize = clamp(Number(effects.customCursorSize) || 20, 8, 64);
+    const cursorColor = effects.customCursorColor || theme.primaryColor || '#000000';
+    const cursorEl = existingCursor || document.createElement('div');
+    cursorEl.id = cursorId;
+    cursorEl.style.position = 'fixed';
+    cursorEl.style.left = '0px';
+    cursorEl.style.top = '0px';
+    cursorEl.style.width = `${cursorSize}px`;
+    cursorEl.style.height = `${cursorSize}px`;
+    cursorEl.style.borderRadius = '9999px';
+    cursorEl.style.border = `2px solid ${cursorColor}`;
+    cursorEl.style.background = `${cursorColor}22`;
+    cursorEl.style.pointerEvents = 'none';
+    cursorEl.style.zIndex = '99999';
+    cursorEl.style.transform = 'translate(-50%, -50%)';
+    cursorEl.style.transition = 'width 0.15s ease, height 0.15s ease, border-color 0.15s ease';
+    if (!existingCursor) document.body.appendChild(cursorEl);
+
+    const handleMove = (event) => {
+      cursorEl.style.left = `${event.clientX}px`;
+      cursorEl.style.top = `${event.clientY}px`;
+    };
+
+    const handleDown = () => {
+      cursorEl.style.width = `${Math.max(6, cursorSize - 6)}px`;
+      cursorEl.style.height = `${Math.max(6, cursorSize - 6)}px`;
+    };
+
+    const handleUp = () => {
+      cursorEl.style.width = `${cursorSize}px`;
+      cursorEl.style.height = `${cursorSize}px`;
+    };
+
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mousedown', handleDown);
+    window.addEventListener('mouseup', handleUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mousedown', handleDown);
+      window.removeEventListener('mouseup', handleUp);
+      cursorEl.remove();
+    };
+  }, [settings]);
 
   // Live Preview Listener
   useEffect(() => {

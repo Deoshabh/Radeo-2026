@@ -14,6 +14,7 @@ export default function ShiprocketShipmentModal({ order, isOpen, onClose, onSucc
   const [dimensions, setDimensions] = useState({ length: 10, breadth: 10, height: 10 });
   const [pickupLocation, setPickupLocation] = useState('Primary');
   const [pickupAddresses, setPickupAddresses] = useState([]);
+  const [shiprocketHealthy, setShiprocketHealthy] = useState(true);
 
   useEffect(() => {
     if (isOpen) {
@@ -23,14 +24,25 @@ export default function ShiprocketShipmentModal({ order, isOpen, onClose, onSucc
 
   const fetchPickupAddresses = async () => {
     try {
+      await adminAPI.getShiprocketHealth();
+      setShiprocketHealthy(true);
+
       const response = await adminAPI.getPickupAddresses();
       setPickupAddresses(response.data?.data?.shipping_address || []);
     } catch (error) {
+      setShiprocketHealthy(false);
+      setPickupAddresses([]);
+      toast.error(error.response?.data?.message || 'Shiprocket is not configured or reachable.');
       console.error('Failed to fetch pickup addresses:', error);
     }
   };
 
   const fetchShippingRates = async () => {
+    if (!shiprocketHealthy) {
+      toast.error('Shiprocket is not healthy. Please verify Shiprocket configuration first.');
+      return;
+    }
+
     try {
       setLoading(true);
       
@@ -153,6 +165,12 @@ export default function ShiprocketShipmentModal({ order, isOpen, onClose, onSucc
             </p>
           </div>
 
+          {!shiprocketHealthy && (
+            <div className="mb-6 p-4 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">
+              Shiprocket is not configured or reachable. Please check admin Shiprocket health/settings and try again.
+            </div>
+          )}
+
           {step === 1 && (
             <div className="space-y-4">
               <h3 className="font-semibold text-lg mb-4">Package Details</h3>
@@ -227,7 +245,7 @@ export default function ShiprocketShipmentModal({ order, isOpen, onClose, onSucc
 
               <button
                 onClick={fetchShippingRates}
-                disabled={loading}
+                disabled={loading || !shiprocketHealthy}
                 className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:bg-gray-400 flex items-center justify-center gap-2"
               >
                 {loading ? (

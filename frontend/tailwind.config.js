@@ -21,9 +21,9 @@ module.exports = {
           900: "var(--color-primary-900)",
         },
         brand: {
-          brown: "#3d2f28",
-          tan: "#8b7355",
-          cream: "#d4c4b0",
+          brown: "var(--color-brand-brown)",
+          tan: "var(--color-brand-tan)",
+          cream: "var(--color-brand-cream)",
         },
       },
       fontFamily: {
