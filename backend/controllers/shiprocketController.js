@@ -116,7 +116,7 @@ exports.createShipment = async (req, res) => {
       shipment_id: result.shipment_id,
       awb_code: result.awb_code,
       courier_name: result.courier_name,
-      courier_id: courier_id,
+      courier_id: result.courier_id || courier_id,
       label_url: result.label_url,
       trackingId: result.awb_code,
       courier: result.courier_name,
@@ -131,16 +131,23 @@ exports.createShipment = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Shipment created successfully",
+      message:
+        result.warnings?.length > 0
+          ? "Shipment created with warnings"
+          : "Shipment created successfully",
       data: result,
       order: order,
     });
   } catch (error) {
     console.error("Create shipment error:", error);
-    res.status(500).json({
+
+    const statusCode = error.statusCode || error.response?.status || 500;
+
+    res.status(statusCode).json({
       success: false,
       message: error.message || "Failed to create shipment",
-      error: error.response?.data || error.message,
+      error: error.details || error.response?.data || error.message,
+      code: error.code,
     });
   }
 };

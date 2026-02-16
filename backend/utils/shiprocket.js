@@ -107,6 +107,20 @@ class ShiprocketService {
     }
   }
 
+  buildShiprocketError(error, fallbackMessage, code) {
+    if (error?.code?.startsWith("SHIPROCKET_")) {
+      return error;
+    }
+
+    const mappedError = new Error(
+      error?.response?.data?.message || error?.message || fallbackMessage,
+    );
+    mappedError.statusCode = error?.response?.status || 500;
+    mappedError.code = code;
+    mappedError.details = error?.response?.data || error?.message;
+    return mappedError;
+  }
+
   /**
    * Check serviceability and get shipping rates
    * @param {Object} params - { pickup_postcode, delivery_postcode, weight, cod, declared_value }
@@ -134,7 +148,11 @@ class ShiprocketService {
         "❌ Get shipping rates failed:",
         error.response?.data || error.message,
       );
-      throw error;
+      throw this.buildShiprocketError(
+        error,
+        "Failed to fetch shipping rates",
+        "SHIPROCKET_RATES_ERROR",
+      );
     }
   }
 
@@ -206,7 +224,11 @@ class ShiprocketService {
         "❌ Create Shiprocket order failed:",
         error.response?.data || error.message,
       );
-      throw error;
+      throw this.buildShiprocketError(
+        error,
+        "Failed to create Shiprocket order",
+        "SHIPROCKET_CREATE_ORDER_ERROR",
+      );
     }
   }
 
@@ -234,7 +256,11 @@ class ShiprocketService {
         "❌ Assign AWB failed:",
         error.response?.data || error.message,
       );
-      throw error;
+      throw this.buildShiprocketError(
+        error,
+        "Failed to assign AWB",
+        "SHIPROCKET_ASSIGN_AWB_ERROR",
+      );
     }
   }
 
@@ -269,7 +295,11 @@ class ShiprocketService {
         "❌ Schedule pickup failed:",
         error.response?.data || error.message,
       );
-      throw error;
+      throw this.buildShiprocketError(
+        error,
+        "Failed to schedule pickup",
+        "SHIPROCKET_SCHEDULE_PICKUP_ERROR",
+      );
     }
   }
 
@@ -296,7 +326,11 @@ class ShiprocketService {
         "❌ Generate label failed:",
         error.response?.data || error.message,
       );
-      throw error;
+      throw this.buildShiprocketError(
+        error,
+        "Failed to generate label",
+        "SHIPROCKET_GENERATE_LABEL_ERROR",
+      );
     }
   }
 
@@ -471,15 +505,23 @@ class ShiprocketService {
    */
   async createCompleteShipment(orderData, courierId = null) {
     try {
+      const warnings = [];
+
       // Step 1: Create order in Shiprocket
       const orderResponse = await this.createOrder(orderData);
 
-      if (!orderResponse.order_id || !orderResponse.shipment_id) {
-        throw new Error("Failed to create Shiprocket order");
-      }
+      const shiprocketOrderId =
+        orderResponse?.order_id || orderResponse?.data?.order_id;
+      const shipmentId =
+        orderResponse?.shipment_id || orderResponse?.data?.shipment_id;
 
-      const shiprocketOrderId = orderResponse.order_id;
-      const shipmentId = orderResponse.shipment_id;
+      if (!shiprocketOrderId || !shipmentId) {
+        throw this.buildShiprocketError(
+          new Error("Shiprocket order/shipment id missing in response"),
+          "Failed to create Shiprocket order",
+          "SHIPROCKET_CREATE_ORDER_ERROR",
+        );
+      }
 
       // Step 2: Get recommended courier if not provided
       if (!courierId) {
@@ -508,14 +550,47 @@ class ShiprocketService {
       // Step 3: Assign AWB
       const awbResponse = await this.assignAWB(shipmentId, courierId);
 
-      const awbCode = awbResponse.response?.data?.awb_code;
-      const courierName = awbResponse.response?.data?.courier_name;
+      const awbData = awbResponse?.response?.data || awbResponse?.data || awbResponse;
+      const awbCode = awbData?.awb_code;
+      const courierName = awbData?.courier_name;
+
+      if (!awbCode) {
+        throw this.buildShiprocketError(
+          new Error("AWB code missing in assign AWB response"),
+          "Failed to assign AWB",
+          "SHIPROCKET_ASSIGN_AWB_ERROR",
+        );
+      }
 
       // Step 4: Schedule pickup
-      await this.schedulePickup(shipmentId);
+      try {
+        await this.schedulePickup(shipmentId);
+      } catch (error) {
+        warnings.push({
+          step: "schedule_pickup",
+          code: error.code,
+          message: error.message,
+          details: error.details || error.response?.data || error.message,
+        });
+      }
 
       // Step 5: Generate label
-      const labelResponse = await this.generateLabel([shipmentId]);
+      let labelUrl = null;
+      try {
+        const labelResponse = await this.generateLabel([shipmentId]);
+        labelUrl =
+          labelResponse?.label_url ||
+          labelResponse?.data?.label_url ||
+          labelResponse?.response?.label_url ||
+          null;
+      } catch (error) {
+        warnings.push({
+          step: "generate_label",
+          code: error.code,
+          message: error.message,
+          details: error.details || error.response?.data || error.message,
+        });
+      }
 
       return {
         success: true,
@@ -523,14 +598,20 @@ class ShiprocketService {
         shipment_id: shipmentId,
         awb_code: awbCode,
         courier_name: courierName,
-        label_url: labelResponse.label_url,
+        courier_id: courierId,
+        label_url: labelUrl,
+        warnings,
       };
     } catch (error) {
       console.error(
         "❌ Complete shipment creation failed:",
         error.response?.data || error.message,
       );
-      throw error;
+      throw this.buildShiprocketError(
+        error,
+        "Failed to create complete shipment",
+        "SHIPROCKET_CREATE_SHIPMENT_ERROR",
+      );
     }
   }
 }
