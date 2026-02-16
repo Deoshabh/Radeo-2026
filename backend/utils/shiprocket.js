@@ -652,17 +652,15 @@ class ShiprocketService {
       }
 
       if (!awbCode) {
-        const awbMissingError = this.buildShiprocketError(
-          new Error("AWB code missing in assign AWB response"),
-          "Failed to assign AWB",
-          "SHIPROCKET_ASSIGN_AWB_ERROR",
-        );
-        awbMissingError.details = {
-          message: "AWB not found in assign AWB and shipment tracking responses",
-          assign_awb_response: awbResponse,
-          shipment_id: shipmentId,
-        };
-        throw awbMissingError;
+        warnings.push({
+          step: "assign_awb",
+          code: "SHIPROCKET_AWB_MISSING",
+          message: "AWB code missing in assign AWB response",
+          details: {
+            assign_awb_response: awbResponse,
+            shipment_id: shipmentId,
+          },
+        });
       }
 
       // Step 4: Schedule pickup

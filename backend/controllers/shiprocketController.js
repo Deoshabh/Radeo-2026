@@ -215,16 +215,16 @@ exports.trackShipment = async (req, res) => {
       });
     }
 
-    if (!order.shipping?.awb_code) {
+    if (!order.shipping?.awb_code && !order.shipping?.shipment_id) {
       return res.status(400).json({
         success: false,
-        message: "No AWB code found for this order",
+        message: "No AWB code or shipment ID found for this order",
       });
     }
 
-    const trackingData = await shiprocketService.trackByAWB(
-      order.shipping.awb_code,
-    );
+    const trackingData = order.shipping?.awb_code
+      ? await shiprocketService.trackByAWB(order.shipping.awb_code)
+      : await shiprocketService.trackByShipmentId(order.shipping.shipment_id);
 
     // Update order with latest tracking info
     if (trackingData.tracking_data) {
