@@ -551,8 +551,19 @@ class ShiprocketService {
       const awbResponse = await this.assignAWB(shipmentId, courierId);
 
       const awbData = awbResponse?.response?.data || awbResponse?.data || awbResponse;
-      const awbCode = awbData?.awb_code;
-      const courierName = awbData?.courier_name;
+      const awbCode =
+        awbData?.awb_code ||
+        awbData?.data?.awb_code ||
+        awbResponse?.response?.data?.data?.awb_code ||
+        awbResponse?.data?.data?.awb_code ||
+        awbResponse?.awb_code;
+      const courierName =
+        awbData?.courier_name ||
+        awbData?.data?.courier_name ||
+        awbResponse?.response?.data?.data?.courier_name ||
+        awbResponse?.data?.data?.courier_name ||
+        awbResponse?.courier_name ||
+        null;
 
       if (!awbCode) {
         throw this.buildShiprocketError(
