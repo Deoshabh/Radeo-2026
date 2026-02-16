@@ -331,6 +331,18 @@ const verifyRecaptcha = (expectedAction, minScore = 0.5, optional = false) => {
 
       if (!result.success) {
         console.log(`❌ reCAPTCHA verification failed:`, result);
+
+        if (optional) {
+          console.warn(
+            `⚠️  Optional reCAPTCHA verification failed for action: ${expectedAction}. Continuing request.`,
+          );
+          req.recaptchaResult = {
+            ...result,
+            optionalBypass: true,
+          };
+          return next();
+        }
+
         return res.status(400).json({
           message: "reCAPTCHA verification failed",
           error: result.error,
