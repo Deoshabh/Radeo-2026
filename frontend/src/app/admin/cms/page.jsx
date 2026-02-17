@@ -86,7 +86,7 @@ export default function AdminCMSPage() {
             setAdvancedSettings(advancedSettingsRes.data.settings || {});
 
             setBranding(settings.branding || { logo: {}, favicon: {}, siteName: '' });
-            setBanners(settings.banners || []);
+            setBanners(settings.banners || settings.bannerSystem?.banners || []);
             setAnnouncementBar(settings.announcementBar || {
                 enabled: true, text: '', link: '', backgroundColor: '#10b981', textColor: '#ffffff', dismissible: true
             });

@@ -83,6 +83,11 @@ export default function useHomeSectionComposition({
     builderLayout,
     initialProducts,
 }) {
+    const effectiveBanners =
+        effectiveSettings?.banners ||
+        effectiveSettings?.bannerSystem?.banners ||
+        [];
+
     const effectiveSettings = useMemo(() => {
         if (!runtimeContext.isStorefrontBuilder) return activeSettings;
         if (!Array.isArray(builderLayout) || builderLayout.length === 0) return activeSettings;
@@ -130,7 +135,7 @@ export default function useHomeSectionComposition({
                     effectiveSettings.homeSections?.heroSection || {},
                     sectionData || {},
                 );
-                return <HeroSection key={section.id} banners={effectiveSettings.banners} heroSettings={heroSettings} />;
+                return <HeroSection key={section.id} banners={effectiveBanners} heroSettings={heroSettings} />;
             }
             case 'products': {
                 const productsSettings = mergeSectionSettings(

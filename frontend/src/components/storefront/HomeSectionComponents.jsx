@@ -37,11 +37,22 @@ const resolveHeroContentPosition = (alignment = 'center') => {
 
 export const HeroSection = ({ banners, heroSettings }) => {
     const activeBanners = (banners || [])
-        .filter((banner) => banner.isActive)
+        .filter((banner) => banner?.isActive === true || banner?.enabled === true)
         .sort((a, b) => (a.order || 0) - (b.order || 0));
 
     if (activeBanners.length > 0) {
         const banner = activeBanners[0];
+        const bannerTitle =
+            banner.title ||
+            banner.name ||
+            heroSettings?.title ||
+            '';
+        const bannerSubtitle =
+            banner.subtitle ||
+            banner.description ||
+            heroSettings?.subtitle ||
+            heroSettings?.description ||
+            '';
         const bannerPrimaryLink = banner.link || banner.primaryLink || '';
         const bannerPrimaryText =
             banner.buttonText ||
@@ -69,8 +80,8 @@ export const HeroSection = ({ banners, heroSettings }) => {
             >
                 <div className="container-custom">
                     <div className="max-w-2xl text-white">
-                        <h2 className="text-5xl lg:text-7xl font-bold mb-4 leading-tight">{banner.title}</h2>
-                        {banner.subtitle && <p className="text-xl text-white/90 mb-8">{banner.subtitle}</p>}
+                        <h2 className="text-5xl lg:text-7xl font-bold mb-4 leading-tight">{bannerTitle}</h2>
+                        {bannerSubtitle && <p className="text-xl text-white/90 mb-8">{bannerSubtitle}</p>}
                         {(bannerPrimaryLink || bannerSecondaryLink) && (
                             <div className="inline-flex flex-col sm:flex-row gap-4">
                                 {bannerPrimaryLink && (

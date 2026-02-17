@@ -467,7 +467,7 @@ export default function VisualEditorPage() {
             setTheme(settings.theme || SITE_SETTINGS_DEFAULTS.theme);
             setBranding(settings.branding || SITE_SETTINGS_DEFAULTS.branding || {});
             setAnnouncementBar(settings.announcementBar || SITE_SETTINGS_DEFAULTS.announcementBar || {});
-            setBanners(settings.banners || []);
+            setBanners(settings.banners || settings.bannerSystem?.banners || []);
             setPublishStatus(settings.publishWorkflow?.status || 'live');
             setScheduledPublishAt(settings.publishWorkflow?.scheduledAt || '');
             setPublishedAt(settings.publishWorkflow?.publishedAt || '');
@@ -720,7 +720,9 @@ export default function VisualEditorPage() {
         toast.success(`Added ${template.label}`);
     };
 
-    const hasActiveBanners = (banners || []).some((banner) => banner?.isActive);
+    const hasActiveBanners = (banners || []).some(
+        (banner) => banner?.isActive === true || banner?.enabled === true,
+    );
     const publishedAtLabel = useMemo(() => {
         if (!publishedAt) return 'Never published';
         const publishedDate = new Date(publishedAt);
@@ -877,6 +879,7 @@ export default function VisualEditorPage() {
                                 {editingSection && (
                                     <EditSectionPanel
                                         section={editingSection}
+                                        hasActiveBanners={hasActiveBanners}
                                         onSave={handleUpdateSection}
                                         onCancel={() => setEditingSectionId(null)}
                                     />
