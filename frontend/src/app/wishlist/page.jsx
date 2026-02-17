@@ -24,7 +24,7 @@ export default function WishlistPage() {
   }
 
   return (
-    <div className="min-h-screen bg-primary-50 pt-24">
+    <div className="min-h-screen bg-primary-50 pt-6">
       <div className="container-custom section-padding">
         <Link href="/products" className="inline-flex items-center gap-2 text-primary-600 hover:text-brand-brown mb-8">
           <FiArrowLeft />

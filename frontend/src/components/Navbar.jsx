@@ -173,7 +173,7 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-[72px]">
 
           {/* ── Left: Nav Links (Desktop) ── */}
-          <div className="hidden lg:flex items-center gap-1">
+          <div className="hidden lg:flex items-center gap-1 flex-1">
             {navLinks.map(link => {
               const isActive = pathname === link.href;
               return (
@@ -199,15 +199,16 @@ export default function Navbar() {
               onMouseEnter={() => setIsCategoriesOpen(true)}
               onMouseLeave={() => setIsCategoriesOpen(false)}
             >
-              <button
-                className="px-4 py-2 text-sm font-medium uppercase tracking-[0.12em] text-[#8a7460] hover:text-[#2a1a0a] transition-colors flex items-center gap-1"
+              <Link
+                href="/categories"
+                className="px-4 py-2 text-sm font-medium uppercase tracking-[0.12em] text-[#8a7460] hover:text-[#2a1a0a] transition-colors flex items-center gap-1 cursor-pointer"
                 style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
               >
                 Categories
                 <svg className={`w-3 h-3 transition-transform duration-200 ${isCategoriesOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
-              </button>
+              </Link>
 
               {isCategoriesOpen && (
                 <div
@@ -289,7 +290,7 @@ export default function Navbar() {
           </Link>
 
           {/* ── Right: Icons ── */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-1 justify-end">
 
             {/* Search toggle (desktop) */}
             <button

@@ -170,7 +170,7 @@ export default function FirebaseLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-brand-cream/20 to-primary-100 pt-24">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-brand-cream/20 to-primary-100 pt-6">
       <div className="container-custom py-12">
         <div className="max-w-md mx-auto">
           {/* Back Button */}

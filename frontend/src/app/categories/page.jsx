@@ -49,7 +49,7 @@ export default function AllCategoriesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-primary-50 pt-24">
+      <div className="min-h-screen bg-primary-50 pt-6">
         <div className="container-custom section-padding">
           <div className="flex justify-center items-center py-20">
             <div className="w-10 h-10 border-2 border-[#e8e0d0] border-t-[#2a1a0a] rounded-full animate-spin"></div>
@@ -60,7 +60,7 @@ export default function AllCategoriesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#faf8f4] pt-24">
+    <div className="min-h-screen bg-[#faf8f4] pt-6">
       <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-8">
         {/* Header */}
         <div className="text-center mb-12">

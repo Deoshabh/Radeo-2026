@@ -256,7 +256,7 @@ function ProductsContent() {
   ].filter(Boolean).length;
 
   return (
-    <div className="min-h-screen bg-[#faf8f4] pt-28 pb-20" ref={containerRef}>
+    <div className="min-h-screen bg-[#faf8f4] pt-8 pb-20" ref={containerRef}>
       <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
         {/* Header */}
         <div className="mb-10" ref={headerRef}>
@@ -552,7 +552,7 @@ function ProductsContent() {
 export default function ProductsPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#faf8f4] pt-28">
+      <div className="min-h-screen bg-[#faf8f4] pt-8">
         <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
           <div className="w-48 h-8 bg-[#e8e0d0] animate-pulse mb-8"></div>
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">

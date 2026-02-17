@@ -126,7 +126,7 @@ export default function ProductClient({ product }) {
     return (
         <>
             <ProductMetadata product={product} />
-            <div className="min-h-screen bg-[#faf8f4] pt-24">
+            <div className="min-h-screen bg-[#faf8f4] pt-6">
                 <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-8 lg:py-12">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
                         {/* Image Gallery */}

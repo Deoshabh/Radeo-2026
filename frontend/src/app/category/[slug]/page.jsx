@@ -18,7 +18,7 @@ export default function CategoryDetailPage() {
   // Show fallback if no slug
   if (!slug) {
     return (
-      <div className="min-h-screen bg-primary-50 pt-24 flex items-center justify-center">
+      <div className="min-h-screen bg-primary-50 pt-6 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600">Invalid category</p>
         </div>

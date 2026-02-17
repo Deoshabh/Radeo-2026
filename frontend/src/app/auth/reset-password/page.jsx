@@ -19,7 +19,7 @@ export default function ResetPasswordPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-primary-50 pt-24 flex items-center justify-center">
+    <div className="min-h-screen bg-primary-50 pt-6 flex items-center justify-center">
       <div className="container-custom py-12">
         <div className="max-w-md mx-auto">
           <Link href="/auth/firebase-login" className="inline-flex items-center gap-2 text-primary-600 hover:text-brand-brown mb-8">
