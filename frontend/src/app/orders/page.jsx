@@ -209,7 +209,7 @@ export default function OrdersPage() {
                       <div key={index} className="flex items-center gap-4">
                         <div className="relative w-16 h-16 flex-shrink-0">
                           <Image
-                            src={item.product?.images?.[0]?.url || item.product?.images?.[0] || '/placeholder.jpg'}
+                            src={item.product?.images?.[0]?.url || item.product?.images?.[0] || '/placeholder.svg'}
                             alt={item.product?.name || 'Product'}
                             fill
                             sizes="64px"

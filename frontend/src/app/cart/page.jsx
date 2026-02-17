@@ -77,7 +77,7 @@ export default function CartPage() {
                   <div key={`${item.product._id}-${item.size}`} className="bg-white rounded-lg p-4 sm:p-6 flex flex-col sm:flex-row gap-4 sm:gap-6">
                     <div className="relative w-full sm:w-24 md:w-32 h-48 sm:h-24 md:h-32 flex-shrink-0">
                       <Image
-                        src={item.product.images?.[0]?.url || item.product.images?.[0] || '/placeholder.jpg'}
+                        src={item.product.images?.[0]?.url || item.product.images?.[0] || '/placeholder.svg'}
                         alt={item.product.name}
                         fill
                         sizes="(max-width: 640px) 100vw, 128px"

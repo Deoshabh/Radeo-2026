@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { updateUserPassword, resetPassword } from '@/utils/firebaseAuth';
@@ -64,7 +64,7 @@ export default function ChangePassword() {
                 <button
                     onClick={handleReset}
                     type="button"
-                    className="text-sm text-brand-brown hover:text-[#5c3d1e] underline"
+                    className="text-sm text-brand-brown hover:text-[color:var(--color-muted)] underline"
                 >
                     Forgot Password?
                 </button>

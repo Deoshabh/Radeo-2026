@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -52,7 +52,7 @@ export default function AllCategoriesPage() {
       <div className="min-h-screen bg-primary-50 pt-6">
         <div className="container-custom section-padding">
           <div className="flex justify-center items-center py-20">
-            <div className="w-10 h-10 border-2 border-[#e8e0d0] border-t-[#2a1a0a] rounded-full animate-spin"></div>
+            <div className="w-10 h-10 border-2 border-[color:var(--color-border-light)] border-t-[#2a1a0a] rounded-full animate-spin"></div>
           </div>
         </div>
       </div>
@@ -60,15 +60,15 @@ export default function AllCategoriesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#faf8f4] pt-6">
+    <div className="min-h-screen bg-[color:var(--color-page-bg)] pt-6">
       <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <p className="text-[11px] text-[#c9a96e] mb-3 uppercase tracking-[0.3em] font-medium" style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>Browse</p>
-          <h1 className="text-4xl lg:text-5xl font-bold text-[#2a1a0a] mb-4" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>
+          <p className="text-[11px] text-[color:var(--color-accent)] mb-3 uppercase tracking-[0.3em] font-medium" style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>Browse</p>
+          <h1 className="text-4xl lg:text-5xl font-bold text-[color:var(--color-heading)] mb-4" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>
             Our Categories
           </h1>
-          <p className="text-lg text-[#8a7460] max-w-2xl mx-auto" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>
+          <p className="text-lg text-[color:var(--color-body)] max-w-2xl mx-auto" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>
             Explore our complete collection of handcrafted shoes organized by category
           </p>
         </div>
@@ -79,10 +79,10 @@ export default function AllCategoriesPage() {
             <button
               key={category._id}
               onClick={() => router.push(`/category/${category.slug}`)}
-              className="group bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-[#e8e0d0] hover:border-[#c9a96e]"
+              className="group bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-[color:var(--color-border-light)] hover:border-[color:var(--color-accent)]"
             >
               {/* Category Image */}
-              <div className="relative aspect-[4/3] bg-[#f2ede4] overflow-hidden">
+              <div className="relative aspect-[4/3] bg-[color:var(--color-subtle-bg)] overflow-hidden">
                 {category.image?.url ? (
                   <Image
                     src={category.image.url}
@@ -94,7 +94,7 @@ export default function AllCategoriesPage() {
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <div className="w-20 h-20 rounded-full bg-white/80 flex items-center justify-center backdrop-blur-sm">
-                      <span className="text-3xl font-bold text-[#c9a96e]" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>{category.name.charAt(0)}</span>
+                      <span className="text-3xl font-bold text-[color:var(--color-accent)]" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>{category.name.charAt(0)}</span>
                     </div>
                   </div>
                 )}
@@ -104,24 +104,24 @@ export default function AllCategoriesPage() {
 
               {/* Category Info */}
               <div className="p-6">
-                <h3 className="text-xl font-bold text-[#2a1a0a] mb-2 group-hover:text-[#a07840] transition-colors" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>
+                <h3 className="text-xl font-bold text-[color:var(--color-heading)] mb-2 group-hover:text-[color:var(--color-accent-hover)] transition-colors" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>
                   {category.name}
                 </h3>
                 {category.description && (
-                    <p className="text-sm text-[#8a7460] mb-3 line-clamp-2" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>
+                    <p className="text-sm text-[color:var(--color-body)] mb-3 line-clamp-2" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>
                     {category.description}
                   </p>
                 )}
-                <div className="flex items-center justify-between pt-3 border-t border-[#e8e0d0]">
+                <div className="flex items-center justify-between pt-3 border-t border-[color:var(--color-border-light)]">
                   <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#c9a96e]"></div>
-                    <p className="text-[11px] font-medium text-[#8a7460] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>
+                    <div className="w-1.5 h-1.5 rounded-full bg-[color:var(--color-accent)]"></div>
+                    <p className="text-[11px] font-medium text-[color:var(--color-body)] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>
                       {categoryStats[category._id] || 0} Products
                     </p>
                   </div>
-                  <div className="w-8 h-8 bg-[#f2ede4] group-hover:bg-[#2a1a0a] flex items-center justify-center transition-colors">
-                    <span className="text-[#2a1a0a] group-hover:text-[#f2ede4] group-hover:translate-x-0.5 transition-all text-lg">
-                      →
+                  <div className="w-8 h-8 bg-[color:var(--color-subtle-bg)] group-hover:bg-[color:var(--color-heading)] flex items-center justify-center transition-colors">
+                    <span className="text-[color:var(--color-heading)] group-hover:text-[color:var(--color-subtle-bg)] group-hover:translate-x-0.5 transition-all text-lg">
+                      â†’
                     </span>
                   </div>
                 </div>

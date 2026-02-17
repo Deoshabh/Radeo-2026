@@ -280,6 +280,7 @@ export function SiteSettingsProvider({ children }) {
       '#1c1917';
 
     const primaryScale = buildPrimaryScale(activePrimaryColor);
+    const secondaryScale = buildPrimaryScale(activeSecondaryColor);
 
     root.style.setProperty('--theme-font-family', theme.fontFamily || 'var(--font-inter)');
     root.style.setProperty('--theme-font-scale', String(theme.fontScale || 1));
@@ -292,11 +293,23 @@ export function SiteSettingsProvider({ children }) {
     root.style.setProperty('--color-background', activeBackgroundColor);
     root.style.setProperty('--color-surface', activeMode === 'dark' ? '#1f2937' : '#ffffff');
     root.style.setProperty('--color-text-primary', activeTextColor);
-    root.style.setProperty('--color-text-secondary', activeMode === 'dark' ? '#D1D5DB' : '#57534e');
-    root.style.setProperty('--color-border', activeMode === 'dark' ? '#374151' : '#e7e5e4');
+    root.style.setProperty('--color-text-secondary', activeMode === 'dark' ? '#D1D5DB' : theme.accentColor || '#8a7460');
+    root.style.setProperty('--color-border', activeMode === 'dark' ? '#374151' : secondaryScale[200] || '#e7e5e4');
     root.style.setProperty('--color-brand-brown', activePrimaryColor || '#3d2f28');
     root.style.setProperty('--color-brand-tan', activeSecondaryColor || '#8b7355');
-    root.style.setProperty('--color-brand-cream', activeSecondaryColor || '#d4c4b0');
+    root.style.setProperty('--color-brand-cream', secondaryScale[100] || '#d4c4b0');
+
+    // Extended palette for luxury theme components
+    root.style.setProperty('--color-accent', theme.accentColor || activeSecondaryColor || '#c9a96e');
+    root.style.setProperty('--color-accent-hover', theme.accentHoverColor || primaryScale[600] || '#a07840');
+    root.style.setProperty('--color-page-bg', activeBackgroundColor || '#faf8f4');
+    root.style.setProperty('--color-card-bg', activeMode === 'dark' ? '#1f2937' : '#ffffff');
+    root.style.setProperty('--color-subtle-bg', theme.subtleBgColor || secondaryScale[50] || '#f2ede4');
+    root.style.setProperty('--color-border-light', theme.borderColor || secondaryScale[200] || '#e8e0d0');
+    root.style.setProperty('--color-heading', activeTextColor || '#2a1a0a');
+    root.style.setProperty('--color-body', theme.bodyTextColor || theme.accentColor || '#8a7460');
+    root.style.setProperty('--color-muted', theme.mutedTextColor || primaryScale[400] || '#5c3d1e');
+
     root.style.setProperty('--color-primary-50', primaryScale[50]);
     root.style.setProperty('--color-primary-100', primaryScale[100]);
     root.style.setProperty('--color-primary-200', primaryScale[200]);
@@ -307,6 +320,12 @@ export function SiteSettingsProvider({ children }) {
     root.style.setProperty('--color-primary-700', primaryScale[700]);
     root.style.setProperty('--color-primary-800', primaryScale[800]);
     root.style.setProperty('--color-primary-900', primaryScale[900]);
+    root.style.setProperty('--color-secondary-50', secondaryScale[50]);
+    root.style.setProperty('--color-secondary-100', secondaryScale[100]);
+    root.style.setProperty('--color-secondary-200', secondaryScale[200]);
+    root.style.setProperty('--color-secondary-300', secondaryScale[300]);
+    root.style.setProperty('--color-secondary-400', secondaryScale[400]);
+    root.style.setProperty('--color-secondary-500', secondaryScale[500]);
 
     root.dataset.themeHeaderVariant = theme.headerVariant || 'minimal';
     root.dataset.themeMode = activeMode;

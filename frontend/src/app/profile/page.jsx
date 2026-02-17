@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -155,7 +155,7 @@ export default function ProfilePage() {
             {!isEditing && (
               <button
                 onClick={() => setIsEditing(true)}
-                className="flex items-center gap-2 text-brand-brown hover:text-[#5c3d1e]"
+                className="flex items-center gap-2 text-brand-brown hover:text-[color:var(--color-muted)]"
               >
                 <FiEdit2 /> Edit Profile
               </button>
@@ -240,7 +240,7 @@ export default function ProfilePage() {
                 setEditingAddressId(null);
                 resetAddressForm();
               }}
-              className="flex items-center gap-2 text-brand-brown hover:text-[#5c3d1e]"
+              className="flex items-center gap-2 text-brand-brown hover:text-[color:var(--color-muted)]"
             >
               <FiPlus /> Add New Address
             </button>

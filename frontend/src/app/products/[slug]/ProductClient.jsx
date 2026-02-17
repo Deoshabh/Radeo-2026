@@ -134,7 +134,7 @@ export default function ProductClient({ product }) {
                             {/* Main Image */}
                             <div className="relative aspect-square bg-white overflow-hidden group border border-[#e8e0d0]">
                                 <Image
-                                    src={filteredImages[selectedImage]?.url || filteredImages[selectedImage] || '/placeholder.jpg'}
+                                    src={filteredImages[selectedImage]?.url || filteredImages[selectedImage] || '/placeholder.svg'}
                                     alt={product.name}
                                     fill
                                     sizes="(max-width: 1024px) 100vw, 50vw"
@@ -192,7 +192,7 @@ export default function ProductClient({ product }) {
                                                 }`}
                                         >
                                             <Image
-                                                src={image?.url || image || '/placeholder.jpg'}
+                                                src={image?.url || image || '/placeholder.svg'}
                                                 alt={`${product.name} ${idx + 1}`}
                                                 fill
                                                 sizes="(max-width: 1024px) 25vw, 12vw"

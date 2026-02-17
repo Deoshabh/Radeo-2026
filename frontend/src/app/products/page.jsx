@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 // Rebuild trigger - v4
 import { useEffect, useState, Suspense, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -48,7 +48,7 @@ function ProductsContent() {
   const fetchMaterials = async () => {
     try {
       const response = await productAPI.getMaterials();
-      // console.log('📦 Materials API response:', response.data);
+      // console.log('ðŸ“¦ Materials API response:', response.data);
       setMaterials(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Failed to fetch materials:', error);
@@ -58,7 +58,7 @@ function ProductsContent() {
   const fetchPriceRange = useCallback(async () => {
     try {
       const response = await productAPI.getPriceRange();
-      // console.log('📦 Price Range API response:', response.data);
+      // console.log('ðŸ“¦ Price Range API response:', response.data);
       if (response.data) {
         setPriceRange(response.data);
         setSelectedPriceRange((prev) => prev || response.data);
@@ -71,7 +71,7 @@ function ProductsContent() {
   const fetchColors = async () => {
     try {
       const response = await productAPI.getColors();
-      // console.log('📦 Colors API response:', response.data);
+      // console.log('ðŸ“¦ Colors API response:', response.data);
       setColors(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Failed to fetch colors:', error);
@@ -81,7 +81,7 @@ function ProductsContent() {
   const fetchSizes = async () => {
     try {
       const response = await productAPI.getSizes();
-      // console.log('📦 Sizes API response:', response.data);
+      // console.log('ðŸ“¦ Sizes API response:', response.data);
       setSizes(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Failed to fetch sizes:', error);
@@ -256,36 +256,36 @@ function ProductsContent() {
   ].filter(Boolean).length;
 
   return (
-    <div className="min-h-screen bg-[#faf8f4] pt-8 pb-20" ref={containerRef}>
+    <div className="min-h-screen bg-[color:var(--color-page-bg)] pt-8 pb-20" ref={containerRef}>
       <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
         {/* Header */}
         <div className="mb-10" ref={headerRef}>
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
             <div>
-              <p className="text-[11px] text-[#8a7460] mb-3 uppercase tracking-[0.2em] font-medium" style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>Home / Products</p>
-              <h1 className="text-4xl lg:text-5xl font-bold text-[#2a1a0a]" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>
+              <p className="text-[11px] text-[color:var(--color-body)] mb-3 uppercase tracking-[0.2em] font-medium" style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>Home / Products</p>
+              <h1 className="text-4xl lg:text-5xl font-bold text-[color:var(--color-heading)]" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>
                 {searchQuery ? `Search: "${searchQuery}"` : 'Our Collection'}
               </h1>
             </div>
-            <p className="text-[11px] text-[#8a7460] uppercase tracking-[0.15em] font-medium" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>
+            <p className="text-[11px] text-[color:var(--color-body)] uppercase tracking-[0.15em] font-medium" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>
               {loading ? 'Loading...' : `${products.length} Items Found`}
             </p>
           </div>
 
           {/* Controls Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-4 bg-white/80 backdrop-blur-sm p-4 border border-[#e8e0d0]">
+          <div className="flex flex-wrap items-center justify-between gap-4 bg-white/80 backdrop-blur-sm p-4 border border-[color:var(--color-border-light)]">
 
             {/* Left: Filter Toggle (Mobile) */}
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
-                className="lg:hidden flex items-center gap-2 px-4 py-2 text-[11px] uppercase tracking-[0.15em] border border-[#2a1a0a] text-[#2a1a0a] hover:bg-[#2a1a0a] hover:text-[#f2ede4] transition-colors"
+                className="lg:hidden flex items-center gap-2 px-4 py-2 text-[11px] uppercase tracking-[0.15em] border border-[color:var(--color-heading)] text-[color:var(--color-heading)] hover:bg-[color:var(--color-heading)] hover:text-[color:var(--color-subtle-bg)] transition-colors"
                 style={{ fontFamily: "var(--font-dm-mono, monospace)" }}
               >
                 <FiFilter className="w-3.5 h-3.5" />
                 Filters
                 {activeFilterCount > 0 && (
-                  <span className="bg-[#2a1a0a] text-[#f2ede4] text-[9px] w-5 h-5 rounded-full flex items-center justify-center">
+                  <span className="bg-[color:var(--color-heading)] text-[color:var(--color-subtle-bg)] text-[9px] w-5 h-5 rounded-full flex items-center justify-center">
                     {activeFilterCount}
                   </span>
                 )}
@@ -294,14 +294,14 @@ function ProductsContent() {
 
             {/* Right: Sort */}
             <div className="flex items-center gap-3 ml-auto">
-              <label className="text-[11px] text-[#8a7460] uppercase tracking-[0.1em] hidden sm:block" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>Sort By:</label>
+              <label className="text-[11px] text-[color:var(--color-body)] uppercase tracking-[0.1em] hidden sm:block" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>Sort By:</label>
               <select
                 value={sortBy}
                 onChange={(e) => {
                   setSortBy(e.target.value);
                   updateFilters('sort', e.target.value);
                 }}
-                className="px-4 py-2 border border-[#e8e0d0] bg-transparent text-[#2a1a0a] cursor-pointer hover:border-[#c9a96e] transition-colors focus:outline-none focus:border-[#c9a96e] text-sm"
+                className="px-4 py-2 border border-[color:var(--color-border-light)] bg-transparent text-[color:var(--color-heading)] cursor-pointer hover:border-[color:var(--color-accent)] transition-colors focus:outline-none focus:border-[color:var(--color-accent)] text-sm"
                 style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}
               >
                 <option value="featured">Featured</option>
@@ -317,15 +317,15 @@ function ProductsContent() {
         <div className="flex gap-8 items-start">
           {/* Sidebar Filters - Desktop */}
           <aside className="hidden lg:block w-72 flex-shrink-0 sticky top-32 transition-all duration-300">
-            <div className="bg-white/80 backdrop-blur-sm border border-[#e8e0d0] p-6">
-              <div className="flex justify-between items-center mb-6 pb-4 border-b border-[#e8e0d0]">
-                <h3 className="text-sm font-semibold text-[#2a1a0a] flex items-center gap-2 uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>
+            <div className="bg-white/80 backdrop-blur-sm border border-[color:var(--color-border-light)] p-6">
+              <div className="flex justify-between items-center mb-6 pb-4 border-b border-[color:var(--color-border-light)]">
+                <h3 className="text-sm font-semibold text-[color:var(--color-heading)] flex items-center gap-2 uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>
                   <FiFilter className="w-4 h-4" /> Filters
                 </h3>
                 {activeFilterCount > 0 && (
                   <button
                     onClick={clearFilters}
-                    className="text-[10px] font-semibold text-[#c9a96e] hover:text-[#a07840] transition-colors uppercase tracking-[0.1em]"
+                    className="text-[10px] font-semibold text-[color:var(--color-accent)] hover:text-[color:var(--color-accent-hover)] transition-colors uppercase tracking-[0.1em]"
                     style={{ fontFamily: "var(--font-dm-mono, monospace)" }}
                   >
                     Clear All
@@ -335,7 +335,7 @@ function ProductsContent() {
 
               {/* Category Filter */}
               <div className="mb-8">
-                <h4 className="text-[11px] font-semibold text-[#2a1a0a] mb-4 uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>Categories</h4>
+                <h4 className="text-[11px] font-semibold text-[color:var(--color-heading)] mb-4 uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>Categories</h4>
                 <div className="space-y-3">
                   <label className="flex items-center gap-3 cursor-pointer group">
                     <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${!selectedCategory ? 'bg-brand-brown border-brand-brown' : 'border-primary-300 group-hover:border-brand-brown'}`}>
@@ -370,7 +370,7 @@ function ProductsContent() {
 
               {/* Price Range Filter */}
               <div className="mb-8">
-                <h4 className="text-[11px] font-semibold text-[#2a1a0a] mb-4 uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>Price Range</h4>
+                <h4 className="text-[11px] font-semibold text-[color:var(--color-heading)] mb-4 uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>Price Range</h4>
                 <div className="px-2">
                   <PriceRangeSlider
                     min={priceRange.min}
@@ -384,7 +384,7 @@ function ProductsContent() {
               {/* Material Filter */}
               {materials.length > 0 && (
                 <div className="mb-8">
-                  <h4 className="text-[11px] font-semibold text-[#2a1a0a] mb-4 uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>Material</h4>
+                  <h4 className="text-[11px] font-semibold text-[color:var(--color-heading)] mb-4 uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>Material</h4>
                   <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
                     {materials.map((material) => (
                       <label key={material} className="flex items-center gap-3 cursor-pointer group">
@@ -407,7 +407,7 @@ function ProductsContent() {
               {/* Color Filter */}
               {colors.length > 0 && (
                 <div className="mb-8">
-                  <h4 className="text-[11px] font-semibold text-[#2a1a0a] mb-4 uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>Color</h4>
+                  <h4 className="text-[11px] font-semibold text-[color:var(--color-heading)] mb-4 uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>Color</h4>
                   <div className="flex flex-wrap gap-2">
                     {colors.map((color) => (
                       <label key={color} className="cursor-pointer group relative">
@@ -438,7 +438,7 @@ function ProductsContent() {
               {/* Size Filter */}
               {sizes.length > 0 && (
                 <div>
-                  <h4 className="text-[11px] font-semibold text-[#2a1a0a] mb-4 uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>Size</h4>
+                  <h4 className="text-[11px] font-semibold text-[color:var(--color-heading)] mb-4 uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>Size</h4>
                   <div className="grid grid-cols-4 gap-2">
                     {sizes.map((size) => (
                       <label key={size} className="cursor-pointer">
@@ -516,7 +516,7 @@ function ProductsContent() {
           <div className="flex-1 min-w-0">
             {loading ? (
               <div className="flex justify-center items-center py-32">
-                <div className="w-10 h-10 border-2 border-[#e8e0d0] border-t-[#2a1a0a] rounded-full animate-spin"></div>
+                <div className="w-10 h-10 border-2 border-[color:var(--color-border-light)] border-t-[#2a1a0a] rounded-full animate-spin"></div>
               </div>
             ) : products.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-8 sm:gap-6 lg:gap-8">
@@ -527,10 +527,10 @@ function ProductsContent() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-20 bg-white/60 border border-dashed border-[#e8e0d0]">
-                <p className="text-[#8a7460] text-lg mb-4" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>No products found matching your criteria.</p>
+              <div className="text-center py-20 bg-white/60 border border-dashed border-[color:var(--color-border-light)]">
+                <p className="text-[color:var(--color-body)] text-lg mb-4" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>No products found matching your criteria.</p>
                 {activeFilterCount > 0 && (
-                  <button onClick={clearFilters} className="px-6 py-2 text-[11px] uppercase tracking-[0.15em] border border-[#2a1a0a] text-[#2a1a0a] hover:bg-[#2a1a0a] hover:text-[#f2ede4] transition-colors" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>
+                  <button onClick={clearFilters} className="px-6 py-2 text-[11px] uppercase tracking-[0.15em] border border-[color:var(--color-heading)] text-[color:var(--color-heading)] hover:bg-[color:var(--color-heading)] hover:text-[color:var(--color-subtle-bg)] transition-colors" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>
                     Clear Filters
                   </button>
                 )}
@@ -539,7 +539,7 @@ function ProductsContent() {
 
             {!loading && products.length > 0 && (
               <div className="mt-12 text-center">
-                <span className="text-[11px] text-[#8a7460] uppercase tracking-[0.15em]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>Showing all {products.length} products</span>
+                <span className="text-[11px] text-[color:var(--color-body)] uppercase tracking-[0.15em]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>Showing all {products.length} products</span>
               </div>
             )}
           </div>
@@ -552,14 +552,14 @@ function ProductsContent() {
 export default function ProductsPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#faf8f4] pt-8">
+      <div className="min-h-screen bg-[color:var(--color-page-bg)] pt-8">
         <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
           <div className="w-48 h-8 bg-[#e8e0d0] animate-pulse mb-8"></div>
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <div className="hidden lg:block h-96 bg-[#f2ede4] animate-pulse"></div>
+            <div className="hidden lg:block h-96 bg-[color:var(--color-subtle-bg)] animate-pulse"></div>
             <div className="lg:col-span-3 grid grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="aspect-[4/5] bg-[#f2ede4] animate-pulse"></div>
+                <div key={i} className="aspect-[4/5] bg-[color:var(--color-subtle-bg)] animate-pulse"></div>
               ))}
             </div>
           </div>

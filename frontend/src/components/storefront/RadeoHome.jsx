@@ -8,8 +8,21 @@ import { SITE_SETTINGS_DEFAULTS } from '@/constants/siteSettingsDefaults';
 import s from './RadeoHome.module.css';
 
 /* ── Helpers ── */
-const MINIO_BASE = process.env.NEXT_PUBLIC_MINIO_URL || 'http://localhost:9000/radeo-assets';
+const MINIO_BASE = process.env.NEXT_PUBLIC_MINIO_URL || '';
 const FALLBACK = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect fill='%23f2ede4' width='800' height='600'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Georgia' font-size='18' fill='%23c9a96e'%3ERADEO%3C/text%3E%3C/svg%3E`;
+
+/* Unsplash demo images for leather shoes */
+const DEMO_IMAGES = {
+  hero: 'https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?w=1200&h=1600&fit=crop&q=80',
+  craft: [
+    'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=1200&h=800&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1616486029423-aaa4789e8c9a?w=1200&h=800&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1605733160314-4fc7dac4bb16?w=1200&h=800&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1449505278894-297fdb3edbc1?w=1200&h=800&fit=crop&q=80',
+  ],
+  heritage: 'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=1200&h=900&fit=crop&q=80',
+  story: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=1200&h=900&fit=crop&q=80',
+};
 
 function imgSrc(url) {
   if (!url) return FALLBACK;
@@ -202,7 +215,7 @@ export default function RadeoHome() {
       {hp.hero.enabled !== false && (
         <section className={s.hero}>
           <div className={s.heroImgCol}>
-            <RImg src={hp.hero.image || `${MINIO_BASE}/hero/hero-main.jpg`} alt="RADEO editorial" className={s.heroImg} width={1200} height={1600} />
+            <RImg src={hp.hero.image || DEMO_IMAGES.hero} alt="RADEO editorial" className={s.heroImg} width={1200} height={1600} />
             <div className={s.heroImgOverlay}></div>
           </div>
           <div className={s.heroContent}>
@@ -288,7 +301,7 @@ export default function RadeoHome() {
             <div className={s.craftGrid}>
               {(hp.craft.images || []).map((img, i) => (
                 <div key={img.id || i} className={`${s.craftImgWrap} ${s.revealImg}`} data-delay={i * 120}>
-                  <RImg src={img.url || `${MINIO_BASE}/craft/${['artisan-hands-stitching', 'workshop-overview', 'shoe-lasting-process', 'hand-burnishing-finish'][i] || 'placeholder'}.jpg`} alt={img.alt} width={1200} height={800} loading="lazy" />
+                  <RImg src={img.url || DEMO_IMAGES.craft[i] || FALLBACK} alt={img.alt} width={1200} height={800} loading="lazy" />
                 </div>
               ))}
             </div>
@@ -330,7 +343,7 @@ export default function RadeoHome() {
                 </div>
               </div>
               <div className={`${s.heritageImgWrap} ${s.revealSplitR}`}>
-                <RImg src={hp.heritage.image || `${MINIO_BASE}/heritage/agra-atelier.jpg`} alt="RADEO atelier in Agra" width={1200} height={900} loading="lazy" />
+                <RImg src={hp.heritage.image || DEMO_IMAGES.heritage} alt="RADEO atelier in Agra" width={1200} height={900} loading="lazy" />
                 <div className={s.heritageImgBadge}>
                   <span>🇮🇳</span>
                   <span>Made in India</span>
@@ -347,7 +360,7 @@ export default function RadeoHome() {
           <div className={s.container}>
             <div className={s.storyGrid}>
               <div className={`${s.storyImgWrap} ${s.revealSplitL}`}>
-                <RImg src={hp.story.image || `${MINIO_BASE}/lifestyle/founder-atelier.jpg`} alt="RADEO founder" width={1200} height={900} loading="lazy" />
+                <RImg src={hp.story.image || DEMO_IMAGES.story} alt="RADEO founder" width={1200} height={900} loading="lazy" />
               </div>
               <div className={`${s.storyContent} ${s.revealSplitR}`}>
                 <div className={s.sectionLabel}>{hp.story.label}</div>

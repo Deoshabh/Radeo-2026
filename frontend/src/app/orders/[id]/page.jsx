@@ -268,7 +268,7 @@ export default function OrderDetailPage() {
                   <div key={index} className="flex items-center gap-4 p-4 border border-primary-200 rounded-lg">
                     <div className="relative w-20 h-20 flex-shrink-0">
                       <Image
-                        src={item.product?.images?.[0]?.url || item.product?.images?.[0] || '/placeholder.jpg'}
+                        src={item.product?.images?.[0]?.url || item.product?.images?.[0] || '/placeholder.svg'}
                         alt={item.product?.name || 'Product'}
                         fill
                         sizes="80px"

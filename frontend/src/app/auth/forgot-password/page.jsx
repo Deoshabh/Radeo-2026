@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -61,7 +61,7 @@ export default function ForgotPasswordPage() {
               </div>
             </div>
             <div className="mt-4">
-              <Link href="/auth/login" className="font-medium text-brand-brown hover:text-[#5c3d1e]">
+              <Link href="/auth/login" className="font-medium text-brand-brown hover:text-[color:var(--color-muted)]">
                 Return to log in
               </Link>
             </div>
@@ -92,7 +92,7 @@ export default function ForgotPasswordPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-brand-brown hover:bg-[#5c3d1e]'
+                className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-brand-brown hover:bg-[color:var(--color-muted)]'
                   } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-brown`}
               >
                 {loading ? 'Sending...' : 'Send reset link'}
@@ -100,7 +100,7 @@ export default function ForgotPasswordPage() {
             </div>
 
             <div className="text-center">
-              <Link href="/auth/login" className="font-medium text-brand-brown hover:text-[#5c3d1e]">
+              <Link href="/auth/login" className="font-medium text-brand-brown hover:text-[color:var(--color-muted)]">
                 Back to log in
               </Link>
             </div>

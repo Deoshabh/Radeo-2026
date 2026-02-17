@@ -244,6 +244,7 @@ export default function AdminCMSPage() {
     { key: 'banners', label: 'Banners', icon: <FiLayout className="w-4 h-4" /> },
     { key: 'announcement', label: 'Announcement', icon: <span className="text-sm">📢</span> },
     { key: 'theme', label: 'Theme', icon: <span className="text-sm">🎨</span> },
+    { key: 'about', label: 'About', icon: <span className="text-sm">📄</span> },
     { key: 'policies', label: 'Policies', icon: <FiFileText className="w-4 h-4" /> },
     { key: 'contact', label: 'Contact', icon: <FiPhone className="w-4 h-4" /> },
     { key: 'system', label: 'System', icon: <FiSettings className="w-4 h-4" /> },
@@ -395,6 +396,20 @@ export default function AdminCMSPage() {
                     <div key={img.id || i} className="flex items-center gap-2 mb-2">
                       <TextInput value={img.url} onChange={(v) => hpArrayUpdate('craft', 'images', i, 'url', v)} placeholder="Image URL (leave empty for default)" />
                       <TextInput value={img.alt} onChange={(v) => hpArrayUpdate('craft', 'images', i, 'alt', v)} placeholder="Alt text" />
+                      <label className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-600 text-xs font-medium rounded-lg cursor-pointer hover:bg-gray-200 transition-colors">
+                        <FiImage className="w-3.5 h-3.5" />
+                        <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return; }
+                          try {
+                            toast.loading('Uploading...', { id: `craft-upload-${i}` });
+                            const url = await handleUploadImage(file);
+                            if (url) hpArrayUpdate('craft', 'images', i, 'url', url);
+                            toast.success('Uploaded!', { id: `craft-upload-${i}` });
+                          } catch { toast.error('Upload failed', { id: `craft-upload-${i}` }); }
+                        }} />
+                      </label>
                       <button onClick={() => hpArrayRemove('craft', 'images', i)} className="text-red-400 hover:text-red-600 shrink-0"><FiTrash2 className="w-4 h-4" /></button>
                     </div>
                   ))}
@@ -421,7 +436,25 @@ export default function AdminCMSPage() {
                 <SectionToggle label="Enable Heritage Section" enabled={homePage.heritage?.enabled !== false} onChange={(v) => hpUpdate('heritage', 'enabled', v)} />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
                   <Field label="Section Label"><TextInput value={homePage.heritage?.label} onChange={(v) => hpUpdate('heritage', 'label', v)} /></Field>
-                  <Field label="Image URL" hint="Leave empty for default"><TextInput value={homePage.heritage?.image} onChange={(v) => hpUpdate('heritage', 'image', v)} /></Field>
+                  <Field label="Image URL" hint="Upload or paste URL">
+                    <div className="flex gap-2">
+                      <TextInput value={homePage.heritage?.image} onChange={(v) => hpUpdate('heritage', 'image', v)} placeholder="https://... or leave blank" />
+                      <label className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-600 text-xs font-medium rounded-lg cursor-pointer hover:bg-gray-200 transition-colors">
+                        <FiImage className="w-3.5 h-3.5" /> Upload
+                        <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return; }
+                          try {
+                            toast.loading('Uploading...', { id: 'heritage-upload' });
+                            const url = await handleUploadImage(file);
+                            if (url) hpUpdate('heritage', 'image', url);
+                            toast.success('Uploaded!', { id: 'heritage-upload' });
+                          } catch { toast.error('Upload failed', { id: 'heritage-upload' }); }
+                        }} />
+                      </label>
+                    </div>
+                  </Field>
                   <Field label="Title Line 1"><TextInput value={homePage.heritage?.titleLine1} onChange={(v) => hpUpdate('heritage', 'titleLine1', v)} /></Field>
                   <Field label="Title Line 2 (italic)"><TextInput value={homePage.heritage?.titleLine2} onChange={(v) => hpUpdate('heritage', 'titleLine2', v)} /></Field>
                   <div className="md:col-span-2">
@@ -450,7 +483,25 @@ export default function AdminCMSPage() {
                 <SectionToggle label="Enable Story Section" enabled={homePage.story?.enabled !== false} onChange={(v) => hpUpdate('story', 'enabled', v)} />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
                   <Field label="Section Label"><TextInput value={homePage.story?.label} onChange={(v) => hpUpdate('story', 'label', v)} /></Field>
-                  <Field label="Image URL" hint="Leave empty for default"><TextInput value={homePage.story?.image} onChange={(v) => hpUpdate('story', 'image', v)} /></Field>
+                  <Field label="Image URL" hint="Upload or paste URL">
+                    <div className="flex gap-2">
+                      <TextInput value={homePage.story?.image} onChange={(v) => hpUpdate('story', 'image', v)} placeholder="https://... or leave blank" />
+                      <label className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-600 text-xs font-medium rounded-lg cursor-pointer hover:bg-gray-200 transition-colors">
+                        <FiImage className="w-3.5 h-3.5" /> Upload
+                        <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return; }
+                          try {
+                            toast.loading('Uploading...', { id: 'story-upload' });
+                            const url = await handleUploadImage(file);
+                            if (url) hpUpdate('story', 'image', url);
+                            toast.success('Uploaded!', { id: 'story-upload' });
+                          } catch { toast.error('Upload failed', { id: 'story-upload' }); }
+                        }} />
+                      </label>
+                    </div>
+                  </Field>
                   <Field label="Title Line 1"><TextInput value={homePage.story?.titleLine1} onChange={(v) => hpUpdate('story', 'titleLine1', v)} /></Field>
                   <Field label="Title Line 2"><TextInput value={homePage.story?.titleLine2} onChange={(v) => hpUpdate('story', 'titleLine2', v)} /></Field>
                   <Field label="Quote"><TextArea value={homePage.story?.quote} onChange={(v) => hpUpdate('story', 'quote', v)} /></Field>
@@ -671,26 +722,180 @@ export default function AdminCMSPage() {
               ══════════════════════════════════════════════════════ */}
           {activeTab === 'theme' && (
             <Card>
-              <h3 className="text-lg font-bold text-gray-900 mb-6">Theme Colors</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Theme Colors</h3>
+              <p className="text-sm text-gray-500 mb-6">Control every color across your storefront. Changes apply site-wide instantly.</p>
+
+              {/* Core Brand Colors */}
+              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">Brand Colors</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
                 {[
                   { key: 'primaryColor', label: 'Primary', def: '#3B2F2F' },
                   { key: 'secondaryColor', label: 'Secondary', def: '#E5D3B3' },
-                  { key: 'backgroundColor', label: 'Background', def: '#fafaf9' },
-                  { key: 'textColor', label: 'Text', def: '#1c1917' },
+                  { key: 'accentColor', label: 'Accent / Gold', def: '#c9a96e' },
+                  { key: 'accentHoverColor', label: 'Accent Hover', def: '#a07840' },
                 ].map(c => (
                   <Field key={c.key} label={c.label}>
-                    <input type="color" className="h-12 w-full border border-gray-200 rounded-lg cursor-pointer"
-                      value={advancedSettings.theme?.[c.key] || c.def}
-                      onChange={(e) => setAdvancedSettings(prev => ({ ...prev, theme: { ...prev.theme, [c.key]: e.target.value } }))}
-                    />
+                    <div className="flex items-center gap-2">
+                      <input type="color" className="h-10 w-10 border border-gray-200 rounded-lg cursor-pointer flex-shrink-0"
+                        value={advancedSettings.theme?.[c.key] || c.def}
+                        onChange={(e) => setAdvancedSettings(prev => ({ ...prev, theme: { ...prev.theme, [c.key]: e.target.value } }))}
+                      />
+                      <input type="text" className="flex-1 text-xs font-mono border border-gray-200 rounded px-2 py-1.5"
+                        value={advancedSettings.theme?.[c.key] || c.def}
+                        onChange={(e) => setAdvancedSettings(prev => ({ ...prev, theme: { ...prev.theme, [c.key]: e.target.value } }))}
+                      />
+                    </div>
                   </Field>
                 ))}
               </div>
-              <div className="pt-6 border-t mt-6 flex justify-end">
+
+              {/* Text Colors */}
+              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">Text Colors</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+                {[
+                  { key: 'textColor', label: 'Headings', def: '#1c1917' },
+                  { key: 'bodyTextColor', label: 'Body Text', def: '#8a7460' },
+                  { key: 'mutedTextColor', label: 'Muted Text', def: '#5c3d1e' },
+                ].map(c => (
+                  <Field key={c.key} label={c.label}>
+                    <div className="flex items-center gap-2">
+                      <input type="color" className="h-10 w-10 border border-gray-200 rounded-lg cursor-pointer flex-shrink-0"
+                        value={advancedSettings.theme?.[c.key] || c.def}
+                        onChange={(e) => setAdvancedSettings(prev => ({ ...prev, theme: { ...prev.theme, [c.key]: e.target.value } }))}
+                      />
+                      <input type="text" className="flex-1 text-xs font-mono border border-gray-200 rounded px-2 py-1.5"
+                        value={advancedSettings.theme?.[c.key] || c.def}
+                        onChange={(e) => setAdvancedSettings(prev => ({ ...prev, theme: { ...prev.theme, [c.key]: e.target.value } }))}
+                      />
+                    </div>
+                  </Field>
+                ))}
+              </div>
+
+              {/* Background & Border Colors */}
+              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">Backgrounds & Borders</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+                {[
+                  { key: 'backgroundColor', label: 'Page Background', def: '#fafaf9' },
+                  { key: 'subtleBgColor', label: 'Subtle Background', def: '#f2ede4' },
+                  { key: 'borderColor', label: 'Border / Divider', def: '#e8e0d0' },
+                ].map(c => (
+                  <Field key={c.key} label={c.label}>
+                    <div className="flex items-center gap-2">
+                      <input type="color" className="h-10 w-10 border border-gray-200 rounded-lg cursor-pointer flex-shrink-0"
+                        value={advancedSettings.theme?.[c.key] || c.def}
+                        onChange={(e) => setAdvancedSettings(prev => ({ ...prev, theme: { ...prev.theme, [c.key]: e.target.value } }))}
+                      />
+                      <input type="text" className="flex-1 text-xs font-mono border border-gray-200 rounded px-2 py-1.5"
+                        value={advancedSettings.theme?.[c.key] || c.def}
+                        onChange={(e) => setAdvancedSettings(prev => ({ ...prev, theme: { ...prev.theme, [c.key]: e.target.value } }))}
+                      />
+                    </div>
+                  </Field>
+                ))}
+              </div>
+
+              {/* Live Preview */}
+              <div className="border border-gray-200 rounded-xl p-6 mb-6" style={{
+                backgroundColor: advancedSettings.theme?.backgroundColor || '#fafaf9',
+                color: advancedSettings.theme?.textColor || '#1c1917'
+              }}>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Live Preview</p>
+                <h4 className="text-lg font-bold mb-1" style={{ color: advancedSettings.theme?.textColor || '#1c1917' }}>Heading Text</h4>
+                <p className="text-sm mb-3" style={{ color: advancedSettings.theme?.bodyTextColor || '#8a7460' }}>Body text appears in this color. Showcasing how your content will look.</p>
+                <p className="text-xs mb-4" style={{ color: advancedSettings.theme?.mutedTextColor || '#5c3d1e' }}>Muted text for secondary information.</p>
+                <div className="flex gap-3">
+                  <span className="px-4 py-2 rounded-lg text-white text-sm font-medium" style={{ backgroundColor: advancedSettings.theme?.primaryColor || '#3B2F2F' }}>Primary Button</span>
+                  <span className="px-4 py-2 rounded-lg text-sm font-medium" style={{ backgroundColor: advancedSettings.theme?.accentColor || '#c9a96e', color: '#fff' }}>Accent Button</span>
+                  <span className="px-4 py-2 rounded-lg text-sm font-medium border" style={{
+                    borderColor: advancedSettings.theme?.borderColor || '#e8e0d0',
+                    backgroundColor: advancedSettings.theme?.subtleBgColor || '#f2ede4',
+                    color: advancedSettings.theme?.textColor || '#1c1917'
+                  }}>Subtle</span>
+                </div>
+              </div>
+
+              <div className="pt-6 border-t flex justify-end">
                 <SaveButton onClick={() => saveAdvanced('theme', advancedSettings.theme || {})} saving={saving} />
               </div>
             </Card>
+          )}
+
+          {/* ══════════════════════════════════════════════════════
+              ABOUT PAGE TAB
+              ══════════════════════════════════════════════════════ */}
+          {activeTab === 'about' && (
+            <div className="space-y-4 animate-in fade-in duration-200">
+              <Card>
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">About Page</h3>
+                    <p className="text-sm text-gray-500 mt-0.5">Manage images and visual content for the About page.</p>
+                  </div>
+                  <SaveButton onClick={() => saveAdvanced('aboutPage', advancedSettings.aboutPage || {})} saving={saving} />
+                </div>
+              </Card>
+
+              <CollapsibleSection title="Hero Banner Image" icon="🖼️" defaultOpen>
+                <Field label="Hero Image URL" hint="Large banner image at the top of the About page. Upload or paste URL.">
+                  <div className="flex gap-2">
+                    <TextInput value={advancedSettings.aboutPage?.heroImage} onChange={(v) => setAdvancedSettings(prev => ({ ...prev, aboutPage: { ...prev.aboutPage, heroImage: v } }))} placeholder="https://... or leave blank for default" />
+                    <label className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-600 text-xs font-medium rounded-lg cursor-pointer hover:bg-gray-200 transition-colors">
+                      <FiImage className="w-3.5 h-3.5" /> Upload
+                      <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return; }
+                        try {
+                          toast.loading('Uploading...', { id: 'about-hero-upload' });
+                          const url = await handleUploadImage(file);
+                          if (url) setAdvancedSettings(prev => ({ ...prev, aboutPage: { ...prev.aboutPage, heroImage: url } }));
+                          toast.success('Uploaded!', { id: 'about-hero-upload' });
+                        } catch { toast.error('Upload failed', { id: 'about-hero-upload' }); }
+                      }} />
+                    </label>
+                  </div>
+                </Field>
+                {advancedSettings.aboutPage?.heroImage && (
+                  <div className="mt-3 relative w-full h-40 rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={advancedSettings.aboutPage.heroImage} alt="About hero preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </CollapsibleSection>
+
+              <CollapsibleSection title="Story Section Image" icon="📖" defaultOpen>
+                <Field label="Story Image URL" hint="Image shown alongside the Our Story text. Upload or paste URL.">
+                  <div className="flex gap-2">
+                    <TextInput value={advancedSettings.aboutPage?.storyImage} onChange={(v) => setAdvancedSettings(prev => ({ ...prev, aboutPage: { ...prev.aboutPage, storyImage: v } }))} placeholder="https://... or leave blank for default" />
+                    <label className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-600 text-xs font-medium rounded-lg cursor-pointer hover:bg-gray-200 transition-colors">
+                      <FiImage className="w-3.5 h-3.5" /> Upload
+                      <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return; }
+                        try {
+                          toast.loading('Uploading...', { id: 'about-story-upload' });
+                          const url = await handleUploadImage(file);
+                          if (url) setAdvancedSettings(prev => ({ ...prev, aboutPage: { ...prev.aboutPage, storyImage: url } }));
+                          toast.success('Uploaded!', { id: 'about-story-upload' });
+                        } catch { toast.error('Upload failed', { id: 'about-story-upload' }); }
+                      }} />
+                    </label>
+                  </div>
+                </Field>
+                {advancedSettings.aboutPage?.storyImage && (
+                  <div className="mt-3 relative w-48 h-36 rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={advancedSettings.aboutPage.storyImage} alt="About story preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </CollapsibleSection>
+
+              <div className="flex justify-end pt-2">
+                <SaveButton onClick={() => saveAdvanced('aboutPage', advancedSettings.aboutPage || {})} saving={saving} label="Save About Page" />
+              </div>
+            </div>
           )}
 
           {/* ══════════════════════════════════════════════════════

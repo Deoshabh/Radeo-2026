@@ -206,7 +206,7 @@ export default function CheckoutPage() {
             contact: selectedAddress.phone,
           },
           theme: {
-            color: '#8B4513',
+            color: getComputedStyle(document.documentElement).getPropertyValue('--color-heading').trim() || '#3B2F2F',
           },
           modal: {
             ondismiss: () => {
@@ -267,7 +267,7 @@ export default function CheckoutPage() {
                 </h2>
                 <button
                   onClick={() => setShowAddressForm(!showAddressForm)}
-                  className="flex items-center gap-2 text-brand-brown hover:text-[#5c3d1e]"
+                  className="flex items-center gap-2 text-brand-brown hover:text-[color:var(--color-muted)]"
                 >
                   <FiPlus /> Add New
                 </button>
@@ -473,7 +473,7 @@ export default function CheckoutPage() {
                       Remove
                     </button>
                   ) : (
-                    <button onClick={handleApplyCoupon} className="px-4 py-2 bg-brand-brown text-white rounded-lg hover:bg-[#5c3d1e]">
+                    <button onClick={handleApplyCoupon} className="px-4 py-2 bg-brand-brown text-white rounded-lg hover:bg-[color:var(--color-muted)]">
                       Apply
                     </button>
                   )}

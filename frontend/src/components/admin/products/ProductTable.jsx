@@ -116,7 +116,7 @@ export default function ProductTable({
                                     <div className="flex items-center gap-3">
                                         <div className="relative w-12 h-12 flex-shrink-0">
                                             <Image
-                                                src={product.images?.[0]?.url || product.images?.[0] || '/placeholder.jpg'}
+                                                src={product.images?.[0]?.url || product.images?.[0] || '/placeholder.svg'}
                                                 alt={product.name}
                                                 fill
                                                 sizes="48px"

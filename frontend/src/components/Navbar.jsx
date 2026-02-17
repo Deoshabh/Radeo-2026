@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 /* eslint-disable @next/next/no-img-element */
 
 import { useState, useEffect, useRef } from 'react';
@@ -13,9 +13,9 @@ import { useWishlist } from '@/context/WishlistContext';
 import { useSiteSettings } from '@/context/SiteSettingsContext';
 import { productAPI, categoryAPI } from '@/utils/api';
 
-/* ═══════════════════════════════════════════════════════════
-   RADEO NAVBAR — Luxury Minimal Navigation
-   ═══════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   RADEO NAVBAR â€” Luxury Minimal Navigation
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
@@ -49,21 +49,21 @@ export default function Navbar() {
   const navRef = useRef(null);
   const searchRequestIdRef = useRef(0);
 
-  // ── Fetch categories ──
+  // â”€â”€ Fetch categories â”€â”€
   useEffect(() => {
     categoryAPI.getNavbarCategories()
       .then(r => setCategories(r.data.categories || []))
       .catch(() => {});
   }, []);
 
-  // ── Scroll handling ──
+  // â”€â”€ Scroll handling â”€â”€
   useEffect(() => {
     const h = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', h);
     return () => window.removeEventListener('scroll', h);
   }, []);
 
-  // ── Close dropdowns on click outside ──
+  // â”€â”€ Close dropdowns on click outside â”€â”€
   useEffect(() => {
     const h = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) { setIsSearchOpen(false); setIsSearchBarVisible(false); }
@@ -73,7 +73,7 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', h);
   }, []);
 
-  // ── Cart bounce animation ──
+  // â”€â”€ Cart bounce animation â”€â”€
   useEffect(() => {
     if (cartCount > prevCartCount && cartRef.current) {
       anime({ targets: cartRef.current, scale: [1, 1.5, 1], rotate: [0, 10, -10, 0], duration: 400, easing: 'easeOutElastic(1, .5)' });
@@ -81,7 +81,7 @@ export default function Navbar() {
     setPrevCartCount(cartCount);
   }, [cartCount, prevCartCount]);
 
-  // ── Wishlist bounce animation ──
+  // â”€â”€ Wishlist bounce animation â”€â”€
   useEffect(() => {
     if (wishlistCount > prevWishlistCount && wishlistRef.current) {
       anime({ targets: wishlistRef.current, scale: [1, 1.5, 1], duration: 400, easing: 'easeOutElastic(1, .5)' });
@@ -89,14 +89,14 @@ export default function Navbar() {
     setPrevWishlistCount(wishlistCount);
   }, [wishlistCount, prevWishlistCount]);
 
-  // ── Categories dropdown animation ──
+  // â”€â”€ Categories dropdown animation â”€â”€
   useEffect(() => {
     if (isCategoriesOpen && categoriesDropdownRef.current) {
       anime({ targets: categoriesDropdownRef.current, opacity: [0, 1], translateY: [8, 0], duration: 250, easing: 'easeOutCubic' });
     }
   }, [isCategoriesOpen]);
 
-  // ── Navbar offset ──
+  // â”€â”€ Navbar offset â”€â”€
   useEffect(() => {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
@@ -116,7 +116,7 @@ export default function Navbar() {
     return () => window.removeEventListener('resize', applyOffset);
   }, [stickyHeader, isTransparentHeader]);
 
-  // ── Search products ──
+  // â”€â”€ Search products â”€â”€
   useEffect(() => {
     if (searchQuery.length < 2) { searchRequestIdRef.current++; setSearchResults([]); return; }
     const id = ++searchRequestIdRef.current;
@@ -145,10 +145,10 @@ export default function Navbar() {
     router.push('/');
   };
 
-  // ── Hide on admin routes ──
+  // â”€â”€ Hide on admin routes â”€â”€
   if (pathname && pathname.startsWith('/admin')) return null;
 
-  // ── Nav links ──
+  // â”€â”€ Nav links â”€â”€
   const navLinks = [
     { href: '/', label: 'Home' },
     { href: '/products', label: 'Shop' },
@@ -159,7 +159,7 @@ export default function Navbar() {
     { href: '/contact', label: 'Contact' },
   ];
 
-  /* ═══════════════════ RENDER ═══════════════════ */
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• RENDER â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
   return (
     <nav
       ref={navRef}
@@ -172,7 +172,7 @@ export default function Navbar() {
       <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
         <div className="flex items-center justify-between h-[72px]">
 
-          {/* ── Left: Nav Links (Desktop) ── */}
+          {/* â”€â”€ Left: Nav Links (Desktop) â”€â”€ */}
           <div className="hidden lg:flex items-center gap-1 flex-1">
             {navLinks.map(link => {
               const isActive = pathname === link.href;
@@ -182,18 +182,18 @@ export default function Navbar() {
                   href={link.href}
                   className={`px-4 py-2 text-sm font-medium uppercase tracking-[0.12em] transition-colors ${
                     isActive
-                      ? 'text-[#2a1a0a]'
-                      : 'text-[#8a7460] hover:text-[#2a1a0a]'
+                      ? 'text-[color:var(--color-heading)]'
+                      : 'text-[color:var(--color-body)] hover:text-[color:var(--color-heading)]'
                   }`}
                   style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
                 >
                   {link.label}
-                  {isActive && <span className="block w-full h-[1px] bg-[#c9a96e] mt-0.5" />}
+                  {isActive && <span className="block w-full h-[1px] bg-[color:var(--color-accent)] mt-0.5" />}
                 </Link>
               );
             })}
 
-            {/* Categories dropdown — positioned between Shop and About */}
+            {/* Categories dropdown â€” positioned between Shop and About */}
             <div
               className="relative"
               onMouseEnter={() => setIsCategoriesOpen(true)}
@@ -201,7 +201,7 @@ export default function Navbar() {
             >
               <Link
                 href="/categories"
-                className="px-4 py-2 text-sm font-medium uppercase tracking-[0.12em] text-[#8a7460] hover:text-[#2a1a0a] transition-colors flex items-center gap-1 cursor-pointer"
+                className="px-4 py-2 text-sm font-medium uppercase tracking-[0.12em] text-[color:var(--color-body)] hover:text-[color:var(--color-heading)] transition-colors flex items-center gap-1 cursor-pointer"
                 style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
               >
                 Categories
@@ -217,11 +217,11 @@ export default function Navbar() {
                 >
                   <Link
                     href="/categories"
-                    className="flex items-center gap-2 px-5 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-[#c9a96e] hover:bg-[#faf8f4] border-b border-gray-100 transition-colors"
+                    className="flex items-center gap-2 px-5 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--color-accent)] hover:bg-[color:var(--color-page-bg)] border-b border-gray-100 transition-colors"
                     style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
                     onClick={() => setIsCategoriesOpen(false)}
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#c9a96e]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[color:var(--color-accent)]" />
                     All Categories
                   </Link>
                   <div className="max-h-80 overflow-y-auto">
@@ -229,7 +229,7 @@ export default function Navbar() {
                       <Link
                         key={cat._id}
                         href={`/products?category=${cat.slug}`}
-                        className="flex items-center gap-3 px-5 py-3 hover:bg-[#faf8f4] transition-colors group"
+                        className="flex items-center gap-3 px-5 py-3 hover:bg-[color:var(--color-page-bg)] transition-colors group"
                         onClick={() => setIsCategoriesOpen(false)}
                       >
                         {cat.image?.url ? (
@@ -237,13 +237,13 @@ export default function Navbar() {
                             <Image src={cat.image.url} alt={cat.name} width={40} height={40} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200" />
                           </div>
                         ) : (
-                          <div className="w-10 h-10 rounded bg-[#f2ede4] flex items-center justify-center flex-shrink-0">
-                            <span className="text-[#5c3d1e] font-bold text-sm" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>{cat.name.charAt(0)}</span>
+                          <div className="w-10 h-10 rounded bg-[color:var(--color-subtle-bg)] flex items-center justify-center flex-shrink-0">
+                            <span className="text-[color:var(--color-muted)] font-bold text-sm" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>{cat.name.charAt(0)}</span>
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-[#2a1a0a] group-hover:text-[#a07840] transition-colors">{cat.name}</div>
-                          {cat.description && <div className="text-xs text-[#8a7460] truncate">{cat.description}</div>}
+                          <div className="text-sm font-medium text-[color:var(--color-heading)] group-hover:text-[color:var(--color-accent-hover)] transition-colors">{cat.name}</div>
+                          {cat.description && <div className="text-xs text-[color:var(--color-body)] truncate">{cat.description}</div>}
                         </div>
                       </Link>
                     ))}
@@ -252,7 +252,7 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* About & Contact — after Categories */}
+            {/* About & Contact â€” after Categories */}
             {navLinksAfterCategories.map(link => {
               const isActive = pathname === link.href;
               return (
@@ -261,19 +261,19 @@ export default function Navbar() {
                   href={link.href}
                   className={`px-4 py-2 text-sm font-medium uppercase tracking-[0.12em] transition-colors ${
                     isActive
-                      ? 'text-[#2a1a0a]'
-                      : 'text-[#8a7460] hover:text-[#2a1a0a]'
+                      ? 'text-[color:var(--color-heading)]'
+                      : 'text-[color:var(--color-body)] hover:text-[color:var(--color-heading)]'
                   }`}
                   style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
                 >
                   {link.label}
-                  {isActive && <span className="block w-full h-[1px] bg-[#c9a96e] mt-0.5" />}
+                  {isActive && <span className="block w-full h-[1px] bg-[color:var(--color-accent)] mt-0.5" />}
                 </Link>
               );
             })}
           </div>
 
-          {/* ── Center: Logo ── */}
+          {/* â”€â”€ Center: Logo â”€â”€ */}
           <Link href="/" className="flex items-center justify-center shrink-0">
             {settings?.branding?.logo?.url ? (
               <div className="relative" style={{ width: `${logoWidth}px`, height: `${logoHeight}px` }}>
@@ -281,7 +281,7 @@ export default function Navbar() {
               </div>
             ) : (
               <span
-                className="text-2xl font-bold text-[#2a1a0a] hover:text-[#5c3d1e] transition-colors tracking-[0.15em]"
+                className="text-2xl font-bold text-[color:var(--color-heading)] hover:text-[color:var(--color-muted)] transition-colors tracking-[0.15em]"
                 style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}
               >
                 RADEO
@@ -289,31 +289,31 @@ export default function Navbar() {
             )}
           </Link>
 
-          {/* ── Right: Icons ── */}
+          {/* â”€â”€ Right: Icons â”€â”€ */}
           <div className="flex items-center gap-1 flex-1 justify-end">
 
             {/* Search toggle (desktop) */}
             <button
               onClick={() => setIsSearchBarVisible(!isSearchBarVisible)}
-              className="hidden lg:flex w-9 h-9 items-center justify-center text-[#8a7460] hover:text-[#2a1a0a] transition-colors rounded-full hover:bg-[#f2ede4]"
+              className="hidden lg:flex w-9 h-9 items-center justify-center text-[color:var(--color-body)] hover:text-[color:var(--color-heading)] transition-colors rounded-full hover:bg-[color:var(--color-subtle-bg)]"
               aria-label="Search"
             >
               <FiSearch className="w-[18px] h-[18px]" />
             </button>
 
             {/* Wishlist */}
-            <Link href="/wishlist" className="relative w-9 h-9 flex items-center justify-center text-[#8a7460] hover:text-[#2a1a0a] transition-colors rounded-full hover:bg-[#f2ede4]" aria-label="Wishlist">
+            <Link href="/wishlist" className="relative w-9 h-9 flex items-center justify-center text-[color:var(--color-body)] hover:text-[color:var(--color-heading)] transition-colors rounded-full hover:bg-[color:var(--color-subtle-bg)]" aria-label="Wishlist">
               <div ref={wishlistRef}><FiHeart className="w-[18px] h-[18px]" /></div>
               {wishlistCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 w-4 h-4 text-[10px] font-bold bg-[#2a1a0a] text-[#f2ede4] rounded-full flex items-center justify-center">{wishlistCount}</span>
+                <span className="absolute top-0.5 right-0.5 w-4 h-4 text-[10px] font-bold bg-[color:var(--color-heading)] text-[color:var(--color-subtle-bg)] rounded-full flex items-center justify-center">{wishlistCount}</span>
               )}
             </Link>
 
             {/* Cart */}
-            <Link href="/cart" id="cart-icon-container" className="relative w-9 h-9 flex items-center justify-center text-[#8a7460] hover:text-[#2a1a0a] transition-colors rounded-full hover:bg-[#f2ede4]" aria-label="Cart">
+            <Link href="/cart" id="cart-icon-container" className="relative w-9 h-9 flex items-center justify-center text-[color:var(--color-body)] hover:text-[color:var(--color-heading)] transition-colors rounded-full hover:bg-[color:var(--color-subtle-bg)]" aria-label="Cart">
               <div ref={cartRef}><FiShoppingCart className="w-[18px] h-[18px]" /></div>
               {cartCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 w-4 h-4 text-[10px] font-bold bg-[#2a1a0a] text-[#f2ede4] rounded-full flex items-center justify-center">{cartCount}</span>
+                <span className="absolute top-0.5 right-0.5 w-4 h-4 text-[10px] font-bold bg-[color:var(--color-heading)] text-[color:var(--color-subtle-bg)] rounded-full flex items-center justify-center">{cartCount}</span>
               )}
             </Link>
 
@@ -322,7 +322,7 @@ export default function Navbar() {
               <div ref={userMenuRef} className="relative">
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="w-9 h-9 rounded-full bg-[#2a1a0a] text-[#f2ede4] flex items-center justify-center text-xs font-bold hover:bg-[#5c3d1e] transition-colors"
+                  className="w-9 h-9 rounded-full bg-[color:var(--color-heading)] text-[color:var(--color-subtle-bg)] flex items-center justify-center text-xs font-bold hover:bg-[color:var(--color-muted)] transition-colors"
                   style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
                   aria-label="User menu"
                 >
@@ -330,18 +330,18 @@ export default function Navbar() {
                 </button>
                 {isUserMenuOpen && (
                   <div className="absolute top-full right-0 mt-2 w-52 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden">
-                    <div className="px-4 py-3 border-b border-gray-100 bg-[#faf8f4]">
-                      <p className="font-semibold text-[#2a1a0a] text-sm">{user?.name}</p>
-                      <p className="text-xs text-[#8a7460] mt-0.5">{user?.email}</p>
+                    <div className="px-4 py-3 border-b border-gray-100 bg-[color:var(--color-page-bg)]">
+                      <p className="font-semibold text-[color:var(--color-heading)] text-sm">{user?.name}</p>
+                      <p className="text-xs text-[color:var(--color-body)] mt-0.5">{user?.email}</p>
                     </div>
-                    <Link href="/profile" className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#2a1a0a] hover:bg-[#faf8f4] transition-colors" onClick={() => setIsUserMenuOpen(false)}>
-                      <FiUser className="w-4 h-4 text-[#8a7460]" /> Profile
+                    <Link href="/profile" className="flex items-center gap-3 px-4 py-2.5 text-sm text-[color:var(--color-heading)] hover:bg-[color:var(--color-page-bg)] transition-colors" onClick={() => setIsUserMenuOpen(false)}>
+                      <FiUser className="w-4 h-4 text-[color:var(--color-body)]" /> Profile
                     </Link>
-                    <Link href="/orders" className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#2a1a0a] hover:bg-[#faf8f4] transition-colors" onClick={() => setIsUserMenuOpen(false)}>
-                      <FiPackage className="w-4 h-4 text-[#8a7460]" /> Orders
+                    <Link href="/orders" className="flex items-center gap-3 px-4 py-2.5 text-sm text-[color:var(--color-heading)] hover:bg-[color:var(--color-page-bg)] transition-colors" onClick={() => setIsUserMenuOpen(false)}>
+                      <FiPackage className="w-4 h-4 text-[color:var(--color-body)]" /> Orders
                     </Link>
                     {user?.role === 'admin' && (
-                      <Link href="/admin" className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#c9a96e] bg-[#faf8f4] hover:bg-[#f2ede4] transition-colors font-medium" onClick={() => setIsUserMenuOpen(false)}>
+                      <Link href="/admin" className="flex items-center gap-3 px-4 py-2.5 text-sm text-[color:var(--color-accent)] bg-[color:var(--color-page-bg)] hover:bg-[color:var(--color-subtle-bg)] transition-colors font-medium" onClick={() => setIsUserMenuOpen(false)}>
                         <FiSettings className="w-4 h-4" /> Admin Panel
                       </Link>
                     )}
@@ -354,7 +354,7 @@ export default function Navbar() {
             ) : (
               <Link
                 href="/auth/login"
-                className="hidden lg:inline-flex px-4 py-2 text-sm font-medium uppercase tracking-[0.12em] bg-[#2a1a0a] text-[#f2ede4] hover:bg-[#5c3d1e] transition-colors"
+                className="hidden lg:inline-flex px-4 py-2 text-sm font-medium uppercase tracking-[0.12em] bg-[color:var(--color-heading)] text-[color:var(--color-subtle-bg)] hover:bg-[color:var(--color-muted)] transition-colors"
                 style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
               >
                 Login
@@ -364,7 +364,7 @@ export default function Navbar() {
             {/* Mobile menu toggle */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="lg:hidden w-9 h-9 flex items-center justify-center text-[#2a1a0a] hover:text-[#8a7460] transition-colors"
+              className="lg:hidden w-9 h-9 flex items-center justify-center text-[color:var(--color-heading)] hover:text-[color:var(--color-body)] transition-colors"
               aria-label="Toggle menu"
             >
               {isMobileMenuOpen ? <FiX className="w-5 h-5" /> : <FiMenu className="w-5 h-5" />}
@@ -373,7 +373,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* ── Search bar (slides down on desktop) ── */}
+      {/* â”€â”€ Search bar (slides down on desktop) â”€â”€ */}
       {isSearchBarVisible && (
         <div ref={searchRef} className="hidden lg:block border-t border-gray-100 bg-white/95 backdrop-blur-md">
           <div className="max-w-[600px] mx-auto px-6 py-4">
@@ -385,10 +385,10 @@ export default function Navbar() {
                 onChange={(e) => { setSearchQuery(e.target.value); setIsSearchOpen(true); }}
                 onFocus={() => setIsSearchOpen(true)}
                 autoFocus
-                className="w-full pl-10 pr-4 py-2.5 border border-[#e8e0d0] rounded-none bg-transparent text-sm text-[#2a1a0a] placeholder-[#8a7460] focus:outline-none focus:border-[#c9a96e] transition-colors"
+                className="w-full pl-10 pr-4 py-2.5 border border-[color:var(--color-border-light)] rounded-none bg-transparent text-sm text-[color:var(--color-heading)] placeholder-[color:var(--color-body)] focus:outline-none focus:border-[color:var(--color-accent)] transition-colors"
                 style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}
               />
-              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8a7460] w-4 h-4" />
+              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[color:var(--color-body)] w-4 h-4" />
             </form>
 
             {/* Results dropdown */}
@@ -399,24 +399,24 @@ export default function Navbar() {
                     key={product._id}
                     href={`/products/${product.slug}`}
                     onClick={() => { setIsSearchOpen(false); setIsSearchBarVisible(false); setSearchQuery(''); }}
-                    className="flex items-center gap-4 px-4 py-3 hover:bg-[#faf8f4] transition-colors"
+                    className="flex items-center gap-4 px-4 py-3 hover:bg-[color:var(--color-page-bg)] transition-colors"
                   >
-                    <div className="relative w-14 h-14 flex-shrink-0 bg-[#f2ede4] rounded">
-                      <Image src={product.images?.[0]?.url || product.images?.[0] || '/placeholder.jpg'} alt={product.name} fill sizes="56px" className="object-cover rounded" />
+                    <div className="relative w-14 h-14 flex-shrink-0 bg-[color:var(--color-subtle-bg)] rounded">
+                      <Image src={product.images?.[0]?.url || product.images?.[0] || '/placeholder.svg'} alt={product.name} fill sizes="56px" className="object-cover rounded" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium text-[#2a1a0a] truncate">{product.name}</h4>
-                      <p className="text-xs text-[#8a7460] uppercase tracking-wider">{product.category?.name}</p>
-                      <p className="text-sm font-semibold text-[#a07840]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>₹{product.price?.toLocaleString()}</p>
+                      <h4 className="text-sm font-medium text-[color:var(--color-heading)] truncate">{product.name}</h4>
+                      <p className="text-xs text-[color:var(--color-body)] uppercase tracking-wider">{product.category?.name}</p>
+                      <p className="text-sm font-semibold text-[color:var(--color-accent-hover)]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>â‚¹{product.price?.toLocaleString()}</p>
                     </div>
                   </Link>
                 ))}
                 <button
                   onClick={() => { router.push(`/products?search=${encodeURIComponent(searchQuery)}`); setIsSearchOpen(false); setIsSearchBarVisible(false); setSearchQuery(''); }}
-                  className="w-full px-4 py-3 text-center text-sm font-medium uppercase tracking-[0.12em] text-[#c9a96e] hover:bg-[#faf8f4] transition-colors border-t border-gray-100"
+                  className="w-full px-4 py-3 text-center text-sm font-medium uppercase tracking-[0.12em] text-[color:var(--color-accent)] hover:bg-[color:var(--color-page-bg)] transition-colors border-t border-gray-100"
                   style={{ fontFamily: "var(--font-dm-mono, monospace)" }}
                 >
-                  View all results →
+                  View all results â†’
                 </button>
               </div>
             )}
@@ -424,7 +424,7 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* ── Mobile Menu ── */}
+      {/* â”€â”€ Mobile Menu â”€â”€ */}
       {isMobileMenuOpen && (
         <div className="lg:hidden bg-white border-t border-gray-100" role="dialog" aria-modal="true" aria-label="Mobile Navigation">
           <div className="px-6 py-4 space-y-4">
@@ -434,9 +434,9 @@ export default function Navbar() {
                 <input
                   type="text" placeholder="Search for shoes..."
                   value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-[#e8e0d0] text-sm text-[#2a1a0a] placeholder-[#8a7460] focus:outline-none focus:border-[#c9a96e] bg-transparent"
+                  className="w-full pl-10 pr-4 py-2.5 border border-[color:var(--color-border-light)] text-sm text-[color:var(--color-heading)] placeholder-[color:var(--color-body)] focus:outline-none focus:border-[color:var(--color-accent)] bg-transparent"
                 />
-                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8a7460] w-4 h-4" />
+                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[color:var(--color-body)] w-4 h-4" />
               </div>
             </form>
 
@@ -448,7 +448,7 @@ export default function Navbar() {
                   href={link.href}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`block px-4 py-3 text-sm font-medium uppercase tracking-[0.12em] transition-colors ${
-                    pathname === link.href ? 'text-[#2a1a0a] bg-[#faf8f4]' : 'text-[#8a7460]'
+                    pathname === link.href ? 'text-[color:var(--color-heading)] bg-[color:var(--color-page-bg)]' : 'text-[color:var(--color-body)]'
                   }`}
                   style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
                 >
@@ -461,7 +461,7 @@ export default function Navbar() {
                 <Link
                   href="/categories"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="block px-4 py-3 text-sm font-semibold uppercase tracking-[0.12em] text-[#c9a96e]"
+                  className="block px-4 py-3 text-sm font-semibold uppercase tracking-[0.12em] text-[color:var(--color-accent)]"
                   style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
                 >
                   All Categories
@@ -471,30 +471,30 @@ export default function Navbar() {
                     key={cat._id}
                     href={`/products?category=${cat.slug}`}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#faf8f4] transition-colors"
+                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-[color:var(--color-page-bg)] transition-colors"
                   >
                     {cat.image?.url ? (
                       <div className="w-9 h-9 rounded overflow-hidden flex-shrink-0 bg-gray-50">
                         <img src={cat.image.url} alt={cat.name} className="w-full h-full object-cover" />
                       </div>
                     ) : (
-                      <div className="w-9 h-9 rounded bg-[#f2ede4] flex items-center justify-center flex-shrink-0">
-                        <span className="text-[#5c3d1e] font-bold text-sm">{cat.name.charAt(0)}</span>
+                      <div className="w-9 h-9 rounded bg-[color:var(--color-subtle-bg)] flex items-center justify-center flex-shrink-0">
+                        <span className="text-[color:var(--color-muted)] font-bold text-sm">{cat.name.charAt(0)}</span>
                       </div>
                     )}
-                    <span className="text-sm text-[#2a1a0a]">{cat.name}</span>
+                    <span className="text-sm text-[color:var(--color-heading)]">{cat.name}</span>
                   </Link>
                 ))}
               </div>
 
-              {/* About & Contact — after Categories in mobile too */}
+              {/* About & Contact â€” after Categories in mobile too */}
               {navLinksAfterCategories.map(link => (
                 <Link
                   key={link.href}
                   href={link.href}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`block px-4 py-3 text-sm font-medium uppercase tracking-[0.12em] transition-colors ${
-                    pathname === link.href ? 'text-[#2a1a0a] bg-[#faf8f4]' : 'text-[#8a7460]'
+                    pathname === link.href ? 'text-[color:var(--color-heading)] bg-[color:var(--color-page-bg)]' : 'text-[color:var(--color-body)]'
                   }`}
                   style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
                 >
@@ -508,7 +508,7 @@ export default function Navbar() {
                   <Link
                     href="/auth/login"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="block text-center px-4 py-3 text-sm font-medium uppercase tracking-[0.12em] bg-[#2a1a0a] text-[#f2ede4]"
+                    className="block text-center px-4 py-3 text-sm font-medium uppercase tracking-[0.12em] bg-[color:var(--color-heading)] text-[color:var(--color-subtle-bg)]"
                     style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
                   >
                     Login / Register

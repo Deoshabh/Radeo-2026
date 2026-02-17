@@ -3,17 +3,17 @@
    Premium Leather Footwear – radeo.in
    ════════════════════════════════════════════════════════════ */
 
-/* ── CSS Variables ── */
+/* ── CSS Variables (theme-aware) ── */
 .radeoRoot {
-  --r-white:      #ffffff;
-  --r-paper:      #faf8f4;
-  --r-beige:      #f2ede4;
-  --r-sand:       #e8e0d0;
-  --r-tan:        #c9a96e;
-  --r-bronze:     #a07840;
-  --r-brown:      #5c3d1e;
-  --r-espresso:   #2a1a0a;
-  --r-mid:        #8a7460;
+  --r-white:      var(--color-card-bg, #ffffff);
+  --r-paper:      var(--color-page-bg, #faf8f4);
+  --r-beige:      var(--color-subtle-bg, #f2ede4);
+  --r-sand:       var(--color-border-light, #e8e0d0);
+  --r-tan:        var(--color-accent, #c9a96e);
+  --r-bronze:     var(--color-accent-hover, #a07840);
+  --r-brown:      var(--color-muted, #5c3d1e);
+  --r-espresso:   var(--color-heading, #2a1a0a);
+  --r-mid:        var(--color-body, #8a7460);
   --r-line:       rgba(90,60,25,0.10);
   --r-shadow-sm:  0 2px 12px rgba(60,35,10,0.08);
   --r-shadow-md:  0 8px 40px rgba(60,35,10,0.12);

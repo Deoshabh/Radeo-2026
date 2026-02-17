@@ -13,7 +13,7 @@ export const SECTION_TEMPLATES = [
       buttonLink: '/products',
       secondaryButtonText: 'Our Story',
       secondaryButtonLink: '/about',
-      imageUrl: '/hero-placeholder.jpg',
+      imageUrl: 'https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?w=1600&h=900&fit=crop&q=80',
       alignment: 'center', // left, center, right
     },
     fields: [

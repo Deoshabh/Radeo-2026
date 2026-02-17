@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import Image from 'next/image';
@@ -82,8 +82,8 @@ export default function ProductCard({ product, priority = false }) {
     <Link href={`/products/${product.slug}`}>
       <div className="product-card group relative bg-white overflow-hidden h-full flex flex-col transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)]">
 
-        {/* ── Image ── */}
-        <div className="relative aspect-[3/4] overflow-hidden bg-[#f5f2ed]">
+        {/* â”€â”€ Image â”€â”€ */}
+        <div className="relative aspect-[3/4] overflow-hidden bg-[color:var(--color-subtle-bg)]">
           <Image
             src={product.images?.[0]?.url || product.images?.[0] || '/placeholder.svg'}
             alt={product.name}
@@ -95,9 +95,9 @@ export default function ProductCard({ product, priority = false }) {
             priority={priority}
           />
 
-          {/* Discount badge — top left */}
+          {/* Discount badge â€” top left */}
           {hasDiscount && product.inStock && (
-            <div className="absolute top-3 left-3 px-2.5 py-1 bg-[#c9a96e] text-white text-[10px] font-bold tracking-wider uppercase"
+            <div className="absolute top-3 left-3 px-2.5 py-1 bg-[color:var(--color-accent)] text-white text-[10px] font-bold tracking-wider uppercase"
               style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>
               {discountPercent}% OFF
             </div>
@@ -105,7 +105,7 @@ export default function ProductCard({ product, priority = false }) {
 
           {/* Out of stock badge */}
           {!product.inStock && (
-            <div className="absolute top-3 left-3 px-2.5 py-1 bg-[#2a1a0a] text-[#f2ede4] text-[10px] font-bold tracking-wider uppercase"
+            <div className="absolute top-3 left-3 px-2.5 py-1 bg-[color:var(--color-heading)] text-[color:var(--color-subtle-bg)] text-[10px] font-bold tracking-wider uppercase"
               style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>
               Sold Out
             </div>
@@ -118,7 +118,7 @@ export default function ProductCard({ product, priority = false }) {
             className={`absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-full backdrop-blur-sm transition-all duration-300 ${
               isProductInWishlist
                 ? 'bg-red-500 text-white shadow-lg shadow-red-200'
-                : 'bg-white/80 text-[#2a1a0a] hover:bg-white hover:shadow-md'
+                : 'bg-white/80 text-[color:var(--color-heading)] hover:bg-white hover:shadow-md'
             }`}
           >
             <FiHeart className={`w-4 h-4 ${isProductInWishlist ? 'fill-current' : ''}`} />
@@ -131,7 +131,7 @@ export default function ProductCard({ product, priority = false }) {
                 <button
                   onClick={handleAddToCart}
                   aria-label="Add to cart"
-                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#2a1a0a]/90 backdrop-blur-sm text-[#f2ede4] text-[10px] font-medium uppercase tracking-[0.15em] hover:bg-[#2a1a0a] transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-[color:var(--color-heading)]/90 backdrop-blur-sm text-[color:var(--color-subtle-bg)] text-[10px] font-medium uppercase tracking-[0.15em] hover:bg-[color:var(--color-heading)] transition-colors"
                   style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
                 >
                   <FiShoppingCart className="w-3.5 h-3.5" />
@@ -145,14 +145,14 @@ export default function ProductCard({ product, priority = false }) {
                     if (result !== false) router.push('/cart');
                   }}
                   aria-label="Buy now"
-                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#c9a96e]/90 backdrop-blur-sm text-white text-[10px] font-medium uppercase tracking-[0.15em] hover:bg-[#c9a96e] transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-[color:var(--color-accent)]/90 backdrop-blur-sm text-white text-[10px] font-medium uppercase tracking-[0.15em] hover:bg-[color:var(--color-accent)] transition-colors"
                   style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
                 >
                   Buy Now
                 </button>
               </>
             ) : (
-              <div className="flex-1 py-3 text-center bg-[#e8e0d0]/90 text-[#8a7460] text-[10px] font-medium uppercase tracking-[0.15em]"
+              <div className="flex-1 py-3 text-center bg-[color:var(--color-border-light)]/90 text-[color:var(--color-body)] text-[10px] font-medium uppercase tracking-[0.15em]"
                 style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>
                 Out of Stock
               </div>
@@ -160,17 +160,17 @@ export default function ProductCard({ product, priority = false }) {
           </div>
         </div>
 
-        {/* ── Product Info ── */}
+        {/* â”€â”€ Product Info â”€â”€ */}
         <div className="p-4 sm:p-5 flex-1 flex flex-col">
 
           {/* Category */}
-          <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.2em] text-[#c9a96e] mb-1.5"
+          <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-accent)] mb-1.5"
             style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>
             {categoryLabel || 'Uncategorized'}
           </p>
 
           {/* Name */}
-          <h3 className="text-sm sm:text-[15px] font-semibold text-[#2a1a0a] mb-2 group-hover:text-[#5c3d1e] transition-colors line-clamp-2 leading-snug"
+          <h3 className="text-sm sm:text-[15px] font-semibold text-[color:var(--color-heading)] mb-2 group-hover:text-[color:var(--color-muted)] transition-colors line-clamp-2 leading-snug"
             style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>
             {product.name}
           </h3>
@@ -183,47 +183,47 @@ export default function ProductCard({ product, priority = false }) {
                   <FiStar
                     key={`star-${product._id || index}-${index}`}
                     className={`w-3 h-3 ${index < Math.round(averageRating)
-                      ? 'fill-[#c9a96e] text-[#c9a96e]'
-                      : 'text-[#e8e0d0]'
+                      ? 'fill-[color:var(--color-accent)] text-[color:var(--color-accent)]'
+                      : 'text-[color:var(--color-border-light)]'
                     }`}
                   />
                 ))}
               </div>
-              <span className="text-[10px] text-[#8a7460]"
+              <span className="text-[10px] text-[color:var(--color-body)]"
                 style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>
                 {averageRating.toFixed(1)}{reviewCount > 0 ? ` (${reviewCount})` : ''}
               </span>
             </div>
           )}
 
-          {/* Price — always at bottom */}
-          <div className="mt-auto pt-2 border-t border-[#f2ede4]">
+          {/* Price â€” always at bottom */}
+          <div className="mt-auto pt-2 border-t border-[color:var(--color-subtle-bg)]">
             {hasDiscount ? (
               <div className="flex items-baseline gap-2 flex-wrap">
-                {/* Offer price — prominent */}
-                <span className="text-lg sm:text-xl font-bold text-[#2a1a0a]"
+                {/* Offer price â€” prominent */}
+                <span className="text-lg sm:text-xl font-bold text-[color:var(--color-heading)]"
                   style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>
-                  ₹{(product.price ?? 0).toLocaleString('en-IN')}
+                  â‚¹{(product.price ?? 0).toLocaleString('en-IN')}
                 </span>
-                {/* Original price — struck through */}
-                <span className="text-xs sm:text-sm text-[#b0a090] line-through"
+                {/* Original price â€” struck through */}
+                <span className="text-xs sm:text-sm text-[color:var(--color-body)] line-through"
                   style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>
-                  ₹{(product.comparePrice ?? 0).toLocaleString('en-IN')}
+                  â‚¹{(product.comparePrice ?? 0).toLocaleString('en-IN')}
                 </span>
                 {/* Savings */}
-                <span className="text-[10px] font-bold text-[#c9a96e] uppercase tracking-wider"
+                <span className="text-[10px] font-bold text-[color:var(--color-accent)] uppercase tracking-wider"
                   style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>
-                  Save ₹{((product.comparePrice - product.price) ?? 0).toLocaleString('en-IN')}
+                  Save â‚¹{((product.comparePrice - product.price) ?? 0).toLocaleString('en-IN')}
                 </span>
               </div>
             ) : (
               <div className="flex items-center justify-between">
-                <span className="text-lg sm:text-xl font-bold text-[#2a1a0a]"
+                <span className="text-lg sm:text-xl font-bold text-[color:var(--color-heading)]"
                   style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>
-                  ₹{(product.price ?? 0).toLocaleString('en-IN')}
+                  â‚¹{(product.price ?? 0).toLocaleString('en-IN')}
                 </span>
                 {product.sizes && product.sizes.length > 0 && (
-                  <span className="text-[10px] text-[#8a7460]"
+                  <span className="text-[10px] text-[color:var(--color-body)]"
                     style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>
                     {product.sizes.length} sizes
                   </span>
@@ -238,14 +238,14 @@ export default function ProductCard({ product, priority = false }) {
           {product.inStock ? (
             <button
               onClick={handleAddToCart}
-              className="w-full py-2.5 bg-[#2a1a0a] text-[#f2ede4] text-[10px] font-medium uppercase tracking-[0.15em] hover:bg-[#5c3d1e] transition-colors"
+              className="w-full py-2.5 bg-[color:var(--color-heading)] text-[color:var(--color-subtle-bg)] text-[10px] font-medium uppercase tracking-[0.15em] hover:bg-[color:var(--color-muted)] transition-colors"
               style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
             >
               <FiShoppingCart className="w-3.5 h-3.5 inline mr-1.5" />
               Add to Cart
             </button>
           ) : (
-            <div className="w-full py-2.5 bg-[#e8e0d0] text-[#8a7460] text-[10px] font-medium uppercase tracking-[0.15em] text-center"
+            <div className="w-full py-2.5 bg-[color:var(--color-border-light)] text-[color:var(--color-body)] text-[10px] font-medium uppercase tracking-[0.15em] text-center"
               style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>
               Out of Stock
             </div>

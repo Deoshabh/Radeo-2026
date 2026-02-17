@@ -14,7 +14,7 @@ export const SITE_SETTINGS_DEFAULTS = {
       primaryButtonLink: '/products',
       secondaryButtonText: 'Our Process',
       secondaryButtonLink: '#craft',
-      image: '',
+      image: 'https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?w=1200&h=1600&fit=crop&q=80',
       stats: [
         { label: 'Years', value: 16, suffix: '+' },
         { label: 'Pairs Crafted', value: 48, suffix: 'K+' },
@@ -40,10 +40,10 @@ export const SITE_SETTINGS_DEFAULTS = {
       titleLine1: 'The Art of',
       titleLine2: 'Shoemaking',
       images: [
-        { id: 'craft-1', url: '', alt: 'Artisan hand-stitching leather' },
-        { id: 'craft-2', url: '', alt: 'Workshop overview' },
-        { id: 'craft-3', url: '', alt: 'Shoe lasting process' },
-        { id: 'craft-4', url: '', alt: 'Hand burnishing finish' },
+        { id: 'craft-1', url: 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=1200&h=800&fit=crop&q=80', alt: 'Artisan hand-stitching leather' },
+        { id: 'craft-2', url: 'https://images.unsplash.com/photo-1616486029423-aaa4789e8c9a?w=1200&h=800&fit=crop&q=80', alt: 'Workshop overview' },
+        { id: 'craft-3', url: 'https://images.unsplash.com/photo-1605733160314-4fc7dac4bb16?w=1200&h=800&fit=crop&q=80', alt: 'Shoe lasting process' },
+        { id: 'craft-4', url: 'https://images.unsplash.com/photo-1449505278894-297fdb3edbc1?w=1200&h=800&fit=crop&q=80', alt: 'Hand burnishing finish' },
       ],
       features: [
         { num: '01', name: 'Goodyear Welt', desc: 'A 200-year-old construction method that lets the sole be replaced — extending every pair\'s life by decades.' },
@@ -58,7 +58,7 @@ export const SITE_SETTINGS_DEFAULTS = {
       titleLine1: 'Crafted in',
       titleLine2: 'Agra',
       description: 'From the city of the Taj Mahal — Agra has been the heart of India\'s leather craft for centuries. RADEO continues this tradition, blending Mughal-era artisanship with contemporary design in every pair we create.',
-      image: '',
+      image: 'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=1200&h=900&fit=crop&q=80',
       points: [
         { icon: '🏛️', title: 'Heritage City', desc: 'Agra\'s leather craft tradition spans over 400 years, rooted in Mughal artisanship.' },
         { icon: '✋', title: 'Master Craftsmen', desc: 'Our karigars (artisans) carry generations of skill passed down through families.' },
@@ -75,7 +75,7 @@ export const SITE_SETTINGS_DEFAULTS = {
         'Today, our twelve artisans continue that tradition. Every pair passes through over 200 hand operations before it earns the RADEO name.',
       ],
       quote: 'A great shoe isn\'t made — it\'s born. Every cut, every stitch, every burnish is a conversation between the artisan and the leather.',
-      image: '',
+      image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=1200&h=900&fit=crop&q=80',
       ctaText: 'Our Story',
       ctaLink: '/about',
     },
@@ -381,6 +381,8 @@ export const SITE_SETTINGS_DEFAULTS = {
   aboutPage: {
     title: 'About Radeo',
     subtitle: 'Your trusted destination for premium footwear since 2026',
+    heroImage: 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=1600&h=600&fit=crop&q=80',
+    storyImage: 'https://images.unsplash.com/photo-1595341888016-a392ef81b7de?w=800&h=600&fit=crop&q=80',
     storyTitle: 'Our Story',
     storyParagraphs: [
       'Radeo was born from a simple belief: everyone deserves access to quality footwear that combines style, comfort, and durability.',
@@ -569,8 +571,14 @@ export const SITE_SETTINGS_DEFAULTS = {
     centerLogo: true,
     primaryColor: '#3B2F2F',
     secondaryColor: '#E5D3B3',
+    accentColor: '#c9a96e',
+    accentHoverColor: '#a07840',
     backgroundColor: '#fafaf9',
     textColor: '#1c1917',
+    bodyTextColor: '#8a7460',
+    mutedTextColor: '#5c3d1e',
+    borderColor: '#e8e0d0',
+    subtleBgColor: '#f2ede4',
     colorModes: {
       light: {
         primaryColor: '#3B2F2F',
