@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -107,7 +107,7 @@ export default function CheckoutPage() {
 
       setAppliedCoupon(coupon);
       setDiscount(discountAmount);
-      toast.success(`Coupon applied! You saved ₹${discountAmount.toLocaleString()}`);
+      toast.success(`Coupon applied! You saved â‚¹${discountAmount.toLocaleString()}`);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Invalid coupon code');
     }
@@ -262,12 +262,12 @@ export default function CheckoutPage() {
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-primary-900 flex items-center gap-2">
-                  <FiMapPin className="text-brand-brown" />
+                  <FiMapPin className="text-[color:var(--color-accent)]" />
                   Shipping Address
                 </h2>
                 <button
                   onClick={() => setShowAddressForm(!showAddressForm)}
-                  className="flex items-center gap-2 text-brand-brown hover:text-[color:var(--color-muted)]"
+                  className="flex items-center gap-2 text-[color:var(--color-accent)] hover:text-[color:var(--color-muted)]"
                 >
                   <FiPlus /> Add New
                 </button>
@@ -361,7 +361,7 @@ export default function CheckoutPage() {
                       key={address._id}
                       onClick={() => setSelectedAddress(address)}
                       className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${selectedAddress?._id === address._id
-                        ? 'border-brand-brown bg-brand-brown bg-opacity-5'
+                        ? 'border-[color:var(--color-accent)] bg-[color:var(--color-subtle-bg)]'
                         : 'border-primary-200 hover:border-primary-400'
                         }`}
                     >
@@ -370,7 +370,7 @@ export default function CheckoutPage() {
                           <div className="flex items-center gap-2 mb-2">
                             <span className="font-semibold text-primary-900">{address.fullName}</span>
                             {address.isDefault && (
-                              <span className="px-2 py-0.5 text-xs bg-brand-brown text-white rounded">Default</span>
+                              <span className="px-2 py-0.5 text-xs bg-[color:var(--color-heading)] text-white rounded">Default</span>
                             )}
                           </div>
                           <p className="text-primary-700 text-sm">{address.addressLine1}</p>
@@ -396,14 +396,14 @@ export default function CheckoutPage() {
             {/* Payment Method */}
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-bold text-primary-900 flex items-center gap-2 mb-6">
-                <FiCreditCard className="text-brand-brown" />
+                <FiCreditCard className="text-[color:var(--color-accent)]" />
                 Payment Method
               </h2>
               <div className="space-y-3">
                 <div
                   onClick={() => setPaymentMethod('razorpay')}
                   className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${paymentMethod === 'razorpay'
-                    ? 'border-brand-brown bg-brand-brown bg-opacity-5'
+                    ? 'border-[color:var(--color-accent)] bg-[color:var(--color-subtle-bg)]'
                     : 'border-primary-200 hover:border-primary-400'
                     }`}
                 >
@@ -426,7 +426,7 @@ export default function CheckoutPage() {
                 <div
                   onClick={() => setPaymentMethod('cod')}
                   className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${paymentMethod === 'cod'
-                    ? 'border-brand-brown bg-brand-brown bg-opacity-5'
+                    ? 'border-[color:var(--color-accent)] bg-[color:var(--color-subtle-bg)]'
                     : 'border-primary-200 hover:border-primary-400'
                     }`}
                 >
@@ -473,7 +473,7 @@ export default function CheckoutPage() {
                       Remove
                     </button>
                   ) : (
-                    <button onClick={handleApplyCoupon} className="px-4 py-2 bg-brand-brown text-white rounded-lg hover:bg-[color:var(--color-muted)]">
+                    <button onClick={handleApplyCoupon} className="px-4 py-2 bg-[color:var(--color-heading)] text-white rounded-lg hover:bg-[color:var(--color-muted)]">
                       Apply
                     </button>
                   )}
@@ -484,27 +484,27 @@ export default function CheckoutPage() {
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-primary-700">
                   <span>Subtotal ({cartCount} items)</span>
-                  <span>₹{subtotal.toLocaleString()}</span>
+                  <span>â‚¹{subtotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-primary-700">
                   <span>Shipping</span>
-                  <span>{shippingCost === 0 ? 'FREE' : `₹${shippingCost}`}</span>
+                  <span>{shippingCost === 0 ? 'FREE' : `â‚¹${shippingCost}`}</span>
                 </div>
                 {discount > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Discount</span>
-                    <span>-₹{discount.toLocaleString()}</span>
+                    <span>-â‚¹{discount.toLocaleString()}</span>
                   </div>
                 )}
                 {subtotal < 1000 && shippingCost > 0 && (
-                  <p className="text-xs text-primary-600">Add ₹{(1000 - subtotal).toLocaleString()} more for FREE shipping</p>
+                  <p className="text-xs text-primary-600">Add â‚¹{(1000 - subtotal).toLocaleString()} more for FREE shipping</p>
                 )}
               </div>
 
               <div className="pt-6 border-t border-primary-200 mb-6">
                 <div className="flex justify-between text-xl font-bold text-primary-900">
                   <span>Total</span>
-                  <span>₹{total.toLocaleString()}</span>
+                  <span>â‚¹{total.toLocaleString()}</span>
                 </div>
               </div>
 
@@ -516,7 +516,7 @@ export default function CheckoutPage() {
                 {isProcessing ? 'Processing...' : 'Place Order'}
               </button>
 
-              <Link href="/cart" className="block text-center mt-4 text-brand-brown hover:underline">
+              <Link href="/cart" className="block text-center mt-4 text-[color:var(--color-accent)] hover:underline">
                 Back to Cart
               </Link>
             </div>

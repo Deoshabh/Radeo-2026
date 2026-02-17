@@ -495,7 +495,7 @@ exports.getPublicSettings = async (req, res, next) => {
     }
 
     if (publishedSnapshot?.theme) {
-      publicSettings.theme = publishedSnapshot.theme;
+      publicSettings.theme = { ...(publicSettings.theme || {}), ...publishedSnapshot.theme };
     }
 
     publicSettings.publishWorkflow = {

@@ -123,7 +123,14 @@ export default function AdminCMSPage() {
       setLoading(true);
       const [mainRes, advRes] = await Promise.all([adminAPI.getAllSettings(), adminAPI.getAdvancedSettings()]);
       const s = mainRes.data.settings;
-      setAdvancedSettings({ ...(advRes.data.settings || {}), theme: { ...(s.theme || {}), ...(advRes.data.settings?.theme || {}) } });
+
+      // Convert key-value array from admin settings API to a keyed object
+      const advArray = advRes.data.settings || [];
+      const adv = Array.isArray(advArray)
+        ? advArray.reduce((acc, item) => { if (item?.key) acc[item.key] = item.value; return acc; }, {})
+        : advArray;
+
+      setAdvancedSettings({ ...adv, theme: { ...(s.theme || {}), ...(adv.theme || {}) } });
       setBranding(s.branding || { logo: {}, favicon: {}, siteName: '' });
       setBanners(s.banners || s.bannerSystem?.banners || []);
       setAnnouncementBar(s.announcementBar || { enabled: true, text: '', link: '', backgroundColor: '#10b981', textColor: '#ffffff', dismissible: true });
@@ -174,12 +181,29 @@ export default function AdminCMSPage() {
   const saveAdvanced = useCallback(async (key, value) => {
     try {
       setSaving(true);
+      // Save to key-value store
       await adminAPI.updateSetting(key, value);
+      // For theme, also save to singleton store so settings are consistent
+      if (key === 'theme') {
+        await adminAPI.updateSettings({ theme: value }).catch(() => {});
+      }
       toast.success('Setting saved!');
       setAdvancedSettings(prev => ({ ...prev, [key]: value }));
       refreshSettings();
     } catch (error) {
       console.error(`Save ${key} failed:`, error);
+      // Fallback: try singleton save if key-value save fails
+      if (key === 'theme') {
+        try {
+          await adminAPI.updateSettings({ theme: value });
+          toast.success('Theme saved!');
+          setAdvancedSettings(prev => ({ ...prev, [key]: value }));
+          refreshSettings();
+          return;
+        } catch (e2) {
+          console.error('Fallback theme save also failed:', e2);
+        }
+      }
       toast.error('Failed to save');
     } finally { setSaving(false); }
   }, [refreshSettings]);
