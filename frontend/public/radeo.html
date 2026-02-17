@@ -1,0 +1,2436 @@
+<!--
+  ╔══════════════════════════════════════════════════════╗
+  ║           RADEO — MinIO Image Setup Guide            ║
+  ╠══════════════════════════════════════════════════════╣
+  ║                                                      ║
+  ║  1. Create a MinIO bucket named: radeo-assets        ║
+  ║  2. Set bucket policy to: public (read-only)         ║
+  ║  3. Create these folder paths inside the bucket:     ║
+  ║       radeo-assets/hero/                             ║
+  ║       radeo-assets/products/                         ║
+  ║       radeo-assets/craft/                            ║
+  ║       radeo-assets/materials/                        ║
+  ║       radeo-assets/lifestyle/                        ║
+  ║  4. Upload images with EXACT filenames listed        ║
+  ║     in the IMAGES config object in <script>          ║
+  ║  5. Update MINIO_BASE at top of <script>:            ║
+  ║       const MINIO_BASE = 'http://your-host:9000/     ║
+  ║                            radeo-assets';            ║
+  ║  6. To swap any image: upload new file to MinIO      ║
+  ║     with the same filename — changes instantly       ║
+  ║     (or update the URL in IMAGES config)             ║
+  ║                                                      ║
+  ║  Recommended image specs:                            ║
+  ║    Hero:      1200×1600px  JPG  <400KB               ║
+  ║    Products:   800×1000px  JPG  <200KB               ║
+  ║    Craft:     1200×800px   JPG  <300KB               ║
+  ║    Materials:  900×1100px  JPG  <250KB               ║
+  ║    Lifestyle: 1200×900px   JPG  <300KB               ║
+  ╚══════════════════════════════════════════════════════╝
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RADEO — Handcrafted Luxury Leather Footwear</title>
+  <meta name="description" content="RADEO — Where Craft Becomes Legacy. Handcrafted luxury leather shoes from India's finest artisans.">
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+
+  <!-- Anime.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+
+  <style>
+    /* ════════════════════════════════════════════════════
+       RADEO — Complete Stylesheet
+       Clean White & Beige Minimal-Modern Theme
+       ════════════════════════════════════════════════════ */
+
+    :root {
+      --white:      #ffffff;
+      --paper:      #faf8f4;
+      --beige:      #f2ede4;
+      --sand:       #e8e0d0;
+      --tan:        #c9a96e;
+      --bronze:     #a07840;
+      --brown:      #5c3d1e;
+      --espresso:   #2a1a0a;
+      --mid:        #8a7460;
+      --line:       rgba(90,60,25,0.10);
+      --shadow-sm:  0 2px 12px rgba(60,35,10,0.08);
+      --shadow-md:  0 8px 40px rgba(60,35,10,0.12);
+      --shadow-lg:  0 24px 80px rgba(60,35,10,0.16);
+
+      --ff-display: 'Playfair Display', serif;
+      --ff-body:    'Cormorant Garamond', serif;
+      --ff-ui:      'DM Mono', monospace;
+
+      --ease-expo:  cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-out:   cubic-bezier(0.33, 1, 0.68, 1);
+    }
+
+    /* ── Reset ── */
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--ff-body);
+      background: var(--paper);
+      color: var(--espresso);
+      overflow-x: hidden;
+      cursor: none;
+      line-height: 1.8;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+      object-fit: cover;
+      object-position: center;
+    }
+
+    img:not([src]), img[src=""] {
+      background: var(--beige);
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    button {
+      border: none;
+      cursor: none;
+      font-family: inherit;
+      background: none;
+    }
+
+    ul { list-style: none; }
+
+    /* ── Custom Cursor ── */
+    .cursor-dot {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 10px;
+      height: 10px;
+      background: var(--espresso);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 10001;
+      transform: translate(-50%, -50%);
+      transition: width 0.3s var(--ease-expo), height 0.3s var(--ease-expo), background 0.3s;
+    }
+
+    .cursor-ring {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 36px;
+      height: 36px;
+      border: 1.5px solid var(--espresso);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 10000;
+      transform: translate(-50%, -50%);
+      transition: width 0.4s var(--ease-expo), height 0.4s var(--ease-expo),
+                  border-radius 0.4s var(--ease-expo), border-color 0.3s, background 0.3s;
+    }
+
+    .cursor-hover .cursor-dot {
+      width: 4px;
+      height: 4px;
+    }
+
+    .cursor-hover .cursor-ring {
+      width: 52px;
+      height: 52px;
+    }
+
+    .cursor-img .cursor-ring {
+      border-radius: 0;
+    }
+
+    .cursor-dark .cursor-dot {
+      background: var(--tan);
+    }
+
+    .cursor-dark .cursor-ring {
+      border-color: var(--tan);
+    }
+
+    /* ── Preloader ── */
+    .preloader {
+      position: fixed;
+      inset: 0;
+      background: var(--espresso);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+    }
+
+    .preloader-word {
+      display: flex;
+      gap: 0.15em;
+      overflow: hidden;
+    }
+
+    .preloader-letter {
+      font-family: var(--ff-display);
+      font-size: clamp(3rem, 6vw, 5rem);
+      font-weight: 700;
+      color: var(--beige);
+      display: inline-block;
+      transform: translateY(110%);
+    }
+
+    .preloader-bar-wrap {
+      width: 160px;
+      height: 1px;
+      background: rgba(242,237,228,0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .preloader-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 0%;
+      background: var(--tan);
+    }
+
+    .preloader-counter {
+      font-family: var(--ff-ui);
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      color: var(--mid);
+      margin-top: 0.5rem;
+    }
+
+    /* ── Navigation ── */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem clamp(1.5rem, 4vw, 3.5rem);
+      transition: all 0.5s var(--ease-expo);
+      opacity: 0;
+    }
+
+    .nav.scrolled {
+      background: rgba(250,248,244,0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 1px 0 var(--line);
+      padding: 1rem clamp(1.5rem, 4vw, 3.5rem);
+    }
+
+    .nav-brand {
+      font-family: var(--ff-display);
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--espresso);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2.5rem;
+    }
+
+    .nav-link {
+      font-family: var(--ff-ui);
+      font-size: 0.62rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--brown);
+      transition: color 0.3s;
+      position: relative;
+    }
+
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 1px;
+      background: var(--tan);
+      transition: width 0.4s var(--ease-expo);
+    }
+
+    .nav-link:hover {
+      color: var(--espresso);
+    }
+
+    .nav-link:hover::after {
+      width: 100%;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .nav-cart {
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 0.4rem;
+    }
+
+    .nav-cart svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--espresso);
+      fill: none;
+      stroke-width: 1.5;
+    }
+
+    .nav-cart-badge {
+      position: absolute;
+      top: -2px;
+      right: -6px;
+      width: 16px;
+      height: 16px;
+      background: var(--tan);
+      color: var(--white);
+      font-family: var(--ff-ui);
+      font-size: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+    }
+
+    .nav-cta {
+      font-family: var(--ff-ui);
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      background: var(--espresso);
+      color: var(--beige);
+      padding: 0.7rem 1.6rem;
+      border-radius: 0;
+      transition: background 0.3s, transform 0.3s;
+    }
+
+    .nav-cta:hover {
+      background: var(--bronze);
+    }
+
+    /* ── Hero ── */
+    .hero {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      position: relative;
+      overflow: hidden;
+      background: var(--paper);
+    }
+
+    .hero-img-col {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      will-change: transform;
+      opacity: 0;
+    }
+
+    .hero-img-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to right, transparent 70%, var(--paper) 100%);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: clamp(2rem, 5vw, 6rem);
+      padding-left: clamp(2rem, 4vw, 5rem);
+    }
+
+    .hero-eyebrow {
+      font-family: var(--ff-ui);
+      font-size: 0.6rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--tan);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      opacity: 0;
+    }
+
+    .hero-eyebrow::before {
+      content: '';
+      display: block;
+      width: 40px;
+      height: 1px;
+      background: var(--tan);
+    }
+
+    .hero-title {
+      font-family: var(--ff-display);
+      font-size: clamp(3.5rem, 6vw, 7rem);
+      font-weight: 900;
+      line-height: 0.95;
+      color: var(--espresso);
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-title .line {
+      display: block;
+      overflow: hidden;
+    }
+
+    .hero-title .line span {
+      display: inline-block;
+      transform: translateY(110%);
+    }
+
+    .hero-title .line-italic {
+      font-style: italic;
+      color: var(--bronze);
+    }
+
+    .hero-desc {
+      font-family: var(--ff-body);
+      font-size: 1.2rem;
+      font-weight: 300;
+      line-height: 1.8;
+      color: var(--brown);
+      max-width: 38ch;
+      margin-bottom: 2.5rem;
+      opacity: 0;
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 1.2rem;
+      margin-bottom: 3rem;
+    }
+
+    .btn-primary {
+      font-family: var(--ff-ui);
+      font-size: 0.62rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      background: var(--espresso);
+      color: var(--beige);
+      padding: 1rem 2.4rem;
+      transition: background 0.3s, transform 0.15s;
+      opacity: 0;
+    }
+
+    .btn-primary:hover {
+      background: var(--bronze);
+    }
+
+    .btn-ghost {
+      font-family: var(--ff-ui);
+      font-size: 0.62rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--bronze);
+      padding: 1rem 1.6rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      transition: color 0.3s, gap 0.3s;
+      opacity: 0;
+    }
+
+    .btn-ghost:hover {
+      color: var(--espresso);
+      gap: 1rem;
+    }
+
+    .btn-ghost .arrow {
+      transition: transform 0.3s var(--ease-expo);
+    }
+
+    .btn-ghost:hover .arrow {
+      transform: translateX(4px);
+    }
+
+    .hero-stats {
+      display: flex;
+      gap: 2rem;
+      opacity: 0;
+    }
+
+    .hero-stat {
+      font-family: var(--ff-ui);
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--mid);
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .hero-stat:not(:last-child)::after {
+      content: '·';
+      margin-left: 0.8rem;
+      color: var(--sand);
+    }
+
+    .hero-stat-num {
+      font-size: 0.7rem;
+      color: var(--espresso);
+      font-weight: 400;
+    }
+
+    /* ── Marquee ── */
+    .marquee {
+      background: var(--sand);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 1rem 0;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .marquee-inner {
+      display: inline-flex;
+      animation: marquee 28s linear infinite;
+    }
+
+    .marquee-text {
+      font-family: var(--ff-ui);
+      font-size: 0.62rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--brown);
+      padding: 0 2rem;
+    }
+
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    /* ── Section Commons ── */
+    .section {
+      padding: clamp(5rem, 10vw, 11rem) 0;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 clamp(1.5rem, 4vw, 3.5rem);
+    }
+
+    .section-label {
+      font-family: var(--ff-ui);
+      font-size: 0.6rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--tan);
+      margin-bottom: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .section-label::before {
+      content: '';
+      width: 32px;
+      height: 1px;
+      background: var(--tan);
+    }
+
+    .section-head {
+      font-family: var(--ff-display);
+      font-size: clamp(2.5rem, 4.5vw, 5rem);
+      font-weight: 700;
+      line-height: 1.05;
+      color: var(--espresso);
+      margin-bottom: 3rem;
+    }
+
+    .section-head .rh-line {
+      display: block;
+      overflow: hidden;
+    }
+
+    .section-head .rh-line span {
+      display: inline-block;
+    }
+
+    .section-head-center {
+      text-align: center;
+    }
+
+    .section-head-center .section-label {
+      justify-content: center;
+    }
+
+    .section-head-center .section-label::before {
+      display: none;
+    }
+
+    /* ── Reveal classes (default hidden) ── */
+    .reveal-label,
+    .reveal-head,
+    .reveal-card,
+    .reveal-img,
+    .reveal-split-l,
+    .reveal-split-r,
+    .reveal-feature,
+    .reveal-stat,
+    .reveal-quote {
+      opacity: 0;
+    }
+
+    /* ── Collection / Products ── */
+    .collection-bg {
+      background: var(--paper);
+    }
+
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2px;
+    }
+
+    .product-card {
+      position: relative;
+      background: var(--white);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transform-style: preserve-3d;
+      will-change: transform;
+    }
+
+    .card-img-wrap {
+      position: relative;
+      aspect-ratio: 3 / 4;
+      overflow: hidden;
+      perspective: 900px;
+    }
+
+    .card-img-main,
+    .card-img-hover {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: opacity 0.4s var(--ease-out);
+    }
+
+    .card-img-hover {
+      opacity: 0;
+    }
+
+    .product-card:hover .card-img-main {
+      opacity: 0;
+    }
+
+    .product-card:hover .card-img-hover {
+      opacity: 1;
+    }
+
+    .card-info {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 1.5rem;
+      background: rgba(250,248,244,0.96);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transform: translateY(100%);
+      transition: transform 0.5s var(--ease-expo);
+    }
+
+    .product-card:hover .card-info {
+      transform: translateY(0);
+    }
+
+    .card-tag {
+      font-family: var(--ff-ui);
+      font-size: 0.55rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--mid);
+    }
+
+    .card-name {
+      font-family: var(--ff-display);
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--espresso);
+      margin: 0.3rem 0 0.8rem;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-price {
+      font-family: var(--ff-ui);
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      color: var(--brown);
+    }
+
+    .card-add {
+      width: 40px;
+      height: 40px;
+      background: var(--espresso);
+      color: var(--beige);
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: background 0.3s;
+    }
+
+    .card-add:hover {
+      background: var(--bronze);
+    }
+
+    .card-badge {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      font-family: var(--ff-ui);
+      font-size: 0.5rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      background: var(--espresso);
+      color: var(--beige);
+      padding: 0.3rem 0.7rem;
+      z-index: 2;
+    }
+
+    /* ── Craft Section ── */
+    .craft-bg {
+      background: var(--beige);
+    }
+
+    .craft-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px;
+      margin-bottom: 4rem;
+    }
+
+    .craft-img-wrap {
+      overflow: hidden;
+      height: 320px;
+    }
+
+    .craft-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.6s var(--ease-expo);
+    }
+
+    .craft-img-wrap:hover img {
+      transform: scale(1.04);
+    }
+
+    .craft-features {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2rem;
+    }
+
+    .craft-feature {
+      padding: 1.5rem 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .craft-feature-num {
+      font-family: var(--ff-ui);
+      font-size: 0.55rem;
+      letter-spacing: 0.2em;
+      color: var(--tan);
+      margin-bottom: 0.8rem;
+    }
+
+    .craft-feature-name {
+      font-family: var(--ff-display);
+      font-size: 1.1rem;
+      font-weight: 400;
+      font-style: italic;
+      color: var(--espresso);
+      margin-bottom: 0.5rem;
+    }
+
+    .craft-feature-desc {
+      font-family: var(--ff-body);
+      font-size: 0.95rem;
+      font-weight: 300;
+      color: var(--mid);
+      line-height: 1.6;
+    }
+
+    /* ── Materials ── */
+    .materials-bg {
+      background: var(--white);
+    }
+
+    .materials-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3px;
+    }
+
+    .material-card {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mat-img-wrap {
+      position: relative;
+      aspect-ratio: 4 / 5;
+      overflow: hidden;
+    }
+
+    .mat-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.6s var(--ease-expo);
+    }
+
+    .material-card:hover .mat-img {
+      transform: scale(1.06);
+    }
+
+    .mat-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(42,26,10,0.80) 0%, transparent 55%);
+      pointer-events: none;
+      transition: background 0.4s;
+    }
+
+    .material-card:hover .mat-overlay {
+      background: linear-gradient(to top, rgba(42,26,10,0.88) 0%, transparent 60%);
+    }
+
+    .mat-content {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 1.8rem;
+    }
+
+    .mat-name {
+      font-family: var(--ff-display);
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--beige);
+      margin-bottom: 0.3rem;
+    }
+
+    .mat-origin {
+      font-family: var(--ff-ui);
+      font-size: 0.55rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--sand);
+    }
+
+    /* ── Story / Lifestyle ── */
+    .story-bg {
+      background: var(--beige);
+    }
+
+    .story-grid {
+      display: grid;
+      grid-template-columns: 55% 45%;
+      gap: 4rem;
+      align-items: center;
+    }
+
+    .story-img-wrap {
+      overflow: hidden;
+      box-shadow: var(--shadow-md);
+    }
+
+    .story-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      min-height: 500px;
+    }
+
+    .story-content {
+      padding: 2rem 0;
+    }
+
+    .story-quote {
+      font-family: var(--ff-body);
+      font-size: 1.5rem;
+      font-weight: 300;
+      font-style: italic;
+      color: var(--tan);
+      line-height: 1.6;
+      margin: 2rem 0;
+      padding-left: 1.5rem;
+      border-left: 2px solid var(--tan);
+    }
+
+    .story-body {
+      font-family: var(--ff-body);
+      font-size: 1.1rem;
+      font-weight: 300;
+      color: var(--brown);
+      line-height: 1.8;
+      margin-bottom: 1.5rem;
+    }
+
+    .story-cta {
+      font-family: var(--ff-ui);
+      font-size: 0.62rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--bronze);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-top: 1rem;
+      transition: gap 0.3s;
+    }
+
+    .story-cta:hover {
+      gap: 1.2rem;
+    }
+
+    /* ── Testimonials ── */
+    .testimonials-bg {
+      background: var(--white);
+    }
+
+    .testimonial-wrap {
+      max-width: 680px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .testimonial-stars {
+      font-size: 1.2rem;
+      color: var(--tan);
+      letter-spacing: 0.3em;
+      margin-bottom: 2rem;
+    }
+
+    .testimonial-quote {
+      font-family: var(--ff-display);
+      font-size: clamp(1.4rem, 2.5vw, 2rem);
+      font-weight: 400;
+      font-style: italic;
+      line-height: 1.45;
+      color: var(--espresso);
+      margin-bottom: 2rem;
+      max-width: 52ch;
+      margin-inline: auto;
+    }
+
+    .testimonial-author {
+      font-family: var(--ff-ui);
+      font-size: 0.6rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--mid);
+    }
+
+    .testimonial-nav {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 2.5rem;
+    }
+
+    .testimonial-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--sand);
+      border: none;
+      transition: background 0.3s;
+    }
+
+    .testimonial-dot.active {
+      background: var(--tan);
+    }
+
+    /* ── CTA Banner ── */
+    .cta-banner {
+      background: var(--espresso);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-banner .container {
+      text-align: center;
+      position: relative;
+      z-index: 2;
+    }
+
+    .cta-banner-head {
+      font-family: var(--ff-display);
+      font-size: clamp(2.5rem, 5vw, 5.5rem);
+      font-weight: 900;
+      line-height: 1.0;
+      color: var(--beige);
+      margin-bottom: 1.2rem;
+    }
+
+    .cta-banner-head em {
+      color: var(--tan);
+      font-style: italic;
+    }
+
+    .cta-banner-sub {
+      font-family: var(--ff-body);
+      font-size: 1.15rem;
+      font-weight: 300;
+      color: var(--mid);
+      margin-bottom: 2.5rem;
+    }
+
+    .cta-banner-btns {
+      display: flex;
+      justify-content: center;
+      gap: 1.2rem;
+    }
+
+    .btn-light {
+      font-family: var(--ff-ui);
+      font-size: 0.62rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      background: var(--beige);
+      color: var(--espresso);
+      padding: 1rem 2.4rem;
+      transition: background 0.3s;
+    }
+
+    .btn-light:hover {
+      background: var(--tan);
+      color: var(--white);
+    }
+
+    .btn-ghost-light {
+      font-family: var(--ff-ui);
+      font-size: 0.62rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--beige);
+      padding: 1rem 2.4rem;
+      border: 1px solid rgba(242,237,228,0.25);
+      transition: border-color 0.3s, color 0.3s;
+    }
+
+    .btn-ghost-light:hover {
+      border-color: var(--tan);
+      color: var(--tan);
+    }
+
+    .cta-grain {
+      position: absolute;
+      inset: 0;
+      opacity: 0.04;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 128px 128px;
+      pointer-events: none;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      background: var(--paper);
+      border-top: 1px solid var(--line);
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 3rem;
+      padding-bottom: 3rem;
+    }
+
+    .footer-brand-name {
+      font-family: var(--ff-display);
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--espresso);
+      margin-bottom: 0.8rem;
+    }
+
+    .footer-brand-tagline {
+      font-family: var(--ff-body);
+      font-size: 1rem;
+      color: var(--mid);
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+      max-width: 28ch;
+    }
+
+    .footer-brand-img {
+      width: 100%;
+      max-width: 200px;
+      height: 120px;
+      object-fit: cover;
+      margin-bottom: 1.2rem;
+      opacity: 0.85;
+    }
+
+    .footer-socials {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .footer-social {
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.3s, color 0.3s;
+      font-family: var(--ff-ui);
+      font-size: 0.6rem;
+      color: var(--mid);
+    }
+
+    .footer-social:hover {
+      border-color: var(--tan);
+      color: var(--tan);
+    }
+
+    .footer-col-title {
+      font-family: var(--ff-ui);
+      font-size: 0.6rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--espresso);
+      margin-bottom: 1.5rem;
+    }
+
+    .footer-col-link {
+      display: block;
+      font-family: var(--ff-body);
+      font-size: 0.95rem;
+      color: var(--mid);
+      margin-bottom: 0.7rem;
+      transition: color 0.3s;
+    }
+
+    .footer-col-link:hover {
+      color: var(--tan);
+    }
+
+    .footer-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--line);
+    }
+
+    .footer-copy {
+      font-family: var(--ff-ui);
+      font-size: 0.55rem;
+      letter-spacing: 0.15em;
+      color: var(--mid);
+    }
+
+    .footer-url {
+      font-family: var(--ff-ui);
+      font-size: 0.55rem;
+      letter-spacing: 0.15em;
+      color: var(--tan);
+    }
+
+    /* ── Mobile Menu Toggle ── */
+    .nav-menu-btn {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      padding: 0.5rem;
+      background: none;
+      border: none;
+    }
+
+    .nav-menu-btn span {
+      display: block;
+      width: 22px;
+      height: 1.5px;
+      background: var(--espresso);
+      transition: transform 0.3s, opacity 0.3s;
+    }
+
+    .mobile-menu {
+      display: none;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 960px) {
+      .hero {
+        grid-template-columns: 1fr;
+        min-height: auto;
+      }
+
+      .hero-img-col {
+        height: 60vh;
+        min-height: 400px;
+      }
+
+      .hero-img-overlay {
+        background: linear-gradient(to top, var(--paper) 0%, transparent 40%);
+      }
+
+      .hero-content {
+        padding: 2rem clamp(1.5rem, 4vw, 3rem);
+      }
+
+      .hero-title {
+        font-size: clamp(2.8rem, 8vw, 4.5rem);
+      }
+
+      .products-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .craft-features {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .materials-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .story-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .story-img-wrap img {
+        min-height: 350px;
+      }
+
+      .footer-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .nav-menu-btn {
+        display: flex;
+      }
+
+      .mobile-menu.active {
+        display: flex;
+        position: fixed;
+        inset: 0;
+        background: rgba(250,248,244,0.98);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        z-index: 999;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2.5rem;
+      }
+
+      .mobile-menu .nav-link {
+        font-size: 0.75rem;
+        letter-spacing: 0.3em;
+      }
+
+      .mobile-close {
+        position: absolute;
+        top: 1.5rem;
+        right: 1.5rem;
+        font-size: 1.5rem;
+        background: none;
+        border: none;
+        color: var(--espresso);
+        cursor: none;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .hero-img-col {
+        height: 50vh;
+      }
+
+      .hero-title {
+        font-size: clamp(2.2rem, 10vw, 3.5rem);
+      }
+
+      .hero-stats {
+        flex-direction: column;
+        gap: 0.6rem;
+      }
+
+      .hero-stat:not(:last-child)::after {
+        display: none;
+      }
+
+      .hero-ctas {
+        flex-direction: column;
+        gap: 0.8rem;
+      }
+
+      .btn-primary, .btn-ghost {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .products-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .craft-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .craft-features {
+        grid-template-columns: 1fr;
+      }
+
+      .materials-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .cta-banner-btns {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .footer-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .footer-bottom {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+      }
+
+      body {
+        cursor: auto;
+      }
+
+      .cursor-dot, .cursor-ring {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Custom Cursor -->
+  <div class="cursor-dot"></div>
+  <div class="cursor-ring"></div>
+
+  <!-- ═══ 0. PRELOADER ═══ -->
+  <div class="preloader" id="preloader">
+    <div class="preloader-word" id="preloader-word"></div>
+    <div class="preloader-bar-wrap">
+      <div class="preloader-bar" id="preloader-bar"></div>
+    </div>
+    <div class="preloader-counter" id="preloader-counter">000</div>
+  </div>
+
+  <!-- ═══ 1. NAVIGATION ═══ -->
+  <nav class="nav" id="nav">
+    <a href="#" class="nav-brand">RADEO</a>
+    <div class="nav-links">
+      <a href="#collection" class="nav-link">Collection</a>
+      <a href="#craft" class="nav-link">Craft</a>
+      <a href="#materials" class="nav-link">Materials</a>
+      <a href="#about" class="nav-link">About</a>
+    </div>
+    <div class="nav-right">
+      <button class="nav-cart" aria-label="Shopping bag">
+        <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="nav-cart-badge">0</span>
+      </button>
+      <button class="nav-cta magnetic-btn">Shop Now</button>
+      <button class="nav-menu-btn" id="nav-menu-btn" aria-label="Open menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Mobile Menu -->
+  <div class="mobile-menu" id="mobile-menu">
+    <button class="mobile-close" id="mobile-close" aria-label="Close menu">&times;</button>
+    <a href="#collection" class="nav-link mobile-link">Collection</a>
+    <a href="#craft" class="nav-link mobile-link">Craft</a>
+    <a href="#materials" class="nav-link mobile-link">Materials</a>
+    <a href="#about" class="nav-link mobile-link">About</a>
+  </div>
+
+  <!-- ═══ 2. HERO ═══ -->
+  <section class="hero" id="hero">
+    <div class="hero-img-col">
+      <img id="img-hero-main" alt="RADEO signature Oxford shoe editorial" class="hero-img" width="1200" height="1600">
+      <div class="hero-img-overlay"></div>
+    </div>
+    <div class="hero-content">
+      <div class="hero-eyebrow">Est. 2008 — Handcrafted Luxury</div>
+      <h1 class="hero-title">
+        <span class="line"><span>Where Craft</span></span>
+        <span class="line"><span class="line-italic">Becomes</span></span>
+        <span class="line"><span>Legacy</span></span>
+      </h1>
+      <p class="hero-desc">Each pair is shaped by sixteen years of mastery — hand-lasted, hand-stitched, and finished to an heirloom standard that only improves with age.</p>
+      <div class="hero-ctas">
+        <button class="btn-primary magnetic-btn">Explore Collection</button>
+        <button class="btn-ghost">Our Process <span class="arrow">→</span></button>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat"><span class="hero-stat-num" data-target="16">0</span>+ Years</div>
+        <div class="hero-stat"><span class="hero-stat-num" data-target="48">0</span>K+ Pairs</div>
+        <div class="hero-stat"><span class="hero-stat-num" data-target="12">0</span> Artisans</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 3. MARQUEE ═══ -->
+  <div class="marquee">
+    <div class="marquee-inner">
+      <span class="marquee-text">Full-Grain Leather &nbsp;◆&nbsp; Goodyear Welt &nbsp;◆&nbsp; Hand-Burnished &nbsp;◆&nbsp; Free Shipping in India &nbsp;◆&nbsp; Lifetime Resoling &nbsp;◆&nbsp; Cork Footbed &nbsp;◆&nbsp; Bespoke Available</span>
+      <span class="marquee-text">Full-Grain Leather &nbsp;◆&nbsp; Goodyear Welt &nbsp;◆&nbsp; Hand-Burnished &nbsp;◆&nbsp; Free Shipping in India &nbsp;◆&nbsp; Lifetime Resoling &nbsp;◆&nbsp; Cork Footbed &nbsp;◆&nbsp; Bespoke Available</span>
+    </div>
+  </div>
+
+  <!-- ═══ 4. FEATURED COLLECTION ═══ -->
+  <section class="section collection-bg" id="collection">
+    <div class="container">
+      <div class="section-label reveal-label">Curated Selection</div>
+      <h2 class="section-head reveal-head">
+        <span class="rh-line"><span>The Collection</span></span>
+      </h2>
+      <div class="products-grid" id="products-grid">
+        <!-- Products rendered dynamically from IMAGES.products -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 5. CRAFT & PROCESS ═══ -->
+  <section class="section craft-bg" id="craft">
+    <div class="container">
+      <div class="section-label reveal-label">Our Process</div>
+      <h2 class="section-head reveal-head">
+        <span class="rh-line"><span>The Art of</span></span>
+        <span class="rh-line"><span>Shoemaking</span></span>
+      </h2>
+      <div class="craft-grid">
+        <div class="craft-img-wrap reveal-img">
+          <img id="img-craft-hands" alt="Artisan hands stitching leather" width="1200" height="800" loading="lazy">
+        </div>
+        <div class="craft-img-wrap reveal-img">
+          <img id="img-craft-workshop" alt="RADEO workshop overview" width="1200" height="800" loading="lazy">
+        </div>
+        <div class="craft-img-wrap reveal-img">
+          <img id="img-craft-lasting" alt="Shoe lasting process" width="1200" height="800" loading="lazy">
+        </div>
+        <div class="craft-img-wrap reveal-img">
+          <img id="img-craft-finishing" alt="Hand burnishing finish" width="1200" height="800" loading="lazy">
+        </div>
+      </div>
+      <div class="craft-features">
+        <div class="craft-feature reveal-feature">
+          <div class="craft-feature-num">01</div>
+          <div class="craft-feature-name">Goodyear Welt</div>
+          <p class="craft-feature-desc">A 200-year-old construction method that lets the sole be replaced — extending every pair's life by decades.</p>
+        </div>
+        <div class="craft-feature reveal-feature">
+          <div class="craft-feature-num">02</div>
+          <div class="craft-feature-name">Hand-Burnished</div>
+          <p class="craft-feature-desc">Each shoe is burnished by hand, giving the leather a rich, luminous patina unique to its wearer.</p>
+        </div>
+        <div class="craft-feature reveal-feature">
+          <div class="craft-feature-num">03</div>
+          <div class="craft-feature-name">Cork Insole</div>
+          <p class="craft-feature-desc">A natural cork footbed moulds to your foot over time, providing bespoke comfort with every step.</p>
+        </div>
+        <div class="craft-feature reveal-feature">
+          <div class="craft-feature-num">04</div>
+          <div class="craft-feature-name">Full-Grain</div>
+          <p class="craft-feature-desc">Only the finest full-grain hides are selected — sourced from heritage tanneries across three continents.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 6. MATERIALS ═══ -->
+  <section class="section materials-bg" id="materials">
+    <div class="container section-head-center">
+      <div class="section-label reveal-label">World-Class Leathers</div>
+      <h2 class="section-head reveal-head">
+        <span class="rh-line"><span>Our Materials</span></span>
+      </h2>
+      <div class="materials-grid" id="materials-grid">
+        <!-- Materials rendered dynamically from IMAGES.materials -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 7. STORY / LIFESTYLE ═══ -->
+  <section class="section story-bg" id="about">
+    <div class="container">
+      <div class="story-grid">
+        <div class="story-img-wrap reveal-split-l">
+          <img id="img-lifestyle-about" alt="RADEO founder in the atelier" width="1200" height="900" loading="lazy">
+        </div>
+        <div class="story-content reveal-split-r">
+          <div class="section-label">Our Story</div>
+          <h2 class="section-head">
+            <span class="rh-line"><span>Born From</span></span>
+            <span class="rh-line"><span>Passion</span></span>
+          </h2>
+          <p class="story-body">Founded in 2008, RADEO started as a small atelier in Agra with a singular vision — to create leather shoes that rival the finest European makers, rooted in Indian craftsmanship.</p>
+          <p class="story-body">Today, our twelve artisans continue that tradition. Every pair passes through over 200 hand operations before it earns the RADEO name.</p>
+          <blockquote class="story-quote">"A great shoe isn't made — it's born. Every cut, every stitch, every burnish is a conversation between the artisan and the leather."</blockquote>
+          <a href="#" class="story-cta">Our Story <span class="arrow">→</span></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 8. TESTIMONIALS ═══ -->
+  <section class="section testimonials-bg">
+    <div class="container">
+      <div class="testimonial-wrap reveal-quote">
+        <div class="testimonial-stars">★★★★★</div>
+        <p class="testimonial-quote" id="testimonial-text">"The Langham Oxford is, without exaggeration, the finest shoe I have worn. The leather develops a patina that tells your story. Exceptional."</p>
+        <p class="testimonial-author" id="testimonial-author">— Arjun Mehta, Mumbai</p>
+        <div class="testimonial-nav">
+          <button class="testimonial-dot active" data-index="0" aria-label="Testimonial 1"></button>
+          <button class="testimonial-dot" data-index="1" aria-label="Testimonial 2"></button>
+          <button class="testimonial-dot" data-index="2" aria-label="Testimonial 3"></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 9. CTA BANNER ═══ -->
+  <section class="section cta-banner" data-dark>
+    <div class="cta-grain"></div>
+    <div class="container">
+      <h2 class="cta-banner-head reveal-head">
+        <span class="rh-line"><span>Step Into</span></span>
+        <span class="rh-line"><span><em>Legacy</em></span></span>
+      </h2>
+      <p class="cta-banner-sub reveal-label">Handcrafted to order. Delivered to your door. Free shipping across India.</p>
+      <div class="cta-banner-btns">
+        <button class="btn-light magnetic-btn">Shop Collection</button>
+        <button class="btn-ghost-light magnetic-btn">Book an Appointment</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 10. FOOTER ═══ -->
+  <footer class="section footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-brand-name">RADEO</div>
+          <p class="footer-brand-tagline">Handcrafted luxury leather footwear. Made in India with intention, worn worldwide with pride.</p>
+          <img id="img-lifestyle-store" class="footer-brand-img" alt="RADEO store interior" width="400" height="300" loading="lazy">
+          <div class="footer-socials">
+            <a href="#" class="footer-social" aria-label="Instagram">IG</a>
+            <a href="#" class="footer-social" aria-label="Twitter">TW</a>
+            <a href="#" class="footer-social" aria-label="Pinterest">PI</a>
+          </div>
+        </div>
+        <div>
+          <div class="footer-col-title">Collection</div>
+          <a href="#" class="footer-col-link">Oxfords</a>
+          <a href="#" class="footer-col-link">Chelsea Boots</a>
+          <a href="#" class="footer-col-link">Derby</a>
+          <a href="#" class="footer-col-link">Monk Strap</a>
+          <a href="#" class="footer-col-link">Bespoke</a>
+        </div>
+        <div>
+          <div class="footer-col-title">Craft</div>
+          <a href="#" class="footer-col-link">Our Process</a>
+          <a href="#" class="footer-col-link">Materials</a>
+          <a href="#" class="footer-col-link">Sizing Guide</a>
+          <a href="#" class="footer-col-link">Care & Restoration</a>
+        </div>
+        <div>
+          <div class="footer-col-title">Help</div>
+          <a href="#" class="footer-col-link">Contact</a>
+          <a href="#" class="footer-col-link">Shipping & Returns</a>
+          <a href="#" class="footer-col-link">FAQ</a>
+          <a href="#" class="footer-col-link">Privacy Policy</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span class="footer-copy">&copy; 2026 RADEO. All rights reserved.</span>
+        <a href="https://radeo.in" class="footer-url">radeo.in</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    /* ════════════════════════════════════════════════════════════
+       RADEO — MinIO Image Configuration
+       Admin: Update these URLs from your MinIO bucket/admin panel.
+       Format: http://YOUR_MINIO_HOST:9000/BUCKET_NAME/filename.jpg
+       All images are public-read from the 'radeo-assets' bucket.
+       ════════════════════════════════════════════════════════════ */
+
+    const MINIO_BASE = 'http://localhost:9000/radeo-assets'; // ← change to your MinIO host
+
+    const IMAGES = {
+
+      /* ── HERO ──────────────────────────────────────────────── */
+      hero: {
+        main: `${MINIO_BASE}/hero/hero-main.jpg`,
+      },
+
+      /* ── PRODUCT CARDS ─────────────────────────────────────── */
+      products: [
+        {
+          id:    'langham',
+          name:  'The Langham',
+          tag:   'Oxford · Tan',
+          price: '₹ 18,500',
+          image: `${MINIO_BASE}/products/langham-oxford-tan.jpg`,
+          hover: `${MINIO_BASE}/products/langham-oxford-tan-alt.jpg`,
+        },
+        {
+          id:    'knightsbridge',
+          name:  'The Knightsbridge',
+          tag:   'Chelsea · Black',
+          price: '₹ 22,000',
+          image: `${MINIO_BASE}/products/knightsbridge-chelsea-black.jpg`,
+          hover: `${MINIO_BASE}/products/knightsbridge-chelsea-black-alt.jpg`,
+        },
+        {
+          id:    'aldgate',
+          name:  'The Aldgate',
+          tag:   'Derby · Midnight',
+          price: '₹ 16,800',
+          image: `${MINIO_BASE}/products/aldgate-derby-midnight.jpg`,
+          hover: `${MINIO_BASE}/products/aldgate-derby-midnight-alt.jpg`,
+        },
+        {
+          id:    'windsor',
+          name:  'The Windsor',
+          tag:   'Boot · Cognac',
+          price: '₹ 26,500',
+          image: `${MINIO_BASE}/products/windsor-boot-cognac.jpg`,
+          hover: `${MINIO_BASE}/products/windsor-boot-cognac-alt.jpg`,
+        },
+      ],
+
+      /* ── CRAFT / BEHIND THE SCENES ─────────────────────────── */
+      craft: {
+        hands:     `${MINIO_BASE}/craft/artisan-hands-stitching.jpg`,
+        workshop:  `${MINIO_BASE}/craft/workshop-overview.jpg`,
+        lasting:   `${MINIO_BASE}/craft/shoe-lasting-process.jpg`,
+        finishing: `${MINIO_BASE}/craft/hand-burnishing-finish.jpg`,
+      },
+
+      /* ── MATERIALS / LEATHERS ──────────────────────────────── */
+      materials: [
+        {
+          name:   'Horween Shell Cordovan',
+          origin: 'Chicago, USA · Since 1905',
+          image:  `${MINIO_BASE}/materials/horween-shell-cordovan.jpg`,
+        },
+        {
+          name:   'Italian Calf Leather',
+          origin: 'Tuscany, Italy · Vegetable Tanned',
+          image:  `${MINIO_BASE}/materials/italian-calf-tuscany.jpg`,
+        },
+        {
+          name:   'English Boxcalf',
+          origin: 'Walsall, England · Chrome Tanned',
+          image:  `${MINIO_BASE}/materials/english-boxcalf-walsall.jpg`,
+        },
+      ],
+
+      /* ── BRAND / LIFESTYLE ─────────────────────────────────── */
+      lifestyle: {
+        about: `${MINIO_BASE}/lifestyle/founder-atelier.jpg`,
+        store: `${MINIO_BASE}/lifestyle/radeo-store-interior.jpg`,
+      },
+
+      /* ── FALLBACK ───────────────────────────────────────────── */
+      fallback: `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect fill='%23f2ede4' width='800' height='600'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Georgia' font-size='18' fill='%23c9a96e'%3E Image Slot %3C/text%3E%3C/svg%3E`,
+    };
+
+    /* ── Helper: inject image src with fallback ── */
+    function setImg(el, src) {
+      if (!el) return;
+      el.src = src;
+      el.onerror = function() { el.src = IMAGES.fallback; el.onerror = null; };
+    }
+
+
+    /* ════════════════════════════════════════════════════════
+       DYNAMIC RENDERING
+       ════════════════════════════════════════════════════════ */
+
+    /* ── Render Product Cards ── */
+    function renderProducts() {
+      var grid = document.getElementById('products-grid');
+      if (!grid) return;
+      IMAGES.products.forEach(function(p) {
+        var card = document.createElement('div');
+        card.className = 'product-card reveal-card';
+        card.setAttribute('data-id', p.id);
+        card.innerHTML =
+          '<div class="card-img-wrap">' +
+            '<img id="img-product-' + p.id + '" class="card-img-main" alt="' + p.name + '" width="800" height="1000" loading="lazy">' +
+            '<img id="img-product-' + p.id + '-hover" class="card-img-hover" alt="' + p.name + ' alternate view" width="800" height="1000" loading="lazy">' +
+          '</div>' +
+          '<div class="card-info">' +
+            '<span class="card-tag">' + p.tag + '</span>' +
+            '<h3 class="card-name">' + p.name + '</h3>' +
+            '<div class="card-footer">' +
+              '<span class="card-price">' + p.price + '</span>' +
+              '<button class="card-add" aria-label="Add to cart">+</button>' +
+            '</div>' +
+          '</div>' +
+          '<span class="card-badge">New</span>';
+        grid.appendChild(card);
+      });
+    }
+
+    /* ── Render Material Cards ── */
+    function renderMaterials() {
+      var grid = document.getElementById('materials-grid');
+      if (!grid) return;
+      IMAGES.materials.forEach(function(m, i) {
+        var card = document.createElement('div');
+        card.className = 'material-card reveal-card';
+        card.innerHTML =
+          '<div class="mat-img-wrap">' +
+            '<img id="img-material-' + i + '" class="mat-img" alt="' + m.name + ' leather texture" width="900" height="1100" loading="lazy">' +
+            '<div class="mat-overlay"></div>' +
+          '</div>' +
+          '<div class="mat-content">' +
+            '<h3 class="mat-name">' + m.name + '</h3>' +
+            '<p class="mat-origin">' + m.origin + '</p>' +
+          '</div>';
+        grid.appendChild(card);
+      });
+    }
+
+    /* ── Inject all images after DOM ready ── */
+    function injectAllImages() {
+      // Hero
+      setImg(document.getElementById('img-hero-main'), IMAGES.hero.main);
+
+      // Products
+      IMAGES.products.forEach(function(p) {
+        setImg(document.getElementById('img-product-' + p.id), p.image);
+        setImg(document.getElementById('img-product-' + p.id + '-hover'), p.hover);
+      });
+
+      // Craft
+      Object.keys(IMAGES.craft).forEach(function(key) {
+        setImg(document.getElementById('img-craft-' + key), IMAGES.craft[key]);
+      });
+
+      // Materials
+      IMAGES.materials.forEach(function(m, i) {
+        setImg(document.getElementById('img-material-' + i), m.image);
+      });
+
+      // Lifestyle
+      setImg(document.getElementById('img-lifestyle-about'), IMAGES.lifestyle.about);
+      setImg(document.getElementById('img-lifestyle-store'), IMAGES.lifestyle.store);
+    }
+
+
+    /* ════════════════════════════════════════════════════════
+       PRELOADER ANIMATION
+       ════════════════════════════════════════════════════════ */
+
+    function initPreloader() {
+      var word = document.getElementById('preloader-word');
+      var letters = 'RADEO'.split('');
+      letters.forEach(function(ch) {
+        var span = document.createElement('span');
+        span.textContent = ch;
+        span.className = 'preloader-letter';
+        word.appendChild(span);
+      });
+
+      var counter = { val: 0 };
+      var counterEl = document.getElementById('preloader-counter');
+
+      var tl = anime.timeline({ easing: 'easeOutExpo' });
+
+      // Letters in
+      tl.add({
+        targets: '.preloader-letter',
+        translateY: ['110%', '0%'],
+        duration: 700,
+        delay: anime.stagger(80),
+      });
+
+      // Bar fills
+      tl.add({
+        targets: '#preloader-bar',
+        width: ['0%', '100%'],
+        duration: 1600,
+        easing: 'easeInOutQuart',
+      }, '-=400');
+
+      // Counter
+      tl.add({
+        targets: counter,
+        val: [0, 100],
+        round: 1,
+        duration: 1600,
+        easing: 'easeInOutQuart',
+        update: function() {
+          counterEl.textContent = String(Math.floor(counter.val)).padStart(3, '0');
+        }
+      }, '-=1600');
+
+      // Letters out
+      tl.add({
+        targets: '.preloader-letter',
+        translateY: ['0%', '-110%'],
+        duration: 500,
+        delay: anime.stagger(50),
+        easing: 'easeInExpo',
+      });
+
+      // Bar fade
+      tl.add({
+        targets: ['#preloader-bar', '#preloader-counter'],
+        opacity: 0,
+        duration: 300,
+      }, '-=300');
+
+      // Preloader exit
+      tl.add({
+        targets: '#preloader',
+        translateY: '-100%',
+        duration: 800,
+        easing: 'easeInOutExpo',
+        complete: function() {
+          document.getElementById('preloader').style.display = 'none';
+          initHeroEntrance();
+        }
+      });
+    }
+
+
+    /* ════════════════════════════════════════════════════════
+       HERO ENTRANCE ANIMATION
+       ════════════════════════════════════════════════════════ */
+
+    function initHeroEntrance() {
+      var tl = anime.timeline({ easing: 'easeOutExpo' });
+
+      // Nav
+      tl.add({
+        targets: '#nav',
+        opacity: [0, 1],
+        translateY: [-15, 0],
+        duration: 600,
+      });
+
+      // Eyebrow
+      tl.add({
+        targets: '.hero-eyebrow',
+        opacity: [0, 1],
+        translateX: [20, 0],
+        duration: 600,
+      }, '-=400');
+
+      // Title lines
+      tl.add({
+        targets: '.hero-title .line span',
+        translateY: ['110%', '0%'],
+        duration: 900,
+        delay: anime.stagger(130),
+      }, '-=400');
+
+      // Description
+      tl.add({
+        targets: '.hero-desc',
+        opacity: [0, 1],
+        translateY: [20, 0],
+        duration: 700,
+      }, '-=500');
+
+      // CTA buttons
+      tl.add({
+        targets: '.hero-ctas button',
+        opacity: [0, 1],
+        translateY: [15, 0],
+        duration: 600,
+        delay: anime.stagger(100),
+      }, '-=400');
+
+      // Stats
+      tl.add({
+        targets: '.hero-stats',
+        opacity: [0, 1],
+        translateY: [20, 0],
+        duration: 600,
+      }, '-=400');
+
+      // Hero image (Ken Burns intro)
+      tl.add({
+        targets: '.hero-img',
+        scale: [1.08, 1.0],
+        opacity: [0, 1],
+        duration: 1200,
+        easing: 'easeOutQuad',
+      }, '-=800');
+
+      // Stat counter
+      tl.add({
+        duration: 1,
+        complete: function() { animateStatCounters(); }
+      });
+    }
+
+
+    /* ════════════════════════════════════════════════════════
+       STAT COUNTER ANIMATION
+       ════════════════════════════════════════════════════════ */
+
+    function animateStatCounters() {
+      document.querySelectorAll('.hero-stat-num').forEach(function(el) {
+        var target = parseInt(el.getAttribute('data-target'), 10);
+        var obj = { val: 0 };
+        anime({
+          targets: obj,
+          val: target,
+          round: 1,
+          duration: 2000,
+          easing: 'easeOutExpo',
+          update: function() {
+            el.textContent = Math.floor(obj.val);
+          }
+        });
+      });
+    }
+
+
+    /* ════════════════════════════════════════════════════════
+       SCROLL REVEAL (IntersectionObserver)
+       ════════════════════════════════════════════════════════ */
+
+    function initScrollReveals() {
+      var observerOptions = { threshold: 0.15 };
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (!entry.isIntersecting) return;
+
+          var el = entry.target;
+          observer.unobserve(el);
+
+          if (el.classList.contains('reveal-label')) {
+            anime({
+              targets: el,
+              opacity: [0, 1],
+              translateY: [16, 0],
+              duration: 600,
+              easing: 'easeOutExpo',
+            });
+          }
+
+          if (el.classList.contains('reveal-head')) {
+            anime({
+              targets: el.querySelectorAll('.rh-line span'),
+              translateY: ['110%', '0%'],
+              duration: 800,
+              delay: anime.stagger(100),
+              easing: 'easeOutExpo',
+            });
+            anime({
+              targets: el,
+              opacity: [0, 1],
+              duration: 100,
+            });
+          }
+
+          if (el.classList.contains('reveal-card')) {
+            anime({
+              targets: el,
+              opacity: [0, 1],
+              translateY: [36, 0],
+              duration: 800,
+              easing: 'easeOutExpo',
+              delay: parseInt(el.getAttribute('data-delay') || 0, 10),
+            });
+          }
+
+          if (el.classList.contains('reveal-img')) {
+            anime({
+              targets: el.querySelector('img') || el,
+              scale: [1.06, 1.0],
+              opacity: [0, 1],
+              duration: 1000,
+              easing: 'easeOutExpo',
+              delay: parseInt(el.getAttribute('data-delay') || 0, 10),
+            });
+            anime({
+              targets: el,
+              opacity: [0, 1],
+              duration: 100,
+            });
+          }
+
+          if (el.classList.contains('reveal-split-l')) {
+            anime({
+              targets: el,
+              opacity: [0, 1],
+              translateX: [-40, 0],
+              duration: 800,
+              easing: 'easeOutExpo',
+            });
+          }
+
+          if (el.classList.contains('reveal-split-r')) {
+            anime({
+              targets: el,
+              opacity: [0, 1],
+              translateX: [40, 0],
+              duration: 800,
+              easing: 'easeOutExpo',
+            });
+          }
+
+          if (el.classList.contains('reveal-feature')) {
+            anime({
+              targets: el,
+              opacity: [0, 1],
+              translateY: [20, 0],
+              duration: 600,
+              easing: 'easeOutExpo',
+              delay: parseInt(el.getAttribute('data-delay') || 0, 10),
+            });
+          }
+
+          if (el.classList.contains('reveal-quote')) {
+            anime({
+              targets: el,
+              opacity: [0, 1],
+              translateY: [24, 0],
+              duration: 900,
+              easing: 'easeOutExpo',
+            });
+          }
+        });
+      }, observerOptions);
+
+      // Add stagger delays to card groups
+      document.querySelectorAll('.products-grid .reveal-card').forEach(function(card, i) {
+        card.setAttribute('data-delay', i * 80);
+      });
+      document.querySelectorAll('.materials-grid .reveal-card').forEach(function(card, i) {
+        card.setAttribute('data-delay', i * 80);
+      });
+      document.querySelectorAll('.craft-grid .reveal-img').forEach(function(img, i) {
+        img.setAttribute('data-delay', i * 120);
+      });
+      document.querySelectorAll('.craft-features .reveal-feature').forEach(function(feat, i) {
+        feat.setAttribute('data-delay', i * 80);
+      });
+
+      // Observe all revealable elements
+      var selectors = '.reveal-label, .reveal-head, .reveal-card, .reveal-img, .reveal-split-l, .reveal-split-r, .reveal-feature, .reveal-stat, .reveal-quote';
+      document.querySelectorAll(selectors).forEach(function(el) {
+        // Skip hero elements (they animate via hero entrance)
+        if (el.closest('.hero')) return;
+        observer.observe(el);
+      });
+    }
+
+
+    /* ════════════════════════════════════════════════════════
+       PARALLAX
+       ════════════════════════════════════════════════════════ */
+
+    function initParallax() {
+      var heroImg = document.querySelector('.hero-img');
+      var heroContent = document.querySelector('.hero-content');
+
+      window.addEventListener('scroll', function() {
+        var sy = window.scrollY;
+        if (sy < window.innerHeight * 1.5) {
+          if (heroImg) heroImg.style.transform = 'translateY(' + (sy * 0.18) + 'px) scale(1)';
+          if (heroContent) heroContent.style.transform = 'translateY(' + (sy * 0.06) + 'px)';
+        }
+      }, { passive: true });
+    }
+
+
+    /* ════════════════════════════════════════════════════════
+       CUSTOM CURSOR
+       ════════════════════════════════════════════════════════ */
+
+    function initCursor() {
+      if (window.innerWidth < 600) return;
+
+      var dot = document.querySelector('.cursor-dot');
+      var ring = document.querySelector('.cursor-ring');
+      var mx = 0, my = 0, rx = 0, ry = 0;
+
+      document.addEventListener('mousemove', function(e) {
+        mx = e.clientX;
+        my = e.clientY;
+        dot.style.left = mx + 'px';
+        dot.style.top = my + 'px';
+      });
+
+      // Lerp ring follow
+      function lerpRing() {
+        rx += (mx - rx) * 0.1;
+        ry += (my - ry) * 0.1;
+        ring.style.left = rx + 'px';
+        ring.style.top = ry + 'px';
+        requestAnimationFrame(lerpRing);
+      }
+      lerpRing();
+
+      // Hover states
+      var interactives = 'a, button, .product-card, .material-card, .nav-link, .footer-social, .testimonial-dot';
+      document.querySelectorAll(interactives).forEach(function(el) {
+        el.addEventListener('mouseenter', function() {
+          document.body.classList.add('cursor-hover');
+        });
+        el.addEventListener('mouseleave', function() {
+          document.body.classList.remove('cursor-hover');
+        });
+      });
+
+      // Image hover → square ring
+      document.querySelectorAll('img, .card-img-wrap, .craft-img-wrap, .mat-img-wrap, .story-img-wrap').forEach(function(el) {
+        el.addEventListener('mouseenter', function() {
+          document.body.classList.add('cursor-img');
+        });
+        el.addEventListener('mouseleave', function() {
+          document.body.classList.remove('cursor-img');
+        });
+      });
+
+      // Dark section cursor color
+      document.querySelectorAll('[data-dark]').forEach(function(el) {
+        el.addEventListener('mouseenter', function() {
+          document.body.classList.add('cursor-dark');
+        });
+        el.addEventListener('mouseleave', function() {
+          document.body.classList.remove('cursor-dark');
+        });
+      });
+    }
+
+
+    /* ════════════════════════════════════════════════════════
+       MAGNETIC BUTTONS
+       ════════════════════════════════════════════════════════ */
+
+    function initMagneticButtons() {
+      document.querySelectorAll('.magnetic-btn').forEach(function(btn) {
+        btn.addEventListener('mousemove', function(e) {
+          var rect = btn.getBoundingClientRect();
+          var cx = rect.left + rect.width / 2;
+          var cy = rect.top + rect.height / 2;
+          var dx = (e.clientX - cx) * 0.28;
+          var dy = (e.clientY - cy) * 0.28;
+          btn.style.transform = 'translate(' + dx + 'px, ' + dy + 'px)';
+        });
+
+        btn.addEventListener('mouseleave', function() {
+          anime({
+            targets: btn,
+            translateX: 0,
+            translateY: 0,
+            duration: 800,
+            easing: 'easeOutElastic(1, 0.5)',
+          });
+        });
+      });
+    }
+
+
+    /* ════════════════════════════════════════════════════════
+       PRODUCT CARD 3D TILT
+       ════════════════════════════════════════════════════════ */
+
+    function initCardTilt() {
+      document.querySelectorAll('.product-card').forEach(function(card) {
+        var wrap = card.querySelector('.card-img-wrap');
+
+        card.addEventListener('mousemove', function(e) {
+          var rect = card.getBoundingClientRect();
+          var x = (e.clientX - rect.left) / rect.width - 0.5;
+          var y = (e.clientY - rect.top) / rect.height - 0.5;
+          card.style.transform = 'perspective(900px) rotateX(' + (y * -12) + 'deg) rotateY(' + (x * 12) + 'deg)';
+        });
+
+        card.addEventListener('mouseleave', function() {
+          anime({
+            targets: card,
+            rotateX: 0,
+            rotateY: 0,
+            duration: 600,
+            easing: 'easeOutElastic(1, 0.5)',
+          });
+          card.style.transform = '';
+        });
+      });
+    }
+
+
+    /* ════════════════════════════════════════════════════════
+       ADD TO CART MICRO-INTERACTION
+       ════════════════════════════════════════════════════════ */
+
+    function initAddToCart() {
+      document.querySelectorAll('.card-add').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var self = this;
+
+          anime({
+            targets: self,
+            scale: [1, 0.82, 1.25, 1],
+            duration: 500,
+            easing: 'easeOutElastic(1, 0.5)',
+          });
+
+          // Swap icon
+          var orig = self.textContent;
+          self.textContent = '✓';
+          self.style.background = 'var(--bronze)';
+
+          setTimeout(function() {
+            self.textContent = orig;
+            self.style.background = '';
+          }, 1800);
+
+          // Update cart badge
+          var badge = document.querySelector('.nav-cart-badge');
+          if (badge) {
+            var count = parseInt(badge.textContent, 10) || 0;
+            badge.textContent = count + 1;
+            anime({
+              targets: badge,
+              scale: [1, 1.4, 1],
+              duration: 400,
+              easing: 'easeOutElastic(1, 0.5)',
+            });
+          }
+        });
+      });
+    }
+
+
+    /* ════════════════════════════════════════════════════════
+       NAV SCROLL BEHAVIOUR
+       ════════════════════════════════════════════════════════ */
+
+    function initNavScroll() {
+      var nav = document.getElementById('nav');
+      window.addEventListener('scroll', function() {
+        if (window.scrollY > 80) {
+          nav.classList.add('scrolled');
+        } else {
+          nav.classList.remove('scrolled');
+        }
+      }, { passive: true });
+    }
+
+
+    /* ════════════════════════════════════════════════════════
+       TESTIMONIAL CAROUSEL
+       ════════════════════════════════════════════════════════ */
+
+    function initTestimonials() {
+      var testimonials = [
+        {
+          text: '"The Langham Oxford is, without exaggeration, the finest shoe I have worn. The leather develops a patina that tells your story. Exceptional."',
+          author: '— Arjun Mehta, Mumbai'
+        },
+        {
+          text: '"I\'ve worn bespoke from London and Florence. RADEO stands shoulder to shoulder with the best — at a fraction of the price. Truly remarkable craftsmanship."',
+          author: '— Vikram Singh, New Delhi'
+        },
+        {
+          text: '"Every detail speaks of care. From the unboxing ritual to the first step on pavement — this is what luxury should feel like. My fourth pair."',
+          author: '— Priya Sharma, Bangalore'
+        }
+      ];
+
+      var textEl = document.getElementById('testimonial-text');
+      var authorEl = document.getElementById('testimonial-author');
+      var dots = document.querySelectorAll('.testimonial-dot');
+      var current = 0;
+
+      function showTestimonial(index) {
+        anime({
+          targets: [textEl, authorEl],
+          opacity: [1, 0],
+          translateY: [0, -10],
+          duration: 300,
+          easing: 'easeInQuad',
+          complete: function() {
+            textEl.textContent = testimonials[index].text;
+            authorEl.textContent = testimonials[index].author;
+            anime({
+              targets: [textEl, authorEl],
+              opacity: [0, 1],
+              translateY: [10, 0],
+              duration: 500,
+              easing: 'easeOutExpo',
+            });
+          }
+        });
+
+        dots.forEach(function(d, i) {
+          d.classList.toggle('active', i === index);
+        });
+        current = index;
+      }
+
+      dots.forEach(function(dot) {
+        dot.addEventListener('click', function() {
+          var idx = parseInt(this.getAttribute('data-index'), 10);
+          if (idx !== current) showTestimonial(idx);
+        });
+      });
+
+      // Auto-rotate
+      setInterval(function() {
+        var next = (current + 1) % testimonials.length;
+        showTestimonial(next);
+      }, 6000);
+    }
+
+
+    /* ════════════════════════════════════════════════════════
+       MOBILE MENU
+       ════════════════════════════════════════════════════════ */
+
+    function initMobileMenu() {
+      var btn = document.getElementById('nav-menu-btn');
+      var menu = document.getElementById('mobile-menu');
+      var closeBtn = document.getElementById('mobile-close');
+
+      if (btn && menu) {
+        btn.addEventListener('click', function() {
+          menu.classList.add('active');
+        });
+
+        closeBtn.addEventListener('click', function() {
+          menu.classList.remove('active');
+        });
+
+        menu.querySelectorAll('.mobile-link').forEach(function(link) {
+          link.addEventListener('click', function() {
+            menu.classList.remove('active');
+          });
+        });
+      }
+    }
+
+
+    /* ════════════════════════════════════════════════════════
+       SMOOTH SCROLL FOR NAV LINKS
+       ════════════════════════════════════════════════════════ */
+
+    function initSmoothScroll() {
+      document.querySelectorAll('a[href^="#"]').forEach(function(link) {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          var target = document.querySelector(this.getAttribute('href'));
+          if (target) {
+            window.scrollTo({
+              top: target.offsetTop - 80,
+              behavior: 'smooth'
+            });
+          }
+        });
+      });
+    }
+
+
+    /* ════════════════════════════════════════════════════════
+       INIT EVERYTHING
+       ════════════════════════════════════════════════════════ */
+
+    document.addEventListener('DOMContentLoaded', function() {
+      // 1. Render dynamic content
+      renderProducts();
+      renderMaterials();
+
+      // 2. Inject images
+      injectAllImages();
+
+      // 3. Start preloader (triggers hero entrance on complete)
+      initPreloader();
+
+      // 4. Init interactive features
+      initScrollReveals();
+      initParallax();
+      initCursor();
+      initMagneticButtons();
+      initCardTilt();
+      initAddToCart();
+      initNavScroll();
+      initTestimonials();
+      initMobileMenu();
+      initSmoothScroll();
+    });
+  </script>
+</body>
+</html>

@@ -13,6 +13,7 @@
   --theme-container-width: 1280px;
   --theme-bg-color: #fafaf9;
   --theme-text-color: #1c1917;
+  --navbar-offset: 80px;
   
   /* Spacing scale */
   --spacing-xs: 0.5rem;

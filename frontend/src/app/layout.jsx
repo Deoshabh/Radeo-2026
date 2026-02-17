@@ -49,7 +49,7 @@ export default function RootLayout({ children }) {
                 <CartProvider>
                   <WishlistProvider>
                     <Navbar />
-                    <main className="page-transition min-h-screen pt-[80px]">
+                    <main className="page-transition min-h-screen" style={{ paddingTop: 'var(--navbar-offset, 80px)' }}>
                       <AnnouncementBar />
                       <MaintenanceModeGate>{children}</MaintenanceModeGate>
                     </main>

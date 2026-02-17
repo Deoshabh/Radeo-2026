@@ -44,6 +44,7 @@ export default function Navbar() {
   const cartRef = useRef(null);
   const wishlistRef = useRef(null);
   const categoriesDropdownRef = useRef(null);
+  const navRef = useRef(null);
   const searchRequestIdRef = useRef(0);
 
   const [prevCartCount, setPrevCartCount] = useState(cartCount);
@@ -129,6 +130,41 @@ export default function Navbar() {
     }
   }, [isCategoriesOpen]);
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+
+    const root = document.documentElement;
+    const shouldReserveSpace = stickyHeader && !isTransparentHeader;
+
+    const applyOffset = () => {
+      if (!shouldReserveSpace) {
+        root.style.setProperty('--navbar-offset', '0px');
+        return;
+      }
+
+      const measuredHeight = navRef.current?.offsetHeight || 80;
+      root.style.setProperty('--navbar-offset', `${measuredHeight}px`);
+    };
+
+    applyOffset();
+
+    if (typeof ResizeObserver === 'undefined' || !navRef.current) {
+      window.addEventListener('resize', applyOffset);
+      return () => {
+        window.removeEventListener('resize', applyOffset);
+      };
+    }
+
+    const observer = new ResizeObserver(() => applyOffset());
+    observer.observe(navRef.current);
+    window.addEventListener('resize', applyOffset);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', applyOffset);
+    };
+  }, [stickyHeader, isTransparentHeader]);
+
   // Search products
   useEffect(() => {
     const searchProducts = async () => {
@@ -178,6 +214,7 @@ export default function Navbar() {
 
   return (
     <nav
+      ref={navRef}
       className={`${stickyHeader ? 'fixed' : 'absolute'} top-0 left-0 right-0 z-50 transition-all duration-300 ${isTransparentHeader
           ? 'bg-transparent'
           : isScrolled
