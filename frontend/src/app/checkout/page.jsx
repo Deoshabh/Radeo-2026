@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { orderAPI, addressAPI, couponAPI } from '@/utils/api';
 import toast from 'react-hot-toast';
-import { FiMapPin, FiPlus, FiEdit2, FiTag, FiCreditCard, FiDollarSign } from 'react-icons/fi';
+import { FiMapPin, FiPlus, FiEdit2, FiTag, FiCreditCard, FiDollarSign, FiTrash2, FiX, FiCheck } from 'react-icons/fi';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -22,6 +22,7 @@ export default function CheckoutPage() {
   const [discount, setDiscount] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showAddressForm, setShowAddressForm] = useState(false);
+  const [editingAddressId, setEditingAddressId] = useState(null);
 
   const [addressForm, setAddressForm] = useState({
     fullName: '',
@@ -66,8 +67,14 @@ export default function CheckoutPage() {
   const handleAddAddress = async (e) => {
     e.preventDefault();
     try {
-      await addressAPI.create(addressForm);
-      toast.success('Address added successfully!');
+      if (editingAddressId) {
+        await addressAPI.update(editingAddressId, addressForm);
+        toast.success('Address updated!');
+        setEditingAddressId(null);
+      } else {
+        await addressAPI.create(addressForm);
+        toast.success('Address added successfully!');
+      }
       fetchAddresses();
       setShowAddressForm(false);
       setAddressForm({
@@ -81,8 +88,52 @@ export default function CheckoutPage() {
         isDefault: false,
       });
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to add address');
+      toast.error(error.response?.data?.message || 'Failed to save address');
     }
+  };
+
+  const handleEditAddress = (e, address) => {
+    e.stopPropagation();
+    setEditingAddressId(address._id);
+    setAddressForm({
+      fullName: address.fullName || '',
+      phone: address.phone || '',
+      addressLine1: address.addressLine1 || '',
+      addressLine2: address.addressLine2 || '',
+      city: address.city || '',
+      state: address.state || '',
+      postalCode: address.postalCode || '',
+      isDefault: address.isDefault || false,
+    });
+    setShowAddressForm(true);
+  };
+
+  const handleDeleteAddress = async (e, addressId) => {
+    e.stopPropagation();
+    if (!confirm('Delete this address?')) return;
+    try {
+      await addressAPI.delete(addressId);
+      toast.success('Address deleted');
+      if (selectedAddress?._id === addressId) setSelectedAddress(null);
+      fetchAddresses();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete address');
+    }
+  };
+
+  const handleCancelAddressForm = () => {
+    setShowAddressForm(false);
+    setEditingAddressId(null);
+    setAddressForm({
+      fullName: '',
+      phone: '',
+      addressLine1: '',
+      addressLine2: '',
+      city: '',
+      state: '',
+      postalCode: '',
+      isDefault: false,
+    });
   };
 
   const handleApplyCoupon = async () => {
@@ -266,16 +317,26 @@ export default function CheckoutPage() {
                   Shipping Address
                 </h2>
                 <button
-                  onClick={() => setShowAddressForm(!showAddressForm)}
+                  onClick={() => {
+                    if (showAddressForm && !editingAddressId) {
+                      handleCancelAddressForm();
+                    } else {
+                      handleCancelAddressForm();
+                      setShowAddressForm(true);
+                    }
+                  }}
                   className="flex items-center gap-2 text-[color:var(--color-accent)] hover:text-[color:var(--color-muted)]"
                 >
-                  <FiPlus /> Add New
+                  {showAddressForm && !editingAddressId ? <><FiX /> Cancel</> : <><FiPlus /> Add New</>}
                 </button>
               </div>
 
               {/* Address Form */}
               {showAddressForm && (
                 <form onSubmit={handleAddAddress} className="mb-6 p-4 border border-primary-200 rounded-lg bg-primary-50">
+                  <h3 className="text-sm font-semibold text-primary-800 mb-3">
+                    {editingAddressId ? 'Edit Address' : 'Add New Address'}
+                  </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <input
                       type="text"
@@ -337,12 +398,12 @@ export default function CheckoutPage() {
                     />
                   </div>
                   <div className="flex gap-3 mt-4">
-                    <button type="submit" className="btn btn-primary">
-                      Save Address
+                    <button type="submit" className="btn btn-primary flex items-center gap-2">
+                      <FiCheck className="w-4 h-4" /> {editingAddressId ? 'Update Address' : 'Save Address'}
                     </button>
                     <button
                       type="button"
-                      onClick={() => setShowAddressForm(false)}
+                      onClick={handleCancelAddressForm}
                       className="btn btn-secondary"
                     >
                       Cancel
@@ -380,12 +441,30 @@ export default function CheckoutPage() {
                           </p>
                           <p className="text-primary-600 text-sm mt-1">Phone: {address.phone}</p>
                         </div>
-                        <input
-                          type="radio"
-                          checked={selectedAddress?._id === address._id}
-                          onChange={() => setSelectedAddress(address)}
-                          className="mt-1"
-                        />
+                        <div className="flex items-center gap-2 ml-3">
+                          <button
+                            onClick={(e) => handleEditAddress(e, address)}
+                            className="p-1.5 text-primary-500 hover:text-[color:var(--color-accent)] hover:bg-primary-100 rounded transition-colors"
+                            title="Edit address"
+                          >
+                            <FiEdit2 className="w-4 h-4" />
+                          </button>
+                          {!address.isDefault && (
+                            <button
+                              onClick={(e) => handleDeleteAddress(e, address._id)}
+                              className="p-1.5 text-primary-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                              title="Delete address"
+                            >
+                              <FiTrash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                          <input
+                            type="radio"
+                            checked={selectedAddress?._id === address._id}
+                            onChange={() => setSelectedAddress(address)}
+                            className="ml-1"
+                          />
+                        </div>
                       </div>
                     </div>
                   ))}

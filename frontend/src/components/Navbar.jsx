@@ -213,8 +213,9 @@ export default function Navbar() {
               {isCategoriesOpen && (
                 <div
                   ref={categoriesDropdownRef}
-                  className="absolute top-full left-0 w-72 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden mt-1"
+                  className="absolute top-full left-0 w-72 pt-2"
                 >
+                  <div className="bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden">
                   <Link
                     href="/categories"
                     className="flex items-center gap-2 px-5 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--color-accent)] hover:bg-[color:var(--color-page-bg)] border-b border-gray-100 transition-colors"
@@ -247,6 +248,7 @@ export default function Navbar() {
                         </div>
                       </Link>
                     ))}
+                  </div>
                   </div>
                 </div>
               )}
@@ -298,12 +300,12 @@ export default function Navbar() {
               className="hidden lg:flex w-9 h-9 items-center justify-center text-[color:var(--color-body)] hover:text-[color:var(--color-heading)] transition-colors rounded-full hover:bg-[color:var(--color-subtle-bg)]"
               aria-label="Search"
             >
-              <FiSearch className="w-[18px] h-[18px]" />
+              <FiSearch className="w-5 h-5" />
             </button>
 
             {/* Wishlist */}
             <Link href="/wishlist" className="relative w-9 h-9 flex items-center justify-center text-[color:var(--color-body)] hover:text-[color:var(--color-heading)] transition-colors rounded-full hover:bg-[color:var(--color-subtle-bg)]" aria-label="Wishlist">
-              <div ref={wishlistRef}><FiHeart className="w-[18px] h-[18px]" /></div>
+              <div ref={wishlistRef}><FiHeart className="w-5 h-5" /></div>
               {wishlistCount > 0 && (
                 <span className="absolute top-0.5 right-0.5 w-4 h-4 text-[10px] font-bold bg-[color:var(--color-heading)] text-[color:var(--color-subtle-bg)] rounded-full flex items-center justify-center">{wishlistCount}</span>
               )}
@@ -311,7 +313,7 @@ export default function Navbar() {
 
             {/* Cart */}
             <Link href="/cart" id="cart-icon-container" className="relative w-9 h-9 flex items-center justify-center text-[color:var(--color-body)] hover:text-[color:var(--color-heading)] transition-colors rounded-full hover:bg-[color:var(--color-subtle-bg)]" aria-label="Cart">
-              <div ref={cartRef}><FiShoppingCart className="w-[18px] h-[18px]" /></div>
+              <div ref={cartRef}><FiShoppingCart className="w-5 h-5" /></div>
               {cartCount > 0 && (
                 <span className="absolute top-0.5 right-0.5 w-4 h-4 text-[10px] font-bold bg-[color:var(--color-heading)] text-[color:var(--color-subtle-bg)] rounded-full flex items-center justify-center">{cartCount}</span>
               )}
