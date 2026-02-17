@@ -10,7 +10,9 @@ const createSnapshotPayload = (settings) => ({
   banners: settings.banners,
   announcementBar: settings.announcementBar,
   homeSections: settings.homeSections,
+  homePage: settings.homePage,
   layout: settings.layout,
+  layoutSchemaVersion: settings.layoutSchemaVersion || 1,
   theme: settings.theme,
 });
 

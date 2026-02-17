@@ -157,6 +157,7 @@ exports.updateSettings = async (req, res, next) => {
         ? settings.theme.toObject()
         : settings.theme || {};
       settings.theme = { ...currentTheme, ...req.body.theme };
+      settings.markModified('theme');
     }
 
     settings.publishWorkflow = normalizePublishWorkflowInput(

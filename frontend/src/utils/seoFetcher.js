@@ -8,7 +8,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.radeo.in/api/v1'
 
 let cachedSeo = null;
 let cacheTimestamp = 0;
-const CACHE_TTL = 60_000; // 1 minute
+const CACHE_TTL = 15_000; // 15 seconds
 
 /**
  * Fetch SEO settings from backend (with in-memory cache for build/SSR)
@@ -22,7 +22,8 @@ export async function fetchSeoSettings() {
 
   try {
     const res = await fetch(`${API_URL}/seo/public`, {
-      next: { revalidate: 60 },
+      next: { revalidate: 15 },
+      cache: 'no-store',
     });
 
     if (!res.ok) {

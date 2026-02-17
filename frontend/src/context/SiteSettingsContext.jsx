@@ -6,7 +6,7 @@ import { SITE_SETTINGS_DEFAULTS } from '@/constants/siteSettingsDefaults';
 import { normalizeSettingsLayout } from '@/utils/layoutSchema';
 
 const CACHE_KEY = 'site-settings-cache-v1';
-const CACHE_TTL_MS = 60 * 60 * 1000;
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes (was 1 hour)
 const THEME_PREVIEW_MODE_KEY = 'theme-preview-mode-v1';
 const THEME_PREVIEW_MODE_EVENT = 'theme-preview-mode-changed';
 

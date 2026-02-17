@@ -207,7 +207,7 @@ app.use((req, res, next) => {
 app.use("/api/health", require("./routes/healthRoutes")); // Health checks
 app.use("/api/v1/auth", require("./routes/authRoutes"));
 app.use("/api/v1/products", require("./routes/productRoutes"));
-app.use("/api/v1/settings", require("./routes/settingsRoutes"));
+app.use("/api/v1/settings", preventCaching, require("./routes/settingsRoutes"));
 app.use("/api/v1/cart", require("./routes/cartRoutes"));
 app.use("/api/v1/orders", require("./routes/orderRoutes"));
 app.use("/api/v1/filters", require("./routes/filterRoutes"));
@@ -237,9 +237,9 @@ app.use("/api/v1/admin/reviews", require("./routes/adminReviewRoutes"));
 app.use("/api/v1/admin/settings", require("./routes/adminSettingsRoutes"));
 app.use("/api/v1/admin/seo", require("./routes/adminSeoRoutes"));
 app.use('/api/v1/admin/cms', adminCMSRouter);
-app.use('/api/v1/cms', publicCMSRouter);
+app.use('/api/v1/cms', preventCaching, publicCMSRouter);
 
-app.use("/api/v1/seo", require("./routes/adminSeoRoutes"));
+app.use("/api/v1/seo", preventCaching, require("./routes/adminSeoRoutes"));
 
 app.use("/api/v1/coupons", require("./routes/couponRoutes"));
 app.use("/api/v1/categories", require("./routes/categoryRoutes"));
