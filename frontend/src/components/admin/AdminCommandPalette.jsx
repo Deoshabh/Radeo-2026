@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiSearch, FiCommand, FiShoppingBag, FiUsers, FiBox, FiSettings, FiLayout, FiHome, FiCreditCard, FiGrid } from 'react-icons/fi';
+import { FiSearch, FiCommand, FiShoppingBag, FiUsers, FiBox, FiSettings, FiHome, FiCreditCard, FiGrid } from 'react-icons/fi';
 
 export default function AdminCommandPalette() {
     const [isOpen, setIsOpen] = useState(false);
@@ -64,16 +64,10 @@ export default function AdminCommandPalette() {
             action: () => router.push('/admin/users')
         },
         {
-            id: 'visual-editor',
-            label: 'Open Visual Editor',
-            icon: FiLayout,
-            action: () => router.push('/admin/visual-editor')
-        },
-        {
             id: 'settings',
             label: 'Site Settings',
             icon: FiSettings,
-            action: () => router.push('/admin/settings')
+            action: () => router.push('/admin/cms')
         },
     ];
 

@@ -547,6 +547,56 @@ exports.generateManifest = async (req, res) => {
 };
 
 /**
+ * Generate invoice
+ * POST /api/admin/shiprocket/invoice/:orderId
+ */
+exports.generateInvoice = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    if (!order.shipping?.shiprocket_order_id) {
+      return res.status(400).json({
+        success: false,
+        message: "No Shiprocket order found for this order",
+      });
+    }
+
+    const result = await shiprocketService.generateInvoice([
+      order.shipping.shiprocket_order_id,
+    ]);
+
+    const invoiceUrl =
+      result?.invoice_url ||
+      result?.data?.invoice_url ||
+      result?.response?.invoice_url ||
+      null;
+
+    if (invoiceUrl) {
+      order.shipping.invoice_url = invoiceUrl;
+      await order.save();
+    }
+
+    res.json({
+      success: true,
+      message: "Invoice generated successfully",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Generate invoice error:", error);
+    return sendShiprocketError(res, error, "Failed to generate invoice");
+  }
+};
+
+/**
  * Mark order as shipped
  * POST /api/admin/shiprocket/mark-shipped/:orderId
  */

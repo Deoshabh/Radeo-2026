@@ -21,8 +21,6 @@ export default function AdminCMSPage() {
     const [saving, setSaving] = useState(false);
 
     // Data State
-    // Note: Branding, Banners, HomeSections are now managed in Visual Editor
-    // We still fetch them to avoid breaking the API call structure if needed, or we can just ignore.
 
     // Announcement Bar State
     const [branding, setBranding] = useState({
@@ -83,7 +81,13 @@ export default function AdminCMSPage() {
             ]);
 
             const settings = mainSettingsRes.data.settings;
-            setAdvancedSettings(advancedSettingsRes.data.settings || {});
+            setAdvancedSettings({
+                ...(advancedSettingsRes.data.settings || {}),
+                theme: {
+                    ...(settings.theme || {}),
+                    ...(advancedSettingsRes.data.settings?.theme || {}),
+                },
+            });
 
             setBranding(settings.branding || { logo: {}, favicon: {}, siteName: '' });
             setBanners(settings.banners || settings.bannerSystem?.banners || []);
@@ -355,12 +359,6 @@ export default function AdminCMSPage() {
                                         <h3 className="text-lg font-semibold text-primary-900">Announcement Bar</h3>
                                         <p className="text-sm text-gray-500">Edit top-site announcement text and visibility.</p>
                                     </div>
-                                    <button
-                                        onClick={() => router.push('/admin/visual-editor')}
-                                        className="btn btn-secondary"
-                                    >
-                                        Open Theme Editor
-                                    </button>
                                 </div>
 
                                 <div className="space-y-4 border rounded-lg p-4 bg-primary-50/40">
@@ -467,6 +465,42 @@ export default function AdminCMSPage() {
                     {/* Tabs */}
                     <div className="bg-white rounded-lg shadow-sm mb-6 flex overflow-x-auto">
                         <button
+                            onClick={() => setActiveTab('branding')}
+                            className={`px-6 py-4 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'branding'
+                                ? 'border-primary-900 text-primary-900 bg-primary-50'
+                                : 'border-transparent text-gray-500 hover:text-gray-700'
+                                }`}
+                        >
+                            <FiImage className="inline mr-2" /> Branding
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('banners')}
+                            className={`px-6 py-4 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'banners'
+                                ? 'border-primary-900 text-primary-900 bg-primary-50'
+                                : 'border-transparent text-gray-500 hover:text-gray-700'
+                                }`}
+                        >
+                            <FiLayout className="inline mr-2" /> Banners
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('home')}
+                            className={`px-6 py-4 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'home'
+                                ? 'border-primary-900 text-primary-900 bg-primary-50'
+                                : 'border-transparent text-gray-500 hover:text-gray-700'
+                                }`}
+                        >
+                            <FiSettings className="inline mr-2" /> Home Essentials
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('theme')}
+                            className={`px-6 py-4 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'theme'
+                                ? 'border-primary-900 text-primary-900 bg-primary-50'
+                                : 'border-transparent text-gray-500 hover:text-gray-700'
+                                }`}
+                        >
+                            🎨 Theme Colors
+                        </button>
+                        <button
                             onClick={() => setActiveTab('announcement')}
                             className={`px-6 py-4 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'announcement'
                                 ? 'border-primary-900 text-primary-900 bg-primary-50'
@@ -503,6 +537,198 @@ export default function AdminCMSPage() {
                             <FiSettings className="inline mr-2" /> System
                         </button>
                     </div>
+
+                    {/* Branding Tab */}
+                    {
+                        activeTab === 'branding' && (
+                            <div className="bg-white rounded-lg shadow-md p-6 space-y-6 animate-fade-in">
+                                <h3 className="text-lg font-semibold text-primary-900">Branding Essentials</h3>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-primary-900 mb-2">Site Name</label>
+                                    <input
+                                        type="text"
+                                        className="input w-full"
+                                        value={branding.siteName || ''}
+                                        onChange={(e) => setBranding((prev) => ({ ...prev, siteName: e.target.value }))}
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-primary-900 mb-2">Logo URL</label>
+                                        <input
+                                            type="text"
+                                            className="input w-full"
+                                            value={branding.logo?.url || ''}
+                                            onChange={(e) => setBranding((prev) => ({
+                                                ...prev,
+                                                logo: { ...(prev.logo || {}), url: e.target.value },
+                                            }))}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-primary-900 mb-2">Favicon URL</label>
+                                        <input
+                                            type="text"
+                                            className="input w-full"
+                                            value={branding.favicon?.url || ''}
+                                            onChange={(e) => setBranding((prev) => ({
+                                                ...prev,
+                                                favicon: { ...(prev.favicon || {}), url: e.target.value },
+                                            }))}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="pt-4 border-t flex justify-end">
+                                    <button onClick={handleSaveBranding} disabled={saving} className="btn btn-primary flex items-center gap-2">
+                                        <FiSave /> {saving ? 'Saving...' : 'Save Branding'}
+                                    </button>
+                                </div>
+                            </div>
+                        )
+                    }
+
+                    {/* Banners Tab */}
+                    {
+                        activeTab === 'banners' && (
+                            <div className="bg-white rounded-lg shadow-md p-6 space-y-4 animate-fade-in">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-lg font-semibold text-primary-900">Homepage Banners</h3>
+                                    <button onClick={handleAddBanner} className="btn btn-secondary flex items-center gap-2">
+                                        <FiPlus /> Add Banner
+                                    </button>
+                                </div>
+
+                                {(banners || []).map((banner, index) => (
+                                    <div key={banner.id || index} className="border rounded-lg p-4 space-y-3">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <input
+                                                type="text"
+                                                className="input"
+                                                value={banner.title || ''}
+                                                onChange={(e) => handleBannerChange(index, 'title', e.target.value)}
+                                                placeholder="Banner title"
+                                            />
+                                            <input
+                                                type="text"
+                                                className="input"
+                                                value={banner.subtitle || banner.description || ''}
+                                                onChange={(e) => {
+                                                    handleBannerChange(index, 'subtitle', e.target.value);
+                                                    handleBannerChange(index, 'description', e.target.value);
+                                                }}
+                                                placeholder="Banner subtitle"
+                                            />
+                                            <input
+                                                type="text"
+                                                className="input"
+                                                value={banner.imageUrl || banner.image || ''}
+                                                onChange={(e) => {
+                                                    handleBannerChange(index, 'imageUrl', e.target.value);
+                                                    handleBannerChange(index, 'image', e.target.value);
+                                                }}
+                                                placeholder="Banner image URL"
+                                            />
+                                            <input
+                                                type="text"
+                                                className="input"
+                                                value={banner.link || banner.buttonLink || ''}
+                                                onChange={(e) => {
+                                                    handleBannerChange(index, 'link', e.target.value);
+                                                    handleBannerChange(index, 'buttonLink', e.target.value);
+                                                }}
+                                                placeholder="Primary button link"
+                                            />
+                                            <input
+                                                type="text"
+                                                className="input"
+                                                value={banner.buttonText || ''}
+                                                onChange={(e) => handleBannerChange(index, 'buttonText', e.target.value)}
+                                                placeholder="Primary button text"
+                                            />
+                                            <label className="flex items-center gap-2 text-sm text-primary-900">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={banner.isActive === true || banner.enabled === true}
+                                                    onChange={(e) => {
+                                                        handleBannerChange(index, 'isActive', e.target.checked);
+                                                        handleBannerChange(index, 'enabled', e.target.checked);
+                                                    }}
+                                                />
+                                                Active
+                                            </label>
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                            <button className="btn btn-secondary" onClick={() => handleMoveBanner(index, -1)} disabled={index === 0}><FiArrowUp /></button>
+                                            <button className="btn btn-secondary" onClick={() => handleMoveBanner(index, 1)} disabled={index === banners.length - 1}><FiArrowDown /></button>
+                                            <button className="btn btn-secondary" onClick={() => handleRemoveBanner(index)}><FiTrash2 /> Remove</button>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                <div className="pt-4 border-t flex justify-end">
+                                    <button onClick={handleSaveBanners} disabled={saving} className="btn btn-primary flex items-center gap-2">
+                                        <FiSave /> {saving ? 'Saving...' : 'Save Banners'}
+                                    </button>
+                                </div>
+                            </div>
+                        )
+                    }
+
+                    {/* Home Essentials Tab */}
+                    {
+                        activeTab === 'home' && (
+                            <div className="bg-white rounded-lg shadow-md p-6 space-y-4 animate-fade-in">
+                                <h3 className="text-lg font-semibold text-primary-900">Home Essentials</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <input className="input" value={homeSections.heroSection?.title || ''} onChange={(e) => handleSectionChange('heroSection', 'title', e.target.value)} placeholder="Hero title" />
+                                    <input className="input" value={homeSections.heroSection?.subtitle || ''} onChange={(e) => handleSectionChange('heroSection', 'subtitle', e.target.value)} placeholder="Hero subtitle" />
+                                    <input className="input" value={homeSections.heroSection?.primaryButtonText || homeSections.heroSection?.buttonText || ''} onChange={(e) => { handleSectionChange('heroSection', 'primaryButtonText', e.target.value); handleSectionChange('heroSection', 'buttonText', e.target.value); }} placeholder="Primary button text" />
+                                    <input className="input" value={homeSections.heroSection?.primaryButtonLink || homeSections.heroSection?.buttonLink || ''} onChange={(e) => { handleSectionChange('heroSection', 'primaryButtonLink', e.target.value); handleSectionChange('heroSection', 'buttonLink', e.target.value); }} placeholder="Primary button link" />
+                                </div>
+                                <div className="pt-4 border-t flex justify-end">
+                                    <button onClick={handleSaveSections} disabled={saving} className="btn btn-primary flex items-center gap-2">
+                                        <FiSave /> {saving ? 'Saving...' : 'Save Home Essentials'}
+                                    </button>
+                                </div>
+                            </div>
+                        )
+                    }
+
+                    {/* Theme Colors Tab */}
+                    {
+                        activeTab === 'theme' && (
+                            <div className="bg-white rounded-lg shadow-md p-6 space-y-4 animate-fade-in">
+                                <h3 className="text-lg font-semibold text-primary-900">Theme Colors</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-primary-900 mb-2">Primary Color</label>
+                                        <input type="color" value={advancedSettings.theme?.primaryColor || '#3B2F2F'} onChange={(e) => setAdvancedSettings((prev) => ({ ...prev, theme: { ...(prev.theme || {}), primaryColor: e.target.value } }))} className="h-10 w-20 border border-primary-200 rounded" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-primary-900 mb-2">Secondary Color</label>
+                                        <input type="color" value={advancedSettings.theme?.secondaryColor || '#E5D3B3'} onChange={(e) => setAdvancedSettings((prev) => ({ ...prev, theme: { ...(prev.theme || {}), secondaryColor: e.target.value } }))} className="h-10 w-20 border border-primary-200 rounded" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-primary-900 mb-2">Background Color</label>
+                                        <input type="color" value={advancedSettings.theme?.backgroundColor || '#fafaf9'} onChange={(e) => setAdvancedSettings((prev) => ({ ...prev, theme: { ...(prev.theme || {}), backgroundColor: e.target.value } }))} className="h-10 w-20 border border-primary-200 rounded" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-primary-900 mb-2">Text Color</label>
+                                        <input type="color" value={advancedSettings.theme?.textColor || '#1c1917'} onChange={(e) => setAdvancedSettings((prev) => ({ ...prev, theme: { ...(prev.theme || {}), textColor: e.target.value } }))} className="h-10 w-20 border border-primary-200 rounded" />
+                                    </div>
+                                </div>
+                                <div className="pt-4 border-t flex justify-end">
+                                    <button onClick={() => handleSaveAdvanced('theme', advancedSettings.theme || {})} disabled={saving} className="btn btn-primary flex items-center gap-2">
+                                        <FiSave /> {saving ? 'Saving...' : 'Save Theme Colors'}
+                                    </button>
+                                </div>
+                            </div>
+                        )
+                    }
 
 
 

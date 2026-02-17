@@ -13,6 +13,7 @@ const {
   getPickupAddresses,
   schedulePickup,
   generateManifest,
+  generateInvoice,
   markAsShipped,
 } = require('../controllers/shiprocketController');
 
@@ -49,6 +50,9 @@ router.post('/schedule-pickup/:orderId', schedulePickup);
 
 // POST /manifest/:orderId → generate and print manifest
 router.post('/manifest/:orderId', generateManifest);
+
+// POST /invoice/:orderId → generate invoice
+router.post('/invoice/:orderId', generateInvoice);
 
 // POST /mark-shipped/:orderId → mark order as shipped
 router.post('/mark-shipped/:orderId', markAsShipped);

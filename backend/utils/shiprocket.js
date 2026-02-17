@@ -313,18 +313,24 @@ class ShiprocketService {
 
   /**
    * Assign AWB (Air Waybill) to shipment
-   * @param {Object} params - { shipment_id, courier_id }
+   * @param {number|string} shipmentId
+   * @param {number|string|null} courierId
    */
   async assignAWB(shipmentId, courierId) {
     try {
       const headers = await this.getHeaders();
 
+      const payload = {
+        shipment_id: [shipmentId],
+      };
+
+      if (courierId !== undefined && courierId !== null && courierId !== "") {
+        payload.courier_id = courierId;
+      }
+
       const response = await axios.post(
         `${this.baseURL}/courier/assign/awb`,
-        {
-          shipment_id: shipmentId,
-          courier_id: courierId,
-        },
+        payload,
         { headers },
       );
 
@@ -338,7 +344,14 @@ class ShiprocketService {
       }
 
       console.log("✅ AWB assigned successfully:", response.data);
-      return response.data;
+
+      return {
+        awb_code: this.extractFirstByKeys(response.data, ["awb_code", "awb"]),
+        courier_name: this.extractFirstByKeys(response.data, [
+          "courier_name",
+          "courier_company_name",
+        ]),
+      };
     } catch (error) {
       console.error(
         "❌ Assign AWB failed:",
@@ -516,6 +529,46 @@ class ShiprocketService {
         error,
         "Failed to print manifest",
         "SHIPROCKET_MANIFEST_PRINT_ERROR",
+      );
+    }
+  }
+
+  /**
+   * Generate invoice PDF URL
+   * @param {Array} orderIds - Array of Shiprocket order IDs
+   */
+  async generateInvoice(orderIds) {
+    try {
+      const headers = await this.getHeaders();
+
+      const response = await axios.post(
+        `${this.baseURL}/orders/print/invoice`,
+        {
+          ids: Array.isArray(orderIds) ? orderIds : [orderIds],
+        },
+        { headers },
+      );
+
+      const businessFailure = this.detectBusinessFailure(response.data);
+      if (businessFailure) {
+        throw this.buildShiprocketError(
+          { response: { status: 422, data: response.data }, message: businessFailure },
+          "Failed to generate invoice",
+          "SHIPROCKET_INVOICE_GENERATE_ERROR",
+        );
+      }
+
+      console.log("✅ Invoice URL generated");
+      return response.data;
+    } catch (error) {
+      console.error(
+        "❌ Generate invoice failed:",
+        error.response?.data || error.message,
+      );
+      throw this.buildShiprocketError(
+        error,
+        "Failed to generate invoice",
+        "SHIPROCKET_INVOICE_GENERATE_ERROR",
       );
     }
   }
@@ -813,6 +866,24 @@ class ShiprocketService {
         });
       }
 
+      // Step 6: Generate invoice
+      let invoiceUrl = null;
+      try {
+        const invoiceResponse = await this.generateInvoice([shiprocketOrderId]);
+        invoiceUrl =
+          invoiceResponse?.invoice_url ||
+          invoiceResponse?.data?.invoice_url ||
+          invoiceResponse?.response?.invoice_url ||
+          null;
+      } catch (error) {
+        warnings.push({
+          step: "generate_invoice",
+          code: error.code,
+          message: error.message,
+          details: error.details || error.response?.data || error.message,
+        });
+      }
+
       return {
         success: true,
         shiprocket_order_id: shiprocketOrderId,
@@ -821,6 +892,7 @@ class ShiprocketService {
         courier_name: courierName,
         courier_id: courierId,
         label_url: labelUrl,
+        invoice_url: invoiceUrl,
         warnings,
       };
     } catch (error) {
