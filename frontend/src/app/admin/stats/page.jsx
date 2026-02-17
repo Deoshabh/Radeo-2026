@@ -25,6 +25,7 @@ export default function AdminStatsPage() {
   const router = useRouter();
   const { user, isAuthenticated, loading } = useAuth();
   const [stats, setStats] = useState(null);
+  const [depsHealth, setDepsHealth] = useState(null);
   const [loadingStats, setLoadingStats] = useState(true);
   const [viewMode, setViewMode] = useState('daily'); // 'daily' or 'monthly'
   const [showAllOrders, setShowAllOrders] = useState(false);
@@ -44,8 +45,13 @@ export default function AdminStatsPage() {
   const fetchStats = async () => {
     try {
       setLoadingStats(true);
-      const response = await adminAPI.getAdminStats();
-      setStats(response.data);
+      const [statsResponse, depsResponse] = await Promise.all([
+        adminAPI.getAdminStats(),
+        adminAPI.getDependenciesHealth(),
+      ]);
+
+      setStats(statsResponse.data);
+      setDepsHealth(depsResponse.data);
     } catch (error) {
       toast.error('Failed to fetch statistics');
       console.error('Failed to fetch statistics:', error);
@@ -110,6 +116,41 @@ export default function AdminStatsPage() {
             <h1 className="text-3xl font-bold text-gray-900">Dashboard Statistics</h1>
             <p className="text-gray-600 mt-2">Overview of your business performance</p>
           </div>
+
+          {depsHealth && (
+            <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900">System Dependencies</h2>
+                <span
+                  className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${depsHealth.status === 'OK'
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-yellow-100 text-yellow-800'
+                    }`}
+                >
+                  {depsHealth.status}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {Object.entries(depsHealth.dependencies || {}).map(([name, service]) => {
+                  const isOperational = service?.status === 'operational';
+                  return (
+                    <div key={name} className="border rounded-lg p-4 bg-gray-50">
+                      <div className="text-sm text-gray-600 capitalize mb-1">{name}</div>
+                      <div
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${isOperational
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                          }`}
+                      >
+                        {service?.status || 'unknown'}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Growth Indicators */}
           {stats.growth && (

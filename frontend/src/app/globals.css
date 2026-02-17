@@ -108,7 +108,8 @@ body {
   }
   
   .glass {
-    background: rgba(255, 255, 255, 0.8);
+    background: color-mix(in srgb, var(--color-surface) 84%, transparent);
+    border: 1px solid var(--color-border);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
   }

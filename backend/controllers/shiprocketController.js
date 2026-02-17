@@ -187,6 +187,7 @@ exports.createShipment = async (req, res) => {
       courier_name: result.courier_name,
       courier_id: result.courier_id || courier_id,
       label_url: result.label_url,
+      invoice_url: result.invoice_url,
       trackingId: result.awb_code,
       courier: result.courier_name,
     };

@@ -229,6 +229,32 @@ export default function OrderDetailsModal({ order, isOpen, onClose }) {
                     </div>
                   </div>
                 )}
+                {order.shipping.label_url && (
+                  <div>
+                    <div className="text-sm text-gray-600">Shipping Label</div>
+                    <a
+                      href={order.shipping.label_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-blue-600 hover:text-blue-800 mt-1 inline-block"
+                    >
+                      Open Label PDF
+                    </a>
+                  </div>
+                )}
+                {order.shipping.invoice_url && (
+                  <div>
+                    <div className="text-sm text-gray-600">Invoice</div>
+                    <a
+                      href={order.shipping.invoice_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-blue-600 hover:text-blue-800 mt-1 inline-block"
+                    >
+                      Open Invoice PDF
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           )}

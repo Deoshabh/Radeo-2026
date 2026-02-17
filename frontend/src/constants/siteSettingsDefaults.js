@@ -451,6 +451,8 @@ export const SITE_SETTINGS_DEFAULTS = {
   },
   theme: {
     mode: 'light',
+    headerVariant: 'centered',
+    centerLogo: true,
     primaryColor: '#3B2F2F',
     secondaryColor: '#E5D3B3',
     backgroundColor: '#fafaf9',

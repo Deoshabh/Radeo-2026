@@ -36,6 +36,7 @@ import {
   FiX,
   FiDownload,
   FiRefreshCw,
+  FiFileText,
 } from 'react-icons/fi';
 
 export default function AdminOrdersDashboard() {
@@ -218,6 +219,28 @@ export default function AdminOrdersDashboard() {
     } finally {
       setSelectedOrder(order);
       setExpandedRow(expandedRow === order._id ? null : order._id);
+    }
+  };
+
+  const handleGenerateInvoice = async (order) => {
+    try {
+      const response = await adminAPI.generateInvoice(order._id);
+      const invoiceUrl =
+        response.data?.data?.invoice_url ||
+        response.data?.data?.data?.invoice_url ||
+        response.data?.data?.response?.invoice_url ||
+        null;
+
+      await fetchOrders();
+
+      if (invoiceUrl) {
+        window.open(invoiceUrl, '_blank');
+        toast.success('Invoice generated successfully');
+      } else {
+        toast.success('Invoice generated. Refreshing latest order data.');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to generate invoice');
     }
   };
 
@@ -616,6 +639,16 @@ export default function AdminOrdersDashboard() {
                               title="Print Label"
                             >
                               <FiPrinter />
+                            </button>
+                          )}
+
+                          {order.shipping?.shiprocket_order_id && (
+                            <button
+                              onClick={() => handleGenerateInvoice(order)}
+                              className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg"
+                              title={order.shipping?.invoice_url ? 'Open Invoice' : 'Generate Invoice'}
+                            >
+                              <FiFileText />
                             </button>
                           )}
 

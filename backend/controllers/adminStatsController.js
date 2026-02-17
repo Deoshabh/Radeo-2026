@@ -1,6 +1,10 @@
 const Order = require("../models/Order");
 const Product = require("../models/Product");
 const User = require("../models/User");
+const mongoose = require("mongoose");
+const redis = require("../config/redis");
+const shiprocketService = require("../utils/shiprocket");
+const { getStorageHealth } = require("../utils/minio");
 
 // @desc    Get admin statistics
 // @route   GET /api/v1/admin/stats
@@ -297,4 +301,93 @@ exports.getAdminStats = async (req, res) => {
     console.error("Get admin stats error:", error);
     res.status(500).json({ message: "Server error" });
   }
+};
+
+// @desc    Get admin dependencies health
+// @route   GET /api/v1/admin/health/deps
+// @access  Private/Admin
+exports.getDependenciesHealth = async (_req, res) => {
+  const health = {
+    status: "OK",
+    timestamp: new Date().toISOString(),
+    dependencies: {
+      mongodb: { status: "checking" },
+      redis: { status: "checking" },
+      storage: { status: "checking" },
+      shiprocket: { status: "checking" },
+    },
+  };
+
+  try {
+    if (mongoose.connection.readyState === 1) {
+      await mongoose.connection.db.admin().ping();
+      health.dependencies.mongodb.status = "operational";
+    } else {
+      health.dependencies.mongodb.status = "disconnected";
+      health.status = "DEGRADED";
+    }
+  } catch (error) {
+    health.dependencies.mongodb = {
+      status: "error",
+      message: error.message,
+    };
+    health.status = "DEGRADED";
+  }
+
+  try {
+    if (redis.status === "ready" || redis.status === "connect") {
+      await redis.ping();
+      health.dependencies.redis = {
+        status: "operational",
+        connection: redis.status,
+      };
+    } else {
+      health.dependencies.redis = {
+        status: "disconnected",
+        connection: redis.status,
+      };
+      health.status = "DEGRADED";
+    }
+  } catch (error) {
+    health.dependencies.redis = {
+      status: "error",
+      connection: redis.status,
+      message: error.message,
+    };
+    health.status = "DEGRADED";
+  }
+
+  try {
+    const storageHealth = await getStorageHealth();
+    health.dependencies.storage = storageHealth;
+    if (storageHealth.status !== "operational") {
+      health.status = "DEGRADED";
+    }
+  } catch (error) {
+    health.dependencies.storage = {
+      status: "error",
+      message: error.message,
+    };
+    health.status = "DEGRADED";
+  }
+
+  try {
+    const shiprocketHealth = await shiprocketService.checkHealth();
+    health.dependencies.shiprocket = {
+      status: "operational",
+      configured: shiprocketHealth.configured,
+      authenticated: shiprocketHealth.authenticated,
+      tokenExpiry: shiprocketHealth.tokenExpiry,
+    };
+  } catch (error) {
+    health.dependencies.shiprocket = {
+      status: "error",
+      code: error.code,
+      message: error.message,
+    };
+    health.status = "DEGRADED";
+  }
+
+  const statusCode = health.status === "OK" ? 200 : 503;
+  return res.status(statusCode).json(health);
 };

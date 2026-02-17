@@ -22,8 +22,9 @@ export default function Navbar() {
   const { settings } = useSiteSettings();
   const theme = settings?.theme || {};
   const stickyHeader = theme.stickyHeader !== false;
-  const headerVariant = theme.headerVariant || 'minimal';
-  const isCenteredHeader = headerVariant === 'centered';
+  const headerVariant = theme.headerVariant || 'centered';
+  const centerLogo = theme.centerLogo !== false;
+  const isCenteredHeader = centerLogo || headerVariant === 'centered';
   const isTransparentHeader = headerVariant === 'transparent';
   const logoWidth = settings?.branding?.logo?.width || 120;
   const logoHeight = settings?.branding?.logo?.height || 40;
@@ -180,16 +181,17 @@ export default function Navbar() {
       className={`${stickyHeader ? 'fixed' : 'absolute'} top-0 left-0 right-0 z-50 transition-all duration-300 ${isTransparentHeader
           ? 'bg-transparent'
           : isScrolled
-            ? 'glass shadow-lg'
-            : 'bg-white/90 backdrop-blur-sm'
+            ? 'glass shadow-lg backdrop-blur-sm'
+            : 'glass backdrop-blur-sm'
         }`}
+      style={{ color: 'var(--color-text-primary)' }}
     >
       <div className="container-custom">
-        <div className={`relative flex items-center justify-between py-4 ${isCenteredHeader ? 'lg:min-h-[72px]' : ''}`}>
+        <div className={`${isCenteredHeader ? 'grid grid-cols-[1fr_auto_1fr] items-center' : 'relative flex items-center justify-between'} py-4 ${isCenteredHeader ? 'lg:min-h-[72px]' : ''}`}>
           {/* Logo */}
           <Link
             href="/"
-            className={`flex items-center gap-2 ${isCenteredHeader ? 'lg:absolute lg:left-1/2 lg:-translate-x-1/2 lg:z-20' : ''}`}
+            className={`flex items-center justify-center gap-2 z-20 ${isCenteredHeader ? 'col-start-2' : ''}`}
           >
             {settings?.branding?.logo?.url ? (
               <div className="relative" style={{ width: `${logoWidth}px`, height: `${logoHeight}px` }}>
@@ -197,7 +199,7 @@ export default function Navbar() {
                   src={settings.branding.logo.url}
                   alt={settings.branding.logo.alt || 'Radeo'}
                   fill
-                  className="object-contain object-left"
+                  className="object-contain object-center"
                   priority
                 />
               </div>
@@ -209,7 +211,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className={`hidden lg:flex items-center gap-8 ${isCenteredHeader ? 'flex-1' : ''}`}>
+          <div className={`hidden lg:flex items-center gap-8 ${isCenteredHeader ? 'col-start-1 justify-start' : ''}`}>
             {['/', '/products'].map((path) => {
               const label = path === '/' ? 'Home' : 'Products';
               const isActive = pathname === path;
@@ -250,11 +252,17 @@ export default function Navbar() {
               {isCategoriesOpen && (
                 <div
                   ref={categoriesDropdownRef}
-                  className="absolute top-full left-0 w-80 bg-white rounded-lg shadow-2xl border border-primary-100 overflow-hidden"
+                  className="absolute top-full left-0 w-80 rounded-lg shadow-2xl border overflow-hidden"
+                  style={{
+                    backgroundColor: 'var(--color-surface)',
+                    borderColor: 'var(--color-border)',
+                    color: 'var(--color-text-primary)',
+                  }}
                 >
                   <Link
                     href="/categories"
-                    className="block px-4 py-3 font-semibold text-brand-brown hover:bg-primary-50 first:rounded-t-lg border-b border-primary-100 transition-colors"
+                    className="block px-4 py-3 font-semibold hover:bg-primary-50 first:rounded-t-lg border-b transition-colors"
+                    style={{ borderColor: 'var(--color-border)', color: 'var(--theme-primary-color)' }}
                   >
                     <div className="flex items-center gap-2">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -287,9 +295,9 @@ export default function Navbar() {
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900 group-hover/item:text-brand-brown transition-colors">{category.name}</div>
+                          <div className="font-medium group-hover/item:text-brand-brown transition-colors" style={{ color: 'var(--color-text-primary)' }}>{category.name}</div>
                           {category.description && (
-                            <div className="text-xs text-gray-500 truncate">{category.description}</div>
+                            <div className="text-xs truncate" style={{ color: 'var(--color-text-secondary)' }}>{category.description}</div>
                           )}
                         </div>
                         <svg className="w-4 h-4 text-gray-400 opacity-0 group-hover/item:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -369,14 +377,14 @@ export default function Navbar() {
           </div>
 
           {/* Icons */}
-          <div className={`flex items-center gap-4 ${isCenteredHeader ? 'lg:ml-auto' : ''}`}>
+          <div className={`flex items-center gap-4 justify-end ${isCenteredHeader ? 'col-start-3' : ''}`}>
             {/* Wishlist */}
             <Link href="/wishlist" className="relative hover:text-brand-brown transition-colors" aria-label="Wishlist">
               <div ref={wishlistRef}>
                 <FiHeart className="w-6 h-6" />
               </div>
               {wishlistCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-brand-brown text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="absolute -top-2 -right-2 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center" style={{ backgroundColor: 'var(--theme-primary-color)' }}>
                   {wishlistCount}
                 </span>
               )}
@@ -388,7 +396,7 @@ export default function Navbar() {
                 <FiShoppingCart className="w-6 h-6" />
               </div>
               {cartCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-brand-brown text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="absolute -top-2 -right-2 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center" style={{ backgroundColor: 'var(--theme-primary-color)' }}>
                   {cartCount}
                 </span>
               )}
@@ -405,8 +413,8 @@ export default function Navbar() {
                   {user?.name?.charAt(0).toUpperCase()}
                 </button>
                 {isUserMenuOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-xl animate-slide-down">
-                    <div className="p-3 border-b border-primary-100">
+                  <div className="absolute top-full right-0 mt-2 w-48 rounded-lg shadow-xl animate-slide-down border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+                    <div className="p-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
                       <p className="font-medium text-primary-900">{user?.name}</p>
                       <p className="text-sm text-primary-600">{user?.email}</p>
                     </div>

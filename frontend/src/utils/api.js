@@ -170,6 +170,8 @@ export const adminAPI = {
     api.post(`/admin/shiprocket/schedule-pickup/${orderId}`, data),
   generateManifest: (orderId) =>
     api.post(`/admin/shiprocket/manifest/${orderId}`),
+  generateInvoice: (orderId) =>
+    api.post(`/admin/shiprocket/invoice/${orderId}`),
   markAsShipped: (orderId) =>
     api.post(`/admin/shiprocket/mark-shipped/${orderId}`),
   getShiprocketHealth: () => api.get('/admin/shiprocket/health'),
@@ -220,6 +222,7 @@ export const adminAPI = {
 
   // Stats
   getAdminStats: () => api.get("/admin/stats"),
+  getDependenciesHealth: () => api.get("/admin/health/deps"),
 
   // Theme Builder
   getThemeVersionHistory: () => api.get("/settings/history"),

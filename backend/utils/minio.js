@@ -219,6 +219,43 @@ async function uploadBuffer(buffer, key, contentType) {
   return getPublicUrl(key);
 }
 
+/**
+ * Runtime storage health check
+ */
+async function getStorageHealth() {
+  const details = {
+    endpoint: MINIO_ENDPOINT,
+    bucket: MINIO_BUCKET,
+    initialized: isInitialized,
+  };
+
+  if (!isInitialized || !minioClient) {
+    return {
+      status: "disconnected",
+      details,
+    };
+  }
+
+  try {
+    const bucketExists = await minioClient.bucketExists(MINIO_BUCKET);
+    return {
+      status: bucketExists ? "operational" : "degraded",
+      details: {
+        ...details,
+        bucketExists,
+      },
+    };
+  } catch (error) {
+    return {
+      status: "error",
+      details: {
+        ...details,
+        error: error.message,
+      },
+    };
+  }
+}
+
 module.exports = {
   initializeBucket,
   generateSignedUploadUrl,
@@ -226,4 +263,5 @@ module.exports = {
   deleteObjects,
   getPublicUrl,
   uploadBuffer,
+  getStorageHealth,
 };
