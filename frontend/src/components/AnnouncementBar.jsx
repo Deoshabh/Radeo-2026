@@ -22,6 +22,18 @@ export default function AnnouncementBar() {
     setDismissed(Boolean(sessionStorage.getItem(storageKey)));
   }, [storageKey]);
 
+  // Auto-dismiss after 5 seconds
+  useEffect(() => {
+    if (!announcement.enabled || dismissed) return;
+    const timer = setTimeout(() => {
+      setDismissed(true);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(storageKey, '1');
+      }
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [announcement.enabled, dismissed, storageKey]);
+
   if (!announcement.enabled) {
     return null;
   }

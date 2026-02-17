@@ -33,14 +33,33 @@ export const formatPrice = (value) => {
 /**
  * Format date to readable string
  */
-export const formatDate = (date, options = {}) => {
+export const formatDate = (date, options = {}, locale = "en-IN") => {
+  if (!date) return "N/A";
   const defaultOptions = {
     year: "numeric",
     month: "long",
     day: "numeric",
     ...options,
   };
-  return new Date(date).toLocaleDateString("en-IN", defaultOptions);
+  return new Date(date).toLocaleDateString(locale, defaultOptions);
+};
+
+/**
+ * Format date with time
+ */
+export const formatDateTime = (date, locale = "en-IN") => {
+  if (!date) return "N/A";
+  try {
+    return new Date(date).toLocaleString(locale, {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "Invalid Date";
+  }
 };
 
 /**

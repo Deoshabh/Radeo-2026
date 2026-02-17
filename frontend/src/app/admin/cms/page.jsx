@@ -298,7 +298,25 @@ export default function AdminCMSPage() {
                 <SectionToggle label="Enable Hero Section" enabled={homePage.hero?.enabled !== false} onChange={(v) => hpUpdate('hero', 'enabled', v)} />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
                   <Field label="Eyebrow Text"><TextInput value={homePage.hero?.eyebrow} onChange={(v) => hpUpdate('hero', 'eyebrow', v)} placeholder="Est. 2008 — Handcrafted in Agra" /></Field>
-                  <Field label="Hero Image URL" hint="Leave empty for default"><TextInput value={homePage.hero?.image} onChange={(v) => hpUpdate('hero', 'image', v)} placeholder="https://... or leave blank" /></Field>
+                  <Field label="Hero Image URL" hint="Upload or paste URL">
+                    <div className="flex gap-2">
+                      <TextInput value={homePage.hero?.image} onChange={(v) => hpUpdate('hero', 'image', v)} placeholder="https://... or leave blank" />
+                      <label className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-600 text-xs font-medium rounded-lg cursor-pointer hover:bg-gray-200 transition-colors">
+                        <FiImage className="w-3.5 h-3.5" /> Upload
+                        <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return; }
+                          try {
+                            toast.loading('Uploading...', { id: 'hero-upload' });
+                            const url = await handleUploadImage(file);
+                            if (url) hpUpdate('hero', 'image', url);
+                            toast.success('Uploaded!', { id: 'hero-upload' });
+                          } catch { toast.error('Upload failed', { id: 'hero-upload' }); }
+                        }} />
+                      </label>
+                    </div>
+                  </Field>
                   <Field label="Title Line 1"><TextInput value={homePage.hero?.titleLine1} onChange={(v) => hpUpdate('hero', 'titleLine1', v)} /></Field>
                   <Field label="Title Line 2 (italic)"><TextInput value={homePage.hero?.titleLine2} onChange={(v) => hpUpdate('hero', 'titleLine2', v)} /></Field>
                   <Field label="Title Line 3"><TextInput value={homePage.hero?.titleLine3} onChange={(v) => hpUpdate('hero', 'titleLine3', v)} /></Field>
@@ -539,10 +557,52 @@ export default function AdminCMSPage() {
               <div className="space-y-4">
                 {(banners || []).map((banner, i) => (
                   <div key={banner.id || i} className="border border-gray-100 rounded-xl p-4 space-y-3">
+                    {/* Banner image preview & upload */}
+                    <div className="flex items-start gap-4">
+                      <div className="relative w-40 h-24 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex-shrink-0 group">
+                        {(banner._preview || banner.imageUrl || banner.image) ? (
+                          <>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={banner._preview || banner.imageUrl || banner.image} alt={banner.title || 'Banner'} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                              <label className="cursor-pointer text-white text-xs font-medium px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-lg hover:bg-white/30 transition-colors">
+                                Change
+                                <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return; }
+                                  const preview = URL.createObjectURL(file);
+                                  handleBannerChange(i, '_file', file);
+                                  handleBannerChange(i, '_preview', preview);
+                                  handleBannerChange(i, '_isNew', true);
+                                }} />
+                              </label>
+                            </div>
+                          </>
+                        ) : (
+                          <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors">
+                            <FiImage className="w-6 h-6 text-gray-400 mb-1" />
+                            <span className="text-[10px] text-gray-400 font-medium">Upload Image</span>
+                            <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return; }
+                              const preview = URL.createObjectURL(file);
+                              handleBannerChange(i, '_file', file);
+                              handleBannerChange(i, '_preview', preview);
+                              handleBannerChange(i, '_isNew', true);
+                            }} />
+                          </label>
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <TextInput value={banner.imageUrl || banner.image} onChange={(v) => { handleBannerChange(i, 'imageUrl', v); handleBannerChange(i, 'image', v); }} placeholder="Or paste image URL" />
+                        <p className="text-[10px] text-gray-400">Upload an image or paste a direct URL above.</p>
+                      </div>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <TextInput value={banner.title} onChange={(v) => handleBannerChange(i, 'title', v)} placeholder="Banner title" />
                       <TextInput value={banner.subtitle || banner.description} onChange={(v) => { handleBannerChange(i, 'subtitle', v); handleBannerChange(i, 'description', v); }} placeholder="Subtitle" />
-                      <TextInput value={banner.imageUrl || banner.image} onChange={(v) => { handleBannerChange(i, 'imageUrl', v); handleBannerChange(i, 'image', v); }} placeholder="Image URL" />
                       <TextInput value={banner.link || banner.buttonLink} onChange={(v) => { handleBannerChange(i, 'link', v); handleBannerChange(i, 'buttonLink', v); }} placeholder="Link" />
                       <TextInput value={banner.buttonText} onChange={(v) => handleBannerChange(i, 'buttonText', v)} placeholder="Button text" />
                       <SectionToggle label="Active" enabled={banner.isActive !== false} onChange={(v) => handleBannerChange(i, 'isActive', v)} />

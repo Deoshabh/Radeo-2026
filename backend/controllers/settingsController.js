@@ -29,6 +29,7 @@ const createSnapshotPayload = (settings) => ({
   banners: settings.banners,
   announcementBar: settings.announcementBar,
   homeSections: settings.homeSections,
+  homePage: settings.homePage,
   layout: settings.layout,
   layoutSchemaVersion: settings.layoutSchemaVersion || CURRENT_LAYOUT_SCHEMA_VERSION,
   theme: settings.theme,
@@ -103,7 +104,7 @@ exports.getAllSettings = async (req, res, next) => {
 ===================== */
 exports.updateSettings = async (req, res, next) => {
   try {
-    const { branding, banners, announcementBar, homeSections, publishWorkflow } = req.body;
+    const { branding, banners, announcementBar, homeSections, homePage, publishWorkflow } = req.body;
     
     // Validate inputs if necessary
     
@@ -122,6 +123,12 @@ exports.updateSettings = async (req, res, next) => {
 
     if (announcementBar) {
       settings.announcementBar = { ...settings.announcementBar.toObject(), ...announcementBar };
+    }
+
+    // Handle homePage (from CMS admin) — stored directly on the document
+    if (homePage) {
+      settings.homePage = homePage;
+      settings.markModified('homePage');
     }
 
     if (homeSections && !req.body.layout) {
@@ -470,6 +477,13 @@ exports.getPublicSettings = async (req, res, next) => {
       };
       publicSettings.heroSection = publicSettings.homeSections.heroSection || publicSettings.heroSection;
       publicSettings.featuredProducts = publicSettings.homeSections.featuredProducts || publicSettings.featuredProducts;
+    }
+
+    // Include homePage data (from CMS admin) for the storefront
+    if (publishedSnapshot?.homePage) {
+      publicSettings.homePage = publishedSnapshot.homePage;
+    } else if (singletonSettings.homePage) {
+      publicSettings.homePage = singletonSettings.homePage;
     }
 
     if (publishedSnapshot?.layout) {

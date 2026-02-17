@@ -9,6 +9,7 @@ import RevenueChart from '@/components/admin/charts/RevenueChart';
 import SalesCategoryPieChart from '@/components/admin/charts/SalesCategoryPieChart';
 import { useAuth } from '@/context/AuthContext';
 import { adminAPI } from '@/utils/api';
+import { formatCurrency } from '@/utils/helpers';
 import { FiDollarSign, FiShoppingBag, FiUsers, FiBox, FiSettings, FiTruck } from 'react-icons/fi';
 
 export default function AdminDashboard() {
@@ -30,14 +31,6 @@ export default function AdminDashboard() {
 
     fetchStats();
   }, []);
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0,
-    }).format(amount || 0);
-  };
 
   const AnimeCounter = ({ value, format = (v) => v }) => {
     const nodeRef = useRef(null);

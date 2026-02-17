@@ -2,10 +2,11 @@
 // Test Product Creation Script
 // ===============================
 const dotenv = require("dotenv");
-dotenv.config();
+const path = require("path");
+dotenv.config({ path: path.join(__dirname, "..", ".env") });
 
 const mongoose = require("mongoose");
-const Product = require("./models/Product");
+const Product = require("../models/Product");
 
 async function createTestProduct() {
   try {

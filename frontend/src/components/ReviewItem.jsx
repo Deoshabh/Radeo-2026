@@ -3,17 +3,13 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { FiStar, FiThumbsUp, FiCheck } from 'react-icons/fi';
+import { formatDate } from '@/utils/helpers';
 import toast from 'react-hot-toast';
 
 export default function ReviewItem({ review, onHelpfulClick }) {
   const [isHelpful, setIsHelpful] = useState(false);
   const [helpfulCount, setHelpfulCount] = useState(review.helpfulVotes || 0);
   const [showAllPhotos, setShowAllPhotos] = useState(false);
-
-  const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-  };
 
   const handleHelpfulClick = async () => {
     try {

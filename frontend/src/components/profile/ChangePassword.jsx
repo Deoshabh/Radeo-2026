@@ -64,7 +64,7 @@ export default function ChangePassword() {
                 <button
                     onClick={handleReset}
                     type="button"
-                    className="text-sm text-brand-brown hover:text-brand-brown-dark underline"
+                    className="text-sm text-brand-brown hover:text-[#5c3d1e] underline"
                 >
                     Forgot Password?
                 </button>

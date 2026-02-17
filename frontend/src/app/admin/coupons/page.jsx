@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { adminAPI } from '@/utils/api';
+import { formatDate } from '@/utils/helpers';
 import { useAuth } from '@/context/AuthContext';
 import AdminLayout from '@/components/AdminLayout';
 import toast from 'react-hot-toast';
@@ -154,15 +155,6 @@ export default function CouponsPage() {
       console.error('Failed to update status:', error);
       toast.error('Failed to update coupon status');
     }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
   };
 
   const isExpired = (validUntil) => {

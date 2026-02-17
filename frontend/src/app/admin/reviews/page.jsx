@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { FiStar, FiEye, FiEyeOff, FiTrash2, FiSearch, FiFilter, FiCheck, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { adminAPI } from '@/utils/api';
+import { formatDate } from '@/utils/helpers';
 import AdminLayout from '@/components/AdminLayout';
 
 export default function AdminReviewsPage() {
@@ -189,14 +190,6 @@ export default function AdminReviewsPage() {
     } else {
       setSelectedReviews(reviews.map((r) => r._id));
     }
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
   };
 
   if (!isAuthenticated || user?.role !== 'admin') {

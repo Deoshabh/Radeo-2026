@@ -3,6 +3,7 @@
 
 import React from 'react';
 import { FiX, FiPackage, FiUser, FiMapPin, FiCreditCard, FiTruck, FiPhone, FiMail, FiCalendar } from 'react-icons/fi';
+import { formatDateTime as formatDate } from '@/utils/helpers';
 
 export default function OrderDetailsModal({ order, isOpen, onClose }) {
   if (!isOpen || !order) return null;
@@ -13,18 +14,6 @@ export default function OrderDetailsModal({ order, isOpen, onClose }) {
     shippingAddress: order.shippingAddress,
     user: order.user
   });
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   const getStatusColor = (status) => {
     const colors = {

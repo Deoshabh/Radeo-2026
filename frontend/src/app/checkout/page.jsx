@@ -267,7 +267,7 @@ export default function CheckoutPage() {
                 </h2>
                 <button
                   onClick={() => setShowAddressForm(!showAddressForm)}
-                  className="flex items-center gap-2 text-brand-brown hover:text-brand-brown-dark"
+                  className="flex items-center gap-2 text-brand-brown hover:text-[#5c3d1e]"
                 >
                   <FiPlus /> Add New
                 </button>
@@ -473,7 +473,7 @@ export default function CheckoutPage() {
                       Remove
                     </button>
                   ) : (
-                    <button onClick={handleApplyCoupon} className="px-4 py-2 bg-brand-brown text-white rounded-lg hover:bg-brand-brown-dark">
+                    <button onClick={handleApplyCoupon} className="px-4 py-2 bg-brand-brown text-white rounded-lg hover:bg-[#5c3d1e]">
                       Apply
                     </button>
                   )}

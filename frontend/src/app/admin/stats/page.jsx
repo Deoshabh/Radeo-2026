@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { adminAPI } from '@/utils/api';
 import AdminLayout from '@/components/AdminLayout';
+import { formatCurrency, formatDate } from '@/utils/helpers';
 import toast from 'react-hot-toast';
 import {
   FiShoppingBag,
@@ -58,19 +59,6 @@ export default function AdminStatsPage() {
     } finally {
       setLoadingStats(false);
     }
-  };
-
-  const formatCurrency = (amount) => {
-    return `₹${(amount || 0).toLocaleString('en-IN')}`;
-  };
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
   };
 
   const getStatusColor = (status) => {

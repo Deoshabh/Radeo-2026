@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FiX, FiShoppingBag, FiHeart, FiShoppingCart, FiTag, FiPackage, FiTrendingUp } from 'react-icons/fi';
 import { adminAPI } from '@/utils/api';
+import { formatCurrency } from '@/utils/helpers';
 import toast from 'react-hot-toast';
 
 export default function UserHistoryModal({ userId, userName, onClose }) {
@@ -37,14 +38,6 @@ export default function UserHistoryModal({ userId, userName, onClose }) {
     { id: 'cart', label: 'Cart', icon: FiShoppingCart },
     { id: 'coupons', label: 'Coupons', icon: FiTag },
   ];
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
 
   const getStatusColor = (status) => {
     const colors = {

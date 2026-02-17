@@ -155,7 +155,7 @@ export default function ProfilePage() {
             {!isEditing && (
               <button
                 onClick={() => setIsEditing(true)}
-                className="flex items-center gap-2 text-brand-brown hover:text-brand-brown-dark"
+                className="flex items-center gap-2 text-brand-brown hover:text-[#5c3d1e]"
               >
                 <FiEdit2 /> Edit Profile
               </button>
@@ -240,7 +240,7 @@ export default function ProfilePage() {
                 setEditingAddressId(null);
                 resetAddressForm();
               }}
-              className="flex items-center gap-2 text-brand-brown hover:text-brand-brown-dark"
+              className="flex items-center gap-2 text-brand-brown hover:text-[#5c3d1e]"
             >
               <FiPlus /> Add New Address
             </button>

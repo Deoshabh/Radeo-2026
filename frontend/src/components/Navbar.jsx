@@ -152,6 +152,9 @@ export default function Navbar() {
   const navLinks = [
     { href: '/', label: 'Home' },
     { href: '/products', label: 'Shop' },
+  ];
+
+  const navLinksAfterCategories = [
     { href: '/about', label: 'About' },
     { href: '/contact', label: 'Contact' },
   ];
@@ -177,7 +180,7 @@ export default function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`px-4 py-2 text-[11px] font-medium uppercase tracking-[0.2em] transition-colors ${
+                  className={`px-4 py-2 text-sm font-medium uppercase tracking-[0.12em] transition-colors ${
                     isActive
                       ? 'text-[#2a1a0a]'
                       : 'text-[#8a7460] hover:text-[#2a1a0a]'
@@ -190,14 +193,14 @@ export default function Navbar() {
               );
             })}
 
-            {/* Categories dropdown */}
+            {/* Categories dropdown — positioned between Shop and About */}
             <div
               className="relative"
               onMouseEnter={() => setIsCategoriesOpen(true)}
               onMouseLeave={() => setIsCategoriesOpen(false)}
             >
               <button
-                className="px-4 py-2 text-[11px] font-medium uppercase tracking-[0.2em] text-[#8a7460] hover:text-[#2a1a0a] transition-colors flex items-center gap-1"
+                className="px-4 py-2 text-sm font-medium uppercase tracking-[0.12em] text-[#8a7460] hover:text-[#2a1a0a] transition-colors flex items-center gap-1"
                 style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
               >
                 Categories
@@ -213,7 +216,7 @@ export default function Navbar() {
                 >
                   <Link
                     href="/categories"
-                    className="flex items-center gap-2 px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-[#c9a96e] hover:bg-[#faf8f4] border-b border-gray-100 transition-colors"
+                    className="flex items-center gap-2 px-5 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-[#c9a96e] hover:bg-[#faf8f4] border-b border-gray-100 transition-colors"
                     style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
                     onClick={() => setIsCategoriesOpen(false)}
                   >
@@ -239,7 +242,7 @@ export default function Navbar() {
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium text-[#2a1a0a] group-hover:text-[#a07840] transition-colors">{cat.name}</div>
-                          {cat.description && <div className="text-[10px] text-[#8a7460] truncate">{cat.description}</div>}
+                          {cat.description && <div className="text-xs text-[#8a7460] truncate">{cat.description}</div>}
                         </div>
                       </Link>
                     ))}
@@ -247,6 +250,26 @@ export default function Navbar() {
                 </div>
               )}
             </div>
+
+            {/* About & Contact — after Categories */}
+            {navLinksAfterCategories.map(link => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`px-4 py-2 text-sm font-medium uppercase tracking-[0.12em] transition-colors ${
+                    isActive
+                      ? 'text-[#2a1a0a]'
+                      : 'text-[#8a7460] hover:text-[#2a1a0a]'
+                  }`}
+                  style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
+                >
+                  {link.label}
+                  {isActive && <span className="block w-full h-[1px] bg-[#c9a96e] mt-0.5" />}
+                </Link>
+              );
+            })}
           </div>
 
           {/* ── Center: Logo ── */}
@@ -281,7 +304,7 @@ export default function Navbar() {
             <Link href="/wishlist" className="relative w-9 h-9 flex items-center justify-center text-[#8a7460] hover:text-[#2a1a0a] transition-colors rounded-full hover:bg-[#f2ede4]" aria-label="Wishlist">
               <div ref={wishlistRef}><FiHeart className="w-[18px] h-[18px]" /></div>
               {wishlistCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 w-4 h-4 text-[9px] font-bold bg-[#2a1a0a] text-[#f2ede4] rounded-full flex items-center justify-center">{wishlistCount}</span>
+                <span className="absolute top-0.5 right-0.5 w-4 h-4 text-[10px] font-bold bg-[#2a1a0a] text-[#f2ede4] rounded-full flex items-center justify-center">{wishlistCount}</span>
               )}
             </Link>
 
@@ -289,7 +312,7 @@ export default function Navbar() {
             <Link href="/cart" id="cart-icon-container" className="relative w-9 h-9 flex items-center justify-center text-[#8a7460] hover:text-[#2a1a0a] transition-colors rounded-full hover:bg-[#f2ede4]" aria-label="Cart">
               <div ref={cartRef}><FiShoppingCart className="w-[18px] h-[18px]" /></div>
               {cartCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 w-4 h-4 text-[9px] font-bold bg-[#2a1a0a] text-[#f2ede4] rounded-full flex items-center justify-center">{cartCount}</span>
+                <span className="absolute top-0.5 right-0.5 w-4 h-4 text-[10px] font-bold bg-[#2a1a0a] text-[#f2ede4] rounded-full flex items-center justify-center">{cartCount}</span>
               )}
             </Link>
 
@@ -308,7 +331,7 @@ export default function Navbar() {
                   <div className="absolute top-full right-0 mt-2 w-52 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden">
                     <div className="px-4 py-3 border-b border-gray-100 bg-[#faf8f4]">
                       <p className="font-semibold text-[#2a1a0a] text-sm">{user?.name}</p>
-                      <p className="text-[10px] text-[#8a7460] mt-0.5">{user?.email}</p>
+                      <p className="text-xs text-[#8a7460] mt-0.5">{user?.email}</p>
                     </div>
                     <Link href="/profile" className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#2a1a0a] hover:bg-[#faf8f4] transition-colors" onClick={() => setIsUserMenuOpen(false)}>
                       <FiUser className="w-4 h-4 text-[#8a7460]" /> Profile
@@ -330,7 +353,7 @@ export default function Navbar() {
             ) : (
               <Link
                 href="/auth/login"
-                className="hidden lg:inline-flex px-4 py-2 text-[11px] font-medium uppercase tracking-[0.15em] bg-[#2a1a0a] text-[#f2ede4] hover:bg-[#5c3d1e] transition-colors"
+                className="hidden lg:inline-flex px-4 py-2 text-sm font-medium uppercase tracking-[0.12em] bg-[#2a1a0a] text-[#f2ede4] hover:bg-[#5c3d1e] transition-colors"
                 style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
               >
                 Login
@@ -382,14 +405,14 @@ export default function Navbar() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="text-sm font-medium text-[#2a1a0a] truncate">{product.name}</h4>
-                      <p className="text-[10px] text-[#8a7460] uppercase tracking-wider">{product.category?.name}</p>
+                      <p className="text-xs text-[#8a7460] uppercase tracking-wider">{product.category?.name}</p>
                       <p className="text-sm font-semibold text-[#a07840]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>₹{product.price?.toLocaleString()}</p>
                     </div>
                   </Link>
                 ))}
                 <button
                   onClick={() => { router.push(`/products?search=${encodeURIComponent(searchQuery)}`); setIsSearchOpen(false); setIsSearchBarVisible(false); setSearchQuery(''); }}
-                  className="w-full px-4 py-3 text-center text-[11px] font-medium uppercase tracking-[0.15em] text-[#c9a96e] hover:bg-[#faf8f4] transition-colors border-t border-gray-100"
+                  className="w-full px-4 py-3 text-center text-sm font-medium uppercase tracking-[0.12em] text-[#c9a96e] hover:bg-[#faf8f4] transition-colors border-t border-gray-100"
                   style={{ fontFamily: "var(--font-dm-mono, monospace)" }}
                 >
                   View all results →
@@ -423,7 +446,7 @@ export default function Navbar() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`block px-4 py-3 text-[11px] font-medium uppercase tracking-[0.2em] transition-colors ${
+                  className={`block px-4 py-3 text-sm font-medium uppercase tracking-[0.12em] transition-colors ${
                     pathname === link.href ? 'text-[#2a1a0a] bg-[#faf8f4]' : 'text-[#8a7460]'
                   }`}
                   style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
@@ -437,7 +460,7 @@ export default function Navbar() {
                 <Link
                   href="/categories"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="block px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#c9a96e]"
+                  className="block px-4 py-3 text-sm font-semibold uppercase tracking-[0.12em] text-[#c9a96e]"
                   style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
                 >
                   All Categories
@@ -463,13 +486,28 @@ export default function Navbar() {
                 ))}
               </div>
 
+              {/* About & Contact — after Categories in mobile too */}
+              {navLinksAfterCategories.map(link => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`block px-4 py-3 text-sm font-medium uppercase tracking-[0.12em] transition-colors ${
+                    pathname === link.href ? 'text-[#2a1a0a] bg-[#faf8f4]' : 'text-[#8a7460]'
+                  }`}
+                  style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
+                >
+                  {link.label}
+                </Link>
+              ))}
+
               {/* Mobile login */}
               {!isAuthenticated && (
                 <div className="pt-3 border-t border-gray-100">
                   <Link
                     href="/auth/login"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="block text-center px-4 py-3 text-[11px] font-medium uppercase tracking-[0.15em] bg-[#2a1a0a] text-[#f2ede4]"
+                    className="block text-center px-4 py-3 text-sm font-medium uppercase tracking-[0.12em] bg-[#2a1a0a] text-[#f2ede4]"
                     style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
                   >
                     Login / Register

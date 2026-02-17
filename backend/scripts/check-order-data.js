@@ -1,6 +1,6 @@
-require("dotenv").config();
+require("dotenv").config({ path: require("path").join(__dirname, "..", ".env") });
 const mongoose = require("mongoose");
-const Order = require("./models/Order");
+const Order = require("../models/Order");
 
 async function checkOrderData() {
   try {

@@ -5,7 +5,8 @@
  * Usage: node migrate-staff-users.js
  */
 
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 const mongoose = require("mongoose");
 
 const connectDB = async () => {

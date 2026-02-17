@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Pusher from "pusher-js";
+import { formatDateTime as formatDate } from "@/utils/helpers";
 import {
   FiPackage,
   FiTruck,
@@ -127,22 +128,6 @@ export default function OrderTracker({ orderId, order, showTimeline = true }) {
   const { icon: StatusIcon, color: statusColor, bg: statusBg } = getStatusIcon(
     trackingData.current_status,
   );
-
-  // Format date
-  const formatDate = (dateStr) => {
-    if (!dateStr) return "N/A";
-    try {
-      return new Date(dateStr).toLocaleString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } catch {
-      return dateStr;
-    }
-  };
 
   if (!trackingData.awb_code) {
     return (
