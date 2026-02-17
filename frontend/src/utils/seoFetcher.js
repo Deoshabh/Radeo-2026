@@ -23,7 +23,6 @@ export async function fetchSeoSettings() {
   try {
     const res = await fetch(`${API_URL}/seo/public`, {
       next: { revalidate: 15 },
-      cache: 'no-store',
     });
 
     if (!res.ok) {
