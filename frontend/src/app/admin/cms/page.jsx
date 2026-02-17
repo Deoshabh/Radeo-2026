@@ -1,956 +1,726 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { adminAPI, settingsAPI } from '@/utils/api';
+import { adminAPI } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
 import AdminLayout from '@/components/AdminLayout';
-import ImageUploadWithEditor from '@/components/ImageUploadWithEditor';
 import toast from 'react-hot-toast';
-import { FiSave, FiImage, FiLayout, FiTrash2, FiPlus, FiArrowUp, FiArrowDown, FiFileText, FiPhone, FiSettings } from 'react-icons/fi';
+import {
+  FiSave, FiImage, FiLayout, FiTrash2, FiPlus, FiArrowUp, FiArrowDown,
+  FiFileText, FiPhone, FiSettings, FiHome, FiChevronDown, FiChevronUp,
+} from 'react-icons/fi';
 import { useSiteSettings } from '@/context/SiteSettingsContext';
+import { SITE_SETTINGS_DEFAULTS } from '@/constants/siteSettingsDefaults';
 
+/* ═══════════════════════════════════════════════════════════
+   Re-usable small UI pieces for Admin CMS
+   ═══════════════════════════════════════════════════════════ */
+function Card({ children, className = '' }) {
+  return <div className={`bg-white rounded-xl shadow-sm border border-gray-100 p-6 ${className}`}>{children}</div>;
+}
+
+function SectionToggle({ label, enabled, onChange }) {
+  return (
+    <label className="flex items-center gap-3 cursor-pointer select-none">
+      <div className={`relative inline-flex items-center w-11 h-6 rounded-full transition-colors ${enabled ? 'bg-emerald-500' : 'bg-gray-300'}`}>
+        <input type="checkbox" className="sr-only" checked={enabled} onChange={(e) => onChange(e.target.checked)} />
+        <span className={`absolute left-0.5 top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-5' : ''}`} />
+      </div>
+      <span className="text-sm font-medium text-gray-700">{label}</span>
+    </label>
+  );
+}
+
+function Field({ label, children, hint }) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">{label}</label>
+      {children}
+      {hint && <p className="mt-1 text-xs text-gray-400">{hint}</p>}
+    </div>
+  );
+}
+
+function TextInput({ value, onChange, placeholder, ...rest }) {
+  return (
+    <input
+      type="text" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:ring-2 focus:ring-amber-200 focus:border-amber-400 transition-all outline-none"
+      value={value || ''} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} {...rest}
+    />
+  );
+}
+
+function TextArea({ value, onChange, placeholder, rows = 3 }) {
+  return (
+    <textarea
+      className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:ring-2 focus:ring-amber-200 focus:border-amber-400 transition-all outline-none"
+      value={value || ''} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={rows}
+    />
+  );
+}
+
+function CollapsibleSection({ title, icon, defaultOpen = false, children, badge }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border border-gray-100 rounded-xl overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-5 py-4 bg-gray-50/60 hover:bg-gray-50 transition-colors text-left"
+      >
+        <span className="flex items-center gap-2 font-semibold text-gray-800 text-sm">
+          {icon} {title}
+          {badge && <span className="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">{badge}</span>}
+        </span>
+        {open ? <FiChevronUp className="text-gray-400" /> : <FiChevronDown className="text-gray-400" />}
+      </button>
+      {open && <div className="px-5 py-5 space-y-4 bg-white">{children}</div>}
+    </div>
+  );
+}
+
+function SaveButton({ onClick, saving, label = 'Save Changes' }) {
+  return (
+    <button onClick={onClick} disabled={saving} className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors">
+      <FiSave className="w-4 h-4" /> {saving ? 'Saving...' : label}
+    </button>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ADMIN CMS PAGE
+   ═══════════════════════════════════════════════════════════ */
 export default function AdminCMSPage() {
-    const router = useRouter();
-    const { user, isAuthenticated, loading: authLoading } = useAuth();
-    const { refreshSettings } = useSiteSettings();
+  const router = useRouter();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { refreshSettings } = useSiteSettings();
 
-    const [activeTab, setActiveTab] = useState('announcement'); // Default to announcement
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState('homepage');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-    // Data State
+  // ── State ──
+  const [branding, setBranding] = useState({ logo: { url: '', alt: 'Logo' }, favicon: { url: '' }, siteName: 'Radeo' });
+  const [banners, setBanners] = useState([]);
+  const [announcementBar, setAnnouncementBar] = useState({ enabled: true, text: '', link: '', backgroundColor: '#10b981', textColor: '#ffffff', dismissible: true });
+  const [homePage, setHomePage] = useState(SITE_SETTINGS_DEFAULTS.homePage);
+  const [advancedSettings, setAdvancedSettings] = useState({});
+  const [selectedPolicy, setSelectedPolicy] = useState('shippingPolicy');
 
-    // Announcement Bar State
-    const [branding, setBranding] = useState({
-        logo: { url: '', alt: 'Logo' },
-        favicon: { url: '' },
-        siteName: 'Radeo',
+  // ── Auth guard ──
+  useEffect(() => {
+    if (!authLoading && (!isAuthenticated || user?.role !== 'admin')) router.push('/');
+  }, [user, isAuthenticated, authLoading, router]);
+
+  // ── Fetch settings ──
+  useEffect(() => {
+    if (isAuthenticated && user?.role === 'admin') fetchSettings();
+  }, [isAuthenticated, user]);
+
+  const fetchSettings = async () => {
+    try {
+      setLoading(true);
+      const [mainRes, advRes] = await Promise.all([adminAPI.getAllSettings(), adminAPI.getAdvancedSettings()]);
+      const s = mainRes.data.settings;
+      setAdvancedSettings({ ...(advRes.data.settings || {}), theme: { ...(s.theme || {}), ...(advRes.data.settings?.theme || {}) } });
+      setBranding(s.branding || { logo: {}, favicon: {}, siteName: '' });
+      setBanners(s.banners || s.bannerSystem?.banners || []);
+      setAnnouncementBar(s.announcementBar || { enabled: true, text: '', link: '', backgroundColor: '#10b981', textColor: '#ffffff', dismissible: true });
+
+      // Deep merge homepage with defaults
+      const def = SITE_SETTINGS_DEFAULTS.homePage;
+      const live = s.homePage || {};
+      setHomePage({
+        hero: { ...def.hero, ...(live.hero || {}), stats: live.hero?.stats?.length ? live.hero.stats : def.hero.stats },
+        marquee: { ...def.marquee, ...(live.marquee || {}) },
+        collection: { ...def.collection, ...(live.collection || {}) },
+        craft: { ...def.craft, ...(live.craft || {}), images: live.craft?.images?.length ? live.craft.images : def.craft.images, features: live.craft?.features?.length ? live.craft.features : def.craft.features },
+        heritage: { ...def.heritage, ...(live.heritage || {}), points: live.heritage?.points?.length ? live.heritage.points : def.heritage.points },
+        story: { ...def.story, ...(live.story || {}), paragraphs: live.story?.paragraphs?.length ? live.story.paragraphs : def.story.paragraphs },
+        testimonials: { ...def.testimonials, ...(live.testimonials || {}), items: live.testimonials?.items?.length ? live.testimonials.items : def.testimonials.items },
+        ctaBanner: { ...def.ctaBanner, ...(live.ctaBanner || {}) },
+      });
+    } catch (error) {
+      console.error('Failed to fetch settings:', error);
+      if (error.response?.status === 401) { toast.error('Session expired.'); router.push('/auth/login'); }
+      else toast.error('Failed to load settings');
+    } finally { setLoading(false); }
+  };
+
+  // ── Upload helper ──
+  const handleUploadImage = async (file) => {
+    if (!file) return null;
+    const { data: rd } = await adminAPI.getUploadUrl({ fileName: file.name, fileType: file.type, folder: 'cms' });
+    const uld = rd?.data || rd;
+    await fetch(uld.signedUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+    return uld.publicUrl;
+  };
+
+  // ── Save helpers ──
+  const save = useCallback(async (key, value, label) => {
+    try {
+      setSaving(true);
+      await adminAPI.updateSettings({ [key]: value });
+      toast.success(`${label} saved!`);
+      refreshSettings();
+    } catch (error) {
+      console.error(`Save ${key} failed:`, error);
+      if (error.response?.status === 401) { toast.error('Session expired.'); router.push('/auth/login'); }
+      else toast.error(`Failed to save ${label}`);
+    } finally { setSaving(false); }
+  }, [refreshSettings, router]);
+
+  const saveAdvanced = useCallback(async (key, value) => {
+    try {
+      setSaving(true);
+      await adminAPI.updateSetting(key, value);
+      toast.success('Setting saved!');
+      setAdvancedSettings(prev => ({ ...prev, [key]: value }));
+      refreshSettings();
+    } catch (error) {
+      console.error(`Save ${key} failed:`, error);
+      toast.error('Failed to save');
+    } finally { setSaving(false); }
+  }, [refreshSettings]);
+
+  // ── Homepage helpers ──
+  const hpUpdate = useCallback((section, field, value) => {
+    setHomePage(prev => ({ ...prev, [section]: { ...prev[section], [field]: value } }));
+  }, []);
+
+  const hpArrayUpdate = useCallback((section, arrayKey, index, field, value) => {
+    setHomePage(prev => {
+      const arr = [...(prev[section]?.[arrayKey] || [])];
+      arr[index] = { ...arr[index], [field]: value };
+      return { ...prev, [section]: { ...prev[section], [arrayKey]: arr } };
     });
+  }, []);
 
-    const [banners, setBanners] = useState([]);
-
-    // Announcement Bar State
-    const [announcementBar, setAnnouncementBar] = useState({
-        enabled: true,
-        text: '',
-        link: '',
-        backgroundColor: '#10b981',
-        textColor: '#ffffff',
-        dismissible: true
+  const hpArrayAdd = useCallback((section, arrayKey, template) => {
+    setHomePage(prev => {
+      const arr = [...(prev[section]?.[arrayKey] || []), template];
+      return { ...prev, [section]: { ...prev[section], [arrayKey]: arr } };
     });
+  }, []);
 
-    // Home Sections State
-    const [homeSections, setHomeSections] = useState({
-        heroSection: {},
-        featuredProducts: {},
-        madeToOrder: {},
-        newsletter: {}
+  const hpArrayRemove = useCallback((section, arrayKey, index) => {
+    setHomePage(prev => {
+      const arr = (prev[section]?.[arrayKey] || []).filter((_, i) => i !== index);
+      return { ...prev, [section]: { ...prev[section], [arrayKey]: arr } };
     });
+  }, []);
 
-    // Advanced Settings State
-    const [advancedSettings, setAdvancedSettings] = useState({});
-    const [jsonError, setJsonError] = useState(null);
-    const [selectedPolicy, setSelectedPolicy] = useState('shippingPolicy');
+  // ── Banner helpers ──
+  const handleAddBanner = () => setBanners(prev => [...prev, { id: Date.now().toString(), imageUrl: '', title: 'New Banner', subtitle: '', link: '/products', buttonText: 'Shop Now', isActive: true, order: prev.length }]);
+  const handleRemoveBanner = (i) => setBanners(prev => prev.filter((_, idx) => idx !== i));
+  const handleBannerChange = (i, f, v) => setBanners(prev => { const n = [...prev]; n[i] = { ...n[i], [f]: v }; return n; });
+  const handleMoveBanner = (i, dir) => {
+    setBanners(prev => {
+      const n = [...prev]; const t = i + dir;
+      if (t < 0 || t >= n.length) return n;
+      [n[i], n[t]] = [n[t], n[i]];
+      n.forEach((b, idx) => b.order = idx);
+      return n;
+    });
+  };
 
-    // Image Upload State
-    const [logoPreview, setLogoPreview] = useState([]);
-    const [logoFile, setLogoFile] = useState([]);
-    const [faviconPreview, setFaviconPreview] = useState([]);
-    const [faviconFile, setFaviconFile] = useState([]);
-
-    useEffect(() => {
-        if (!authLoading && (!isAuthenticated || user?.role !== 'admin')) {
-            router.push('/');
-        }
-    }, [user, isAuthenticated, authLoading, router]);
-
-    useEffect(() => {
-        if (isAuthenticated && user?.role === 'admin') {
-            fetchSettings();
-        }
-    }, [isAuthenticated, user]);
-
-    const fetchSettings = async () => {
-        try {
-            setLoading(true);
-            const [mainSettingsRes, advancedSettingsRes] = await Promise.all([
-                adminAPI.getAllSettings(),
-                adminAPI.getAdvancedSettings()
-            ]);
-
-            const settings = mainSettingsRes.data.settings;
-            setAdvancedSettings({
-                ...(advancedSettingsRes.data.settings || {}),
-                theme: {
-                    ...(settings.theme || {}),
-                    ...(advancedSettingsRes.data.settings?.theme || {}),
-                },
-            });
-
-            setBranding(settings.branding || { logo: {}, favicon: {}, siteName: '' });
-            setBanners(settings.banners || settings.bannerSystem?.banners || []);
-            setAnnouncementBar(settings.announcementBar || {
-                enabled: true, text: '', link: '', backgroundColor: '#10b981', textColor: '#ffffff', dismissible: true
-            });
-            setHomeSections(settings.homeSections || {
-                heroSection: {}, featuredProducts: {}, madeToOrder: {}, newsletter: {}
-            });
-
-            // Init previews
-            if (settings.branding?.logo?.url) {
-                setLogoPreview([settings.branding.logo.url]);
-            }
-            if (settings.branding?.favicon?.url) {
-                setFaviconPreview([settings.branding.favicon.url]);
-            }
-        } catch (error) {
-            console.error('Failed to fetch settings:', error);
-            if (error.response?.status === 401) {
-                toast.error('Session expired. Please login again.');
-                router.push('/auth/login');
-            } else {
-                toast.error('Failed to load settings');
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleUploadImage = async (file) => {
-        try {
-            if (!file) return null;
-
-            const { data: responseData } = await adminAPI.getUploadUrl({
-                fileName: file.name,
-                fileType: file.type,
-                folder: 'cms', // Organize in CMS folder
-            });
-
-            const uploadUrlData = responseData?.data || responseData;
-
-            await fetch(uploadUrlData.signedUrl, {
-                method: 'PUT',
-                body: file,
-                headers: { 'Content-Type': file.type },
-            });
-
-            return uploadUrlData.publicUrl;
-        } catch (error) {
-            console.error('Upload failed:', error);
-            throw new Error(`Failed to upload ${file.name}`);
-        }
-    };
-
-    const handleSaveBranding = async () => {
-        try {
-            setSaving(true);
-
-            let logoUrl = branding.logo?.url;
-            let faviconUrl = branding.favicon?.url;
-
-            // Upload new Logo if changed
-            if (logoFile.length > 0) {
-                logoUrl = await handleUploadImage(logoFile[0]);
-            }
-
-            // Upload new Favicon if changed
-            if (faviconFile.length > 0) {
-                faviconUrl = await handleUploadImage(faviconFile[0]);
-            }
-
-            const updatedBranding = {
-                ...branding,
-                logo: { ...branding.logo, url: logoUrl },
-                favicon: { ...branding.favicon, url: faviconUrl },
-            };
-
-            await adminAPI.updateSettings({ branding: updatedBranding });
-
-            toast.success('Branding settings updated!');
-            setBranding(updatedBranding);
-            setLogoFile([]);
-            setFaviconFile([]);
-            refreshSettings(); // Update context
-        } catch (error) {
-            console.error('Save failed:', error);
-            if (error.response?.status === 401) {
-                toast.error('Session expired. Please login again.');
-                router.push('/auth/login');
-            } else {
-                toast.error('Failed to save branding settings');
-            }
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const handleSaveAnnouncement = async () => {
-        try {
-            setSaving(true);
-            await adminAPI.updateSettings({ announcementBar });
-            toast.success('Announcement Bar updated!');
-            refreshSettings();
-        } catch (error) {
-            console.error('Save failed:', error);
-            if (error.response?.status === 401) {
-                toast.error('Session expired. Please login again.');
-                router.push('/auth/login');
-            } else {
-                toast.error('Failed to save announcement bar');
-            }
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const handleSaveSections = async () => {
-        try {
-            setSaving(true);
-            await adminAPI.updateSettings({ homeSections });
-            toast.success('Home Sections updated!');
-            refreshSettings();
-        } catch (error) {
-            console.error('Save failed:', error);
-            if (error.response?.status === 401) {
-                toast.error('Session expired. Please login again.');
-                router.push('/auth/login');
-            } else {
-                toast.error('Failed to save sections');
-            }
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const handleSectionChange = (section, field, value) => {
-        setHomeSections(prev => ({
-            ...prev,
-            [section]: {
-                ...prev[section],
-                [field]: value
-            }
-        }));
-    };
-
-    // Banner Management
-    const handleAddBanner = () => {
-        setBanners([
-            ...banners,
-            {
-                id: Date.now().toString(),
-                imageUrl: '',
-                title: 'New Banner',
-                subtitle: 'Banner Subtitle',
-                link: '/products',
-                buttonText: 'Shop Now',
-                isActive: true,
-                order: banners.length,
-                _isNew: true, // Internal flag
-                _file: null, // To store file before upload
-                _preview: null
-            }
-        ]);
-    };
-
-    const handleRemoveBanner = (index) => {
-        const newBanners = banners.filter((_, i) => i !== index);
-        setBanners(newBanners);
-    };
-
-    const handleMoveBanner = (index, direction) => {
-        const newBanners = [...banners];
-        const targetIndex = index + direction;
-
-        if (targetIndex >= 0 && targetIndex < newBanners.length) {
-            [newBanners[index], newBanners[targetIndex]] = [newBanners[targetIndex], newBanners[index]];
-            // Update order
-            newBanners.forEach((b, i) => b.order = i);
-            setBanners(newBanners);
-        }
-    };
-
-    const handleBannerChange = (index, field, value) => {
-        const newBanners = [...banners];
-        newBanners[index][field] = value;
-        setBanners(newBanners);
-    };
-
-    const handleBannerImageChange = (index, { images, imagePreviews }) => {
-        const newBanners = [...banners];
-        if (images.length > 0) {
-            newBanners[index]._file = images[0];
-            newBanners[index]._preview = imagePreviews[0];
-        }
-        setBanners(newBanners);
-    };
-
-    const handleSaveBanners = async () => {
-        try {
-            setSaving(true);
-            const updatedBanners = [...banners];
-
-            // Upload images for new/updated banners
-            for (let i = 0; i < updatedBanners.length; i++) {
-                const banner = updatedBanners[i];
-                if (banner._file) {
-                    const url = await handleUploadImage(banner._file);
-                    updatedBanners[i].imageUrl = url;
-                    delete updatedBanners[i]._file;
-                    delete updatedBanners[i]._preview;
-                    delete updatedBanners[i]._isNew;
-                }
-            }
-
-            await adminAPI.updateSettings({ banners: updatedBanners });
-
-            toast.success('Banners updated successfully!');
-            setBanners(updatedBanners);
-            refreshSettings();
-        } catch (error) {
-            console.error('Save failed:', error);
-            if (error.response?.status === 401) {
-                toast.error('Session expired. Please login again.');
-                router.push('/auth/login');
-            } else {
-                toast.error('Failed to save banners');
-            }
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const handleSaveAdvanced = async (key, value) => {
-        try {
-            setSaving(true);
-            setJsonError(null);
-
-            await adminAPI.updateSetting(key, value);
-
-            toast.success('Setting updated successfully');
-            setAdvancedSettings(prev => ({ ...prev, [key]: value }));
-            refreshSettings();
-        } catch (error) {
-            console.error(`Failed to save ${key}:`, error);
-            if (error.response?.status === 401) {
-                toast.error('Session expired. Please login again.');
-                router.push('/auth/login');
-            } else {
-                toast.error(`Failed to save ${key}`);
-            }
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    if (authLoading || loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-primary-50">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-900"></div>
-            </div>
-        );
-                    {/* Announcement Tab */}
-                    {
-                        activeTab === 'announcement' && (
-                            <div className="bg-white rounded-lg shadow-md p-6 space-y-6 animate-fade-in">
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-primary-900">Announcement Bar</h3>
-                                        <p className="text-sm text-gray-500">Edit top-site announcement text and visibility.</p>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4 border rounded-lg p-4 bg-primary-50/40">
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={announcementBar.enabled !== false}
-                                            onChange={(e) =>
-                                                setAnnouncementBar((prev) => ({ ...prev, enabled: e.target.checked }))
-                                            }
-                                            className="accent-primary-900"
-                                        />
-                                        <span className="text-sm font-medium text-primary-900">Enable Announcement Bar</span>
-                                    </label>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-primary-900 mb-2">Announcement Text</label>
-                                        <input
-                                            type="text"
-                                            className="input w-full"
-                                            value={announcementBar.text || ''}
-                                            onChange={(e) =>
-                                                setAnnouncementBar((prev) => ({ ...prev, text: e.target.value }))
-                                            }
-                                            placeholder="Free shipping on all orders above ₹999"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-primary-900 mb-2">Optional Link</label>
-                                        <input
-                                            type="text"
-                                            className="input w-full"
-                                            value={announcementBar.link || ''}
-                                            onChange={(e) =>
-                                                setAnnouncementBar((prev) => ({ ...prev, link: e.target.value }))
-                                            }
-                                            placeholder="/products"
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-primary-900 mb-2">Background Color</label>
-                                            <input
-                                                type="color"
-                                                value={announcementBar.backgroundColor || '#10b981'}
-                                                onChange={(e) =>
-                                                    setAnnouncementBar((prev) => ({ ...prev, backgroundColor: e.target.value }))
-                                                }
-                                                className="h-10 w-20 border border-primary-200 rounded"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-primary-900 mb-2">Text Color</label>
-                                            <input
-                                                type="color"
-                                                value={announcementBar.textColor || '#ffffff'}
-                                                onChange={(e) =>
-                                                    setAnnouncementBar((prev) => ({ ...prev, textColor: e.target.value }))
-                                                }
-                                                className="h-10 w-20 border border-primary-200 rounded"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={announcementBar.dismissible !== false}
-                                            onChange={(e) =>
-                                                setAnnouncementBar((prev) => ({ ...prev, dismissible: e.target.checked }))
-                                            }
-                                            className="accent-primary-900"
-                                        />
-                                        <span className="text-sm text-primary-900">Allow users to dismiss</span>
-                                    </label>
-                                </div>
-
-                                <div className="pt-4 border-t flex justify-end">
-                                    <button
-                                        onClick={handleSaveAnnouncement}
-                                        disabled={saving}
-                                        className="btn btn-primary flex items-center gap-2"
-                                    >
-                                        <FiSave /> {saving ? 'Saving...' : 'Save Announcement'}
-                                    </button>
-                                </div>
-                            </div>
-                        )
-                    }
-
-    }
-
+  // ── Loading ──
+  if (authLoading || loading) {
     return (
-        <AdminLayout>
-            <div className="min-h-screen bg-primary-50">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-5xl">
-                    <div className="mb-6">
-                        <h1 className="text-2xl sm:text-3xl font-bold text-primary-900">CMS & Site Settings</h1>
-                        <p className="text-primary-600 mt-1">Manage your website&apos;s look and feel</p>
-                    </div>
-
-                    {/* Tabs */}
-                    <div className="bg-white rounded-lg shadow-sm mb-6 flex overflow-x-auto">
-                        <button
-                            onClick={() => setActiveTab('branding')}
-                            className={`px-6 py-4 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'branding'
-                                ? 'border-primary-900 text-primary-900 bg-primary-50'
-                                : 'border-transparent text-gray-500 hover:text-gray-700'
-                                }`}
-                        >
-                            <FiImage className="inline mr-2" /> Branding
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('banners')}
-                            className={`px-6 py-4 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'banners'
-                                ? 'border-primary-900 text-primary-900 bg-primary-50'
-                                : 'border-transparent text-gray-500 hover:text-gray-700'
-                                }`}
-                        >
-                            <FiLayout className="inline mr-2" /> Banners
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('home')}
-                            className={`px-6 py-4 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'home'
-                                ? 'border-primary-900 text-primary-900 bg-primary-50'
-                                : 'border-transparent text-gray-500 hover:text-gray-700'
-                                }`}
-                        >
-                            <FiSettings className="inline mr-2" /> Home Essentials
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('theme')}
-                            className={`px-6 py-4 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'theme'
-                                ? 'border-primary-900 text-primary-900 bg-primary-50'
-                                : 'border-transparent text-gray-500 hover:text-gray-700'
-                                }`}
-                        >
-                            🎨 Theme Colors
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('announcement')}
-                            className={`px-6 py-4 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'announcement'
-                                ? 'border-primary-900 text-primary-900 bg-primary-50'
-                                : 'border-transparent text-gray-500 hover:text-gray-700'
-                                }`}
-                        >
-                            <span className="inline mr-2">📢</span> Announcement Bar
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('policies')}
-                            className={`px-6 py-4 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'policies'
-                                ? 'border-primary-900 text-primary-900 bg-primary-50'
-                                : 'border-transparent text-gray-500 hover:text-gray-700'
-                                }`}
-                        >
-                            <FiFileText className="inline mr-2" /> Policies & Pages
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('contact')}
-                            className={`px-6 py-4 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'contact'
-                                ? 'border-primary-900 text-primary-900 bg-primary-50'
-                                : 'border-transparent text-gray-500 hover:text-gray-700'
-                                }`}
-                        >
-                            <FiPhone className="inline mr-2" /> Contact Info
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('system')}
-                            className={`px-6 py-4 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'system'
-                                ? 'border-primary-900 text-primary-900 bg-primary-50'
-                                : 'border-transparent text-gray-500 hover:text-gray-700'
-                                }`}
-                        >
-                            <FiSettings className="inline mr-2" /> System
-                        </button>
-                    </div>
-
-                    {/* Branding Tab */}
-                    {
-                        activeTab === 'branding' && (
-                            <div className="bg-white rounded-lg shadow-md p-6 space-y-6 animate-fade-in">
-                                <h3 className="text-lg font-semibold text-primary-900">Branding Essentials</h3>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-primary-900 mb-2">Site Name</label>
-                                    <input
-                                        type="text"
-                                        className="input w-full"
-                                        value={branding.siteName || ''}
-                                        onChange={(e) => setBranding((prev) => ({ ...prev, siteName: e.target.value }))}
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-primary-900 mb-2">Logo URL</label>
-                                        <input
-                                            type="text"
-                                            className="input w-full"
-                                            value={branding.logo?.url || ''}
-                                            onChange={(e) => setBranding((prev) => ({
-                                                ...prev,
-                                                logo: { ...(prev.logo || {}), url: e.target.value },
-                                            }))}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-primary-900 mb-2">Favicon URL</label>
-                                        <input
-                                            type="text"
-                                            className="input w-full"
-                                            value={branding.favicon?.url || ''}
-                                            onChange={(e) => setBranding((prev) => ({
-                                                ...prev,
-                                                favicon: { ...(prev.favicon || {}), url: e.target.value },
-                                            }))}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="pt-4 border-t flex justify-end">
-                                    <button onClick={handleSaveBranding} disabled={saving} className="btn btn-primary flex items-center gap-2">
-                                        <FiSave /> {saving ? 'Saving...' : 'Save Branding'}
-                                    </button>
-                                </div>
-                            </div>
-                        )
-                    }
-
-                    {/* Banners Tab */}
-                    {
-                        activeTab === 'banners' && (
-                            <div className="bg-white rounded-lg shadow-md p-6 space-y-4 animate-fade-in">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-lg font-semibold text-primary-900">Homepage Banners</h3>
-                                    <button onClick={handleAddBanner} className="btn btn-secondary flex items-center gap-2">
-                                        <FiPlus /> Add Banner
-                                    </button>
-                                </div>
-
-                                {(banners || []).map((banner, index) => (
-                                    <div key={banner.id || index} className="border rounded-lg p-4 space-y-3">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            <input
-                                                type="text"
-                                                className="input"
-                                                value={banner.title || ''}
-                                                onChange={(e) => handleBannerChange(index, 'title', e.target.value)}
-                                                placeholder="Banner title"
-                                            />
-                                            <input
-                                                type="text"
-                                                className="input"
-                                                value={banner.subtitle || banner.description || ''}
-                                                onChange={(e) => {
-                                                    handleBannerChange(index, 'subtitle', e.target.value);
-                                                    handleBannerChange(index, 'description', e.target.value);
-                                                }}
-                                                placeholder="Banner subtitle"
-                                            />
-                                            <input
-                                                type="text"
-                                                className="input"
-                                                value={banner.imageUrl || banner.image || ''}
-                                                onChange={(e) => {
-                                                    handleBannerChange(index, 'imageUrl', e.target.value);
-                                                    handleBannerChange(index, 'image', e.target.value);
-                                                }}
-                                                placeholder="Banner image URL"
-                                            />
-                                            <input
-                                                type="text"
-                                                className="input"
-                                                value={banner.link || banner.buttonLink || ''}
-                                                onChange={(e) => {
-                                                    handleBannerChange(index, 'link', e.target.value);
-                                                    handleBannerChange(index, 'buttonLink', e.target.value);
-                                                }}
-                                                placeholder="Primary button link"
-                                            />
-                                            <input
-                                                type="text"
-                                                className="input"
-                                                value={banner.buttonText || ''}
-                                                onChange={(e) => handleBannerChange(index, 'buttonText', e.target.value)}
-                                                placeholder="Primary button text"
-                                            />
-                                            <label className="flex items-center gap-2 text-sm text-primary-900">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={banner.isActive === true || banner.enabled === true}
-                                                    onChange={(e) => {
-                                                        handleBannerChange(index, 'isActive', e.target.checked);
-                                                        handleBannerChange(index, 'enabled', e.target.checked);
-                                                    }}
-                                                />
-                                                Active
-                                            </label>
-                                        </div>
-
-                                        <div className="flex items-center gap-2">
-                                            <button className="btn btn-secondary" onClick={() => handleMoveBanner(index, -1)} disabled={index === 0}><FiArrowUp /></button>
-                                            <button className="btn btn-secondary" onClick={() => handleMoveBanner(index, 1)} disabled={index === banners.length - 1}><FiArrowDown /></button>
-                                            <button className="btn btn-secondary" onClick={() => handleRemoveBanner(index)}><FiTrash2 /> Remove</button>
-                                        </div>
-                                    </div>
-                                ))}
-
-                                <div className="pt-4 border-t flex justify-end">
-                                    <button onClick={handleSaveBanners} disabled={saving} className="btn btn-primary flex items-center gap-2">
-                                        <FiSave /> {saving ? 'Saving...' : 'Save Banners'}
-                                    </button>
-                                </div>
-                            </div>
-                        )
-                    }
-
-                    {/* Home Essentials Tab */}
-                    {
-                        activeTab === 'home' && (
-                            <div className="bg-white rounded-lg shadow-md p-6 space-y-4 animate-fade-in">
-                                <h3 className="text-lg font-semibold text-primary-900">Home Essentials</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <input className="input" value={homeSections.heroSection?.title || ''} onChange={(e) => handleSectionChange('heroSection', 'title', e.target.value)} placeholder="Hero title" />
-                                    <input className="input" value={homeSections.heroSection?.subtitle || ''} onChange={(e) => handleSectionChange('heroSection', 'subtitle', e.target.value)} placeholder="Hero subtitle" />
-                                    <input className="input" value={homeSections.heroSection?.primaryButtonText || homeSections.heroSection?.buttonText || ''} onChange={(e) => { handleSectionChange('heroSection', 'primaryButtonText', e.target.value); handleSectionChange('heroSection', 'buttonText', e.target.value); }} placeholder="Primary button text" />
-                                    <input className="input" value={homeSections.heroSection?.primaryButtonLink || homeSections.heroSection?.buttonLink || ''} onChange={(e) => { handleSectionChange('heroSection', 'primaryButtonLink', e.target.value); handleSectionChange('heroSection', 'buttonLink', e.target.value); }} placeholder="Primary button link" />
-                                </div>
-                                <div className="pt-4 border-t flex justify-end">
-                                    <button onClick={handleSaveSections} disabled={saving} className="btn btn-primary flex items-center gap-2">
-                                        <FiSave /> {saving ? 'Saving...' : 'Save Home Essentials'}
-                                    </button>
-                                </div>
-                            </div>
-                        )
-                    }
-
-                    {/* Theme Colors Tab */}
-                    {
-                        activeTab === 'theme' && (
-                            <div className="bg-white rounded-lg shadow-md p-6 space-y-4 animate-fade-in">
-                                <h3 className="text-lg font-semibold text-primary-900">Theme Colors</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-primary-900 mb-2">Primary Color</label>
-                                        <input type="color" value={advancedSettings.theme?.primaryColor || '#3B2F2F'} onChange={(e) => setAdvancedSettings((prev) => ({ ...prev, theme: { ...(prev.theme || {}), primaryColor: e.target.value } }))} className="h-10 w-20 border border-primary-200 rounded" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-primary-900 mb-2">Secondary Color</label>
-                                        <input type="color" value={advancedSettings.theme?.secondaryColor || '#E5D3B3'} onChange={(e) => setAdvancedSettings((prev) => ({ ...prev, theme: { ...(prev.theme || {}), secondaryColor: e.target.value } }))} className="h-10 w-20 border border-primary-200 rounded" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-primary-900 mb-2">Background Color</label>
-                                        <input type="color" value={advancedSettings.theme?.backgroundColor || '#fafaf9'} onChange={(e) => setAdvancedSettings((prev) => ({ ...prev, theme: { ...(prev.theme || {}), backgroundColor: e.target.value } }))} className="h-10 w-20 border border-primary-200 rounded" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-primary-900 mb-2">Text Color</label>
-                                        <input type="color" value={advancedSettings.theme?.textColor || '#1c1917'} onChange={(e) => setAdvancedSettings((prev) => ({ ...prev, theme: { ...(prev.theme || {}), textColor: e.target.value } }))} className="h-10 w-20 border border-primary-200 rounded" />
-                                    </div>
-                                </div>
-                                <div className="pt-4 border-t flex justify-end">
-                                    <button onClick={() => handleSaveAdvanced('theme', advancedSettings.theme || {})} disabled={saving} className="btn btn-primary flex items-center gap-2">
-                                        <FiSave /> {saving ? 'Saving...' : 'Save Theme Colors'}
-                                    </button>
-                                </div>
-                            </div>
-                        )
-                    }
-
-
-
-
-
-
-
-
-                    {/* Policies Tab */}
-                    {
-                        activeTab === 'policies' && (
-                            <div className="bg-white rounded-lg shadow-md p-6 space-y-6 animate-fade-in">
-                                <div className="flex justify-between items-center mb-6">
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-primary-900">Policy & Page Content</h3>
-                                        <p className="text-sm text-gray-500">Edit detailed content for various site sections.</p>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <select
-                                            value={selectedPolicy}
-                                            onChange={(e) => setSelectedPolicy(e.target.value)}
-                                            className="input py-2"
-                                        >
-                                            <option value="shippingPolicy">Shipping Policy</option>
-                                            <option value="returnsPolicy">Returns Policy</option>
-                                            <option value="aboutPage">About Page</option>
-                                            <option value="faqPage">FAQ Page</option>
-                                            <option value="footerContent">Footer Content</option>
-                                        </select>
-                                        <button
-                                            onClick={() => {
-                                                try {
-                                                    const value = JSON.parse(document.getElementById('policy-editor').value);
-                                                    handleSaveAdvanced(selectedPolicy, value);
-                                                } catch (e) {
-                                                    toast.error('Invalid JSON format');
-                                                }
-                                            }}
-                                            disabled={saving}
-                                            className="btn btn-primary flex items-center gap-2"
-                                        >
-                                            <FiSave /> {saving ? 'Saving...' : 'Save Changes'}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="relative">
-                                    <textarea
-                                        id="policy-editor"
-                                        className="w-full h-[600px] font-mono text-sm p-4 border rounded-lg bg-gray-50 focus:bg-white transition-colors custom-scrollbar"
-                                        defaultValue={JSON.stringify(advancedSettings[selectedPolicy] || {}, null, 2)}
-                                        key={selectedPolicy}
-                                        spellCheck={false}
-                                    />
-                                    <div className="absolute top-2 right-4 text-xs text-gray-400 pointer-events-none">
-                                        JSON Editor
-                                    </div>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-2">
-                                    <span className="font-semibold text-yellow-600">Note:</span> Be careful when editing JSON structure. Ensure all quotes and commas are correct.
-                                </p>
-                            </div>
-                        )
-                    }
-
-                    {/* Contact Tab */}
-                    {
-                        activeTab === 'contact' && (
-                            <div className="bg-white rounded-lg shadow-md p-6 space-y-6 animate-fade-in">
-                                <h3 className="text-lg font-semibold text-primary-900 mb-6 border-b pb-2">Contact Information</h3>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="md:col-span-2">
-                                        <label className="block text-sm font-medium text-primary-900 mb-2">Business Address</label>
-                                        <textarea
-                                            rows={3}
-                                            className="input w-full"
-                                            value={advancedSettings.contactInfo?.address || ''}
-                                            onChange={(e) => setAdvancedSettings(prev => ({
-                                                ...prev,
-                                                contactInfo: { ...prev.contactInfo, address: e.target.value }
-                                            }))}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-primary-900 mb-2">Phone Number</label>
-                                        <input
-                                            type="text"
-                                            className="input w-full"
-                                            value={advancedSettings.contactInfo?.phone || ''}
-                                            onChange={(e) => setAdvancedSettings(prev => ({
-                                                ...prev,
-                                                contactInfo: { ...prev.contactInfo, phone: e.target.value }
-                                            }))}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-primary-900 mb-2">Email Address</label>
-                                        <input
-                                            type="email"
-                                            className="input w-full"
-                                            value={advancedSettings.contactInfo?.email || ''}
-                                            onChange={(e) => setAdvancedSettings(prev => ({
-                                                ...prev,
-                                                contactInfo: { ...prev.contactInfo, email: e.target.value }
-                                            }))}
-                                        />
-                                    </div>
-
-                                    <div className="md:col-span-2 grid grid-cols-3 gap-4 pt-4">
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={advancedSettings.contactInfo?.showAddress ?? true}
-                                                onChange={(e) => setAdvancedSettings(prev => ({
-                                                    ...prev,
-                                                    contactInfo: { ...prev.contactInfo, showAddress: e.target.checked }
-                                                }))}
-                                                className="accent-primary-900"
-                                            />
-                                            <span className="text-sm">Show Address</span>
-                                        </label>
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={advancedSettings.contactInfo?.showPhone ?? true}
-                                                onChange={(e) => setAdvancedSettings(prev => ({
-                                                    ...prev,
-                                                    contactInfo: { ...prev.contactInfo, showPhone: e.target.checked }
-                                                }))}
-                                                className="accent-primary-900"
-                                            />
-                                            <span className="text-sm">Show Phone</span>
-                                        </label>
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={advancedSettings.contactInfo?.showEmail ?? true}
-                                                onChange={(e) => setAdvancedSettings(prev => ({
-                                                    ...prev,
-                                                    contactInfo: { ...prev.contactInfo, showEmail: e.target.checked }
-                                                }))}
-                                                className="accent-primary-900"
-                                            />
-                                            <span className="text-sm">Show Email</span>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div className="pt-6 border-t flex justify-end">
-                                    <button
-                                        onClick={() => handleSaveAdvanced('contactInfo', advancedSettings.contactInfo)}
-                                        disabled={saving}
-                                        className="btn btn-primary flex items-center gap-2"
-                                    >
-                                        <FiSave /> {saving ? 'Saving...' : 'Save Contact Info'}
-                                    </button>
-                                </div>
-                            </div>
-                        )
-                    }
-
-                    {/* System Tab */}
-                    {
-                        activeTab === 'system' && (
-                            <div className="bg-white rounded-lg shadow-md p-6 space-y-6 animate-fade-in">
-                                <h3 className="text-lg font-semibold text-primary-900 mb-6 border-b pb-2">System Settings</h3>
-
-                                <div className="space-y-6">
-                                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
-                                        <div>
-                                            <h4 className="font-medium text-primary-900">Maintenance Mode</h4>
-                                            <p className="text-sm text-gray-500">Temporarily disable the storefront for visitors.</p>
-                                        </div>
-                                        <label className="relative inline-flex items-center cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                className="sr-only peer"
-                                                checked={advancedSettings.maintenanceMode?.enabled ?? false}
-                                                onChange={(e) => setAdvancedSettings(prev => ({
-                                                    ...prev,
-                                                    maintenanceMode: { ...prev.maintenanceMode, enabled: e.target.checked }
-                                                }))}
-                                            />
-                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
-                                        </label>
-                                    </div>
-
-                                    {advancedSettings.maintenanceMode?.enabled && (
-                                        <div className="p-4 border rounded-lg animate-fade-in">
-                                            <label className="block text-sm font-medium text-primary-900 mb-2">Maintenance Message</label>
-                                            <textarea
-                                                className="input w-full"
-                                                rows={2}
-                                                value={advancedSettings.maintenanceMode?.message || ''}
-                                                onChange={(e) => setAdvancedSettings(prev => ({
-                                                    ...prev,
-                                                    maintenanceMode: { ...prev.maintenanceMode, message: e.target.value }
-                                                }))}
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="pt-6 border-t flex justify-end">
-                                    <button
-                                        onClick={() => handleSaveAdvanced('maintenanceMode', advancedSettings.maintenanceMode)}
-                                        disabled={saving}
-                                        className="btn btn-primary flex items-center gap-2"
-                                    >
-                                        <FiSave /> {saving ? 'Saving...' : 'Save System Settings'}
-                                    </button>
-                                </div>
-                            </div>
-                        )
-                    }
-
-                </div >
-            </div >
-        </AdminLayout >
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
+          <span className="text-sm text-gray-500 font-medium">Loading settings...</span>
+        </div>
+      </div>
     );
+  }
+
+  // ═══════════════════ TABS CONFIG ═══════════════════
+  const tabs = [
+    { key: 'homepage', label: 'Homepage', icon: <FiHome className="w-4 h-4" /> },
+    { key: 'branding', label: 'Branding', icon: <FiImage className="w-4 h-4" /> },
+    { key: 'banners', label: 'Banners', icon: <FiLayout className="w-4 h-4" /> },
+    { key: 'announcement', label: 'Announcement', icon: <span className="text-sm">📢</span> },
+    { key: 'theme', label: 'Theme', icon: <span className="text-sm">🎨</span> },
+    { key: 'policies', label: 'Policies', icon: <FiFileText className="w-4 h-4" /> },
+    { key: 'contact', label: 'Contact', icon: <FiPhone className="w-4 h-4" /> },
+    { key: 'system', label: 'System', icon: <FiSettings className="w-4 h-4" /> },
+  ];
+
+  /* ═══════════════════════════ RENDER ═══════════════════════════ */
+  return (
+    <AdminLayout>
+      <div className="min-h-screen bg-gray-50/50">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+          {/* ── Header ── */}
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Site Settings</h1>
+            <p className="text-gray-500 text-sm mt-1">Manage your website&apos;s content, appearance, and configuration.</p>
+          </div>
+
+          {/* ── Tab bar ── */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 flex overflow-x-auto no-scrollbar">
+            {tabs.map(t => (
+              <button
+                key={t.key}
+                onClick={() => setActiveTab(t.key)}
+                className={`flex items-center gap-2 px-5 py-3.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                  activeTab === t.key
+                    ? 'border-gray-900 text-gray-900 bg-gray-50/50'
+                    : 'border-transparent text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                {t.icon} {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* ══════════════════════════════════════════════════════
+              HOMEPAGE TAB
+              ══════════════════════════════════════════════════════ */}
+          {activeTab === 'homepage' && (
+            <div className="space-y-4 animate-in fade-in duration-200">
+              <Card>
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Homepage Sections</h3>
+                    <p className="text-sm text-gray-500 mt-0.5">Control every section of your storefront landing page.</p>
+                  </div>
+                  <SaveButton onClick={() => save('homePage', homePage, 'Homepage')} saving={saving} />
+                </div>
+              </Card>
+
+              {/* ── Hero Section ── */}
+              <CollapsibleSection title="Hero Section" icon="🖼️" defaultOpen badge={homePage.hero?.enabled !== false ? 'ON' : 'OFF'}>
+                <SectionToggle label="Enable Hero Section" enabled={homePage.hero?.enabled !== false} onChange={(v) => hpUpdate('hero', 'enabled', v)} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                  <Field label="Eyebrow Text"><TextInput value={homePage.hero?.eyebrow} onChange={(v) => hpUpdate('hero', 'eyebrow', v)} placeholder="Est. 2008 — Handcrafted in Agra" /></Field>
+                  <Field label="Hero Image URL" hint="Leave empty for default"><TextInput value={homePage.hero?.image} onChange={(v) => hpUpdate('hero', 'image', v)} placeholder="https://... or leave blank" /></Field>
+                  <Field label="Title Line 1"><TextInput value={homePage.hero?.titleLine1} onChange={(v) => hpUpdate('hero', 'titleLine1', v)} /></Field>
+                  <Field label="Title Line 2 (italic)"><TextInput value={homePage.hero?.titleLine2} onChange={(v) => hpUpdate('hero', 'titleLine2', v)} /></Field>
+                  <Field label="Title Line 3"><TextInput value={homePage.hero?.titleLine3} onChange={(v) => hpUpdate('hero', 'titleLine3', v)} /></Field>
+                  <Field label="Description"><TextArea value={homePage.hero?.description} onChange={(v) => hpUpdate('hero', 'description', v)} /></Field>
+                  <Field label="Primary Button Text"><TextInput value={homePage.hero?.primaryButtonText} onChange={(v) => hpUpdate('hero', 'primaryButtonText', v)} /></Field>
+                  <Field label="Primary Button Link"><TextInput value={homePage.hero?.primaryButtonLink} onChange={(v) => hpUpdate('hero', 'primaryButtonLink', v)} /></Field>
+                  <Field label="Secondary Button Text"><TextInput value={homePage.hero?.secondaryButtonText} onChange={(v) => hpUpdate('hero', 'secondaryButtonText', v)} /></Field>
+                  <Field label="Secondary Button Link"><TextInput value={homePage.hero?.secondaryButtonLink} onChange={(v) => hpUpdate('hero', 'secondaryButtonLink', v)} /></Field>
+                </div>
+                {/* Stats */}
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Hero Stats</span>
+                    <button onClick={() => hpArrayAdd('hero', 'stats', { label: 'Label', value: 0, suffix: '' })} className="text-xs text-amber-600 hover:text-amber-800 font-medium flex items-center gap-1"><FiPlus className="w-3 h-3" /> Add Stat</button>
+                  </div>
+                  {(homePage.hero?.stats || []).map((st, i) => (
+                    <div key={i} className="flex items-center gap-2 mb-2">
+                      <TextInput value={st.label} onChange={(v) => hpArrayUpdate('hero', 'stats', i, 'label', v)} placeholder="Label" />
+                      <input type="number" className="w-20 px-2 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-amber-200" value={st.value || 0} onChange={(e) => hpArrayUpdate('hero', 'stats', i, 'value', parseInt(e.target.value) || 0)} />
+                      <TextInput value={st.suffix} onChange={(v) => hpArrayUpdate('hero', 'stats', i, 'suffix', v)} placeholder="+" />
+                      <button onClick={() => hpArrayRemove('hero', 'stats', i)} className="text-red-400 hover:text-red-600"><FiTrash2 className="w-4 h-4" /></button>
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleSection>
+
+              {/* ── Marquee ── */}
+              <CollapsibleSection title="Marquee Banner" icon="📜" badge={homePage.marquee?.enabled !== false ? 'ON' : 'OFF'}>
+                <SectionToggle label="Enable Marquee" enabled={homePage.marquee?.enabled !== false} onChange={(v) => hpUpdate('marquee', 'enabled', v)} />
+                <Field label="Scrolling Text" hint="Use ◆ as separators"><TextArea value={homePage.marquee?.text} onChange={(v) => hpUpdate('marquee', 'text', v)} /></Field>
+              </CollapsibleSection>
+
+              {/* ── Collection ── */}
+              <CollapsibleSection title="Collection / Products" icon="👟" badge={homePage.collection?.enabled !== false ? 'ON' : 'OFF'}>
+                <SectionToggle label="Enable Collection Section" enabled={homePage.collection?.enabled !== false} onChange={(v) => hpUpdate('collection', 'enabled', v)} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                  <Field label="Section Label"><TextInput value={homePage.collection?.label} onChange={(v) => hpUpdate('collection', 'label', v)} /></Field>
+                  <Field label="Section Title"><TextInput value={homePage.collection?.title} onChange={(v) => hpUpdate('collection', 'title', v)} /></Field>
+                  <Field label="Product Source">
+                    <select
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-amber-200"
+                      value={homePage.collection?.productSelection || 'latest'}
+                      onChange={(e) => hpUpdate('collection', 'productSelection', e.target.value)}
+                    >
+                      <option value="latest">Latest Products</option>
+                      <option value="top-rated">Top Rated</option>
+                      <option value="featured">Featured</option>
+                    </select>
+                  </Field>
+                  <Field label="Product Limit">
+                    <input type="number" min={1} max={12}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-amber-200"
+                      value={homePage.collection?.productLimit || 4}
+                      onChange={(e) => hpUpdate('collection', 'productLimit', parseInt(e.target.value) || 4)}
+                    />
+                  </Field>
+                </div>
+              </CollapsibleSection>
+
+              {/* ── Craft ── */}
+              <CollapsibleSection title="Craft / Process" icon="🔨" badge={homePage.craft?.enabled !== false ? 'ON' : 'OFF'}>
+                <SectionToggle label="Enable Craft Section" enabled={homePage.craft?.enabled !== false} onChange={(v) => hpUpdate('craft', 'enabled', v)} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                  <Field label="Section Label"><TextInput value={homePage.craft?.label} onChange={(v) => hpUpdate('craft', 'label', v)} /></Field>
+                  <div />
+                  <Field label="Title Line 1"><TextInput value={homePage.craft?.titleLine1} onChange={(v) => hpUpdate('craft', 'titleLine1', v)} /></Field>
+                  <Field label="Title Line 2"><TextInput value={homePage.craft?.titleLine2} onChange={(v) => hpUpdate('craft', 'titleLine2', v)} /></Field>
+                </div>
+                {/* Craft Images */}
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Process Images (4 recommended)</span>
+                    <button onClick={() => hpArrayAdd('craft', 'images', { id: `craft-${Date.now()}`, url: '', alt: 'New image' })} className="text-xs text-amber-600 hover:text-amber-800 font-medium flex items-center gap-1"><FiPlus className="w-3 h-3" /> Add Image</button>
+                  </div>
+                  {(homePage.craft?.images || []).map((img, i) => (
+                    <div key={img.id || i} className="flex items-center gap-2 mb-2">
+                      <TextInput value={img.url} onChange={(v) => hpArrayUpdate('craft', 'images', i, 'url', v)} placeholder="Image URL (leave empty for default)" />
+                      <TextInput value={img.alt} onChange={(v) => hpArrayUpdate('craft', 'images', i, 'alt', v)} placeholder="Alt text" />
+                      <button onClick={() => hpArrayRemove('craft', 'images', i)} className="text-red-400 hover:text-red-600 shrink-0"><FiTrash2 className="w-4 h-4" /></button>
+                    </div>
+                  ))}
+                </div>
+                {/* Craft Features */}
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Features (4 recommended)</span>
+                    <button onClick={() => hpArrayAdd('craft', 'features', { num: `0${(homePage.craft?.features?.length || 0) + 1}`, name: 'Feature Name', desc: 'Description' })} className="text-xs text-amber-600 hover:text-amber-800 font-medium flex items-center gap-1"><FiPlus className="w-3 h-3" /> Add Feature</button>
+                  </div>
+                  {(homePage.craft?.features || []).map((f, i) => (
+                    <div key={i} className="grid grid-cols-[60px_1fr_2fr_auto] gap-2 mb-2 items-start">
+                      <TextInput value={f.num} onChange={(v) => hpArrayUpdate('craft', 'features', i, 'num', v)} placeholder="01" />
+                      <TextInput value={f.name} onChange={(v) => hpArrayUpdate('craft', 'features', i, 'name', v)} placeholder="Name" />
+                      <TextInput value={f.desc} onChange={(v) => hpArrayUpdate('craft', 'features', i, 'desc', v)} placeholder="Description" />
+                      <button onClick={() => hpArrayRemove('craft', 'features', i)} className="text-red-400 hover:text-red-600 mt-2"><FiTrash2 className="w-4 h-4" /></button>
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleSection>
+
+              {/* ── Heritage / Agra ── */}
+              <CollapsibleSection title="Heritage / Agra" icon="🏛️" badge={homePage.heritage?.enabled !== false ? 'ON' : 'OFF'}>
+                <SectionToggle label="Enable Heritage Section" enabled={homePage.heritage?.enabled !== false} onChange={(v) => hpUpdate('heritage', 'enabled', v)} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                  <Field label="Section Label"><TextInput value={homePage.heritage?.label} onChange={(v) => hpUpdate('heritage', 'label', v)} /></Field>
+                  <Field label="Image URL" hint="Leave empty for default"><TextInput value={homePage.heritage?.image} onChange={(v) => hpUpdate('heritage', 'image', v)} /></Field>
+                  <Field label="Title Line 1"><TextInput value={homePage.heritage?.titleLine1} onChange={(v) => hpUpdate('heritage', 'titleLine1', v)} /></Field>
+                  <Field label="Title Line 2 (italic)"><TextInput value={homePage.heritage?.titleLine2} onChange={(v) => hpUpdate('heritage', 'titleLine2', v)} /></Field>
+                  <div className="md:col-span-2">
+                    <Field label="Description"><TextArea value={homePage.heritage?.description} onChange={(v) => hpUpdate('heritage', 'description', v)} rows={4} /></Field>
+                  </div>
+                </div>
+                {/* Heritage Points */}
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Heritage Points</span>
+                    <button onClick={() => hpArrayAdd('heritage', 'points', { icon: '✨', title: 'New Point', desc: 'Description' })} className="text-xs text-amber-600 hover:text-amber-800 font-medium flex items-center gap-1"><FiPlus className="w-3 h-3" /> Add Point</button>
+                  </div>
+                  {(homePage.heritage?.points || []).map((pt, i) => (
+                    <div key={i} className="grid grid-cols-[50px_1fr_2fr_auto] gap-2 mb-2 items-start">
+                      <TextInput value={pt.icon} onChange={(v) => hpArrayUpdate('heritage', 'points', i, 'icon', v)} placeholder="🏛️" />
+                      <TextInput value={pt.title} onChange={(v) => hpArrayUpdate('heritage', 'points', i, 'title', v)} placeholder="Title" />
+                      <TextInput value={pt.desc} onChange={(v) => hpArrayUpdate('heritage', 'points', i, 'desc', v)} placeholder="Description" />
+                      <button onClick={() => hpArrayRemove('heritage', 'points', i)} className="text-red-400 hover:text-red-600 mt-2"><FiTrash2 className="w-4 h-4" /></button>
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleSection>
+
+              {/* ── Story ── */}
+              <CollapsibleSection title="Our Story" icon="📖" badge={homePage.story?.enabled !== false ? 'ON' : 'OFF'}>
+                <SectionToggle label="Enable Story Section" enabled={homePage.story?.enabled !== false} onChange={(v) => hpUpdate('story', 'enabled', v)} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                  <Field label="Section Label"><TextInput value={homePage.story?.label} onChange={(v) => hpUpdate('story', 'label', v)} /></Field>
+                  <Field label="Image URL" hint="Leave empty for default"><TextInput value={homePage.story?.image} onChange={(v) => hpUpdate('story', 'image', v)} /></Field>
+                  <Field label="Title Line 1"><TextInput value={homePage.story?.titleLine1} onChange={(v) => hpUpdate('story', 'titleLine1', v)} /></Field>
+                  <Field label="Title Line 2"><TextInput value={homePage.story?.titleLine2} onChange={(v) => hpUpdate('story', 'titleLine2', v)} /></Field>
+                  <Field label="Quote"><TextArea value={homePage.story?.quote} onChange={(v) => hpUpdate('story', 'quote', v)} /></Field>
+                  <div>
+                    <Field label="CTA Button Text"><TextInput value={homePage.story?.ctaText} onChange={(v) => hpUpdate('story', 'ctaText', v)} /></Field>
+                    <div className="mt-3"><Field label="CTA Button Link"><TextInput value={homePage.story?.ctaLink} onChange={(v) => hpUpdate('story', 'ctaLink', v)} /></Field></div>
+                  </div>
+                </div>
+                {/* Story Paragraphs */}
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Paragraphs</span>
+                    <button onClick={() => hpUpdate('story', 'paragraphs', [...(homePage.story?.paragraphs || []), ''])} className="text-xs text-amber-600 hover:text-amber-800 font-medium flex items-center gap-1"><FiPlus className="w-3 h-3" /> Add Paragraph</button>
+                  </div>
+                  {(homePage.story?.paragraphs || []).map((p, i) => (
+                    <div key={i} className="flex items-start gap-2 mb-2">
+                      <TextArea value={p} onChange={(v) => {
+                        const arr = [...(homePage.story?.paragraphs || [])];
+                        arr[i] = v;
+                        hpUpdate('story', 'paragraphs', arr);
+                      }} rows={2} />
+                      <button onClick={() => hpUpdate('story', 'paragraphs', (homePage.story?.paragraphs || []).filter((_, idx) => idx !== i))} className="text-red-400 hover:text-red-600 mt-2 shrink-0"><FiTrash2 className="w-4 h-4" /></button>
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleSection>
+
+              {/* ── Testimonials ── */}
+              <CollapsibleSection title="Testimonials" icon="⭐" badge={homePage.testimonials?.enabled !== false ? 'ON' : 'OFF'}>
+                <SectionToggle label="Enable Testimonials" enabled={homePage.testimonials?.enabled !== false} onChange={(v) => hpUpdate('testimonials', 'enabled', v)} />
+                <div className="mt-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Testimonial Items</span>
+                    <button onClick={() => hpArrayAdd('testimonials', 'items', { id: `t-${Date.now()}`, text: 'Customer quote...', author: 'Name, City', rating: 5 })} className="text-xs text-amber-600 hover:text-amber-800 font-medium flex items-center gap-1"><FiPlus className="w-3 h-3" /> Add Testimonial</button>
+                  </div>
+                  {(homePage.testimonials?.items || []).map((t, i) => (
+                    <div key={t.id || i} className="border border-gray-100 rounded-lg p-4 mb-3 space-y-2 bg-gray-50/40">
+                      <TextArea value={t.text} onChange={(v) => hpArrayUpdate('testimonials', 'items', i, 'text', v)} placeholder="Customer testimonial text" />
+                      <div className="grid grid-cols-[1fr_80px_auto] gap-2 items-center">
+                        <TextInput value={t.author} onChange={(v) => hpArrayUpdate('testimonials', 'items', i, 'author', v)} placeholder="Author Name, City" />
+                        <input type="number" min={1} max={5}
+                          className="px-2 py-2 rounded-lg border border-gray-200 text-sm outline-none"
+                          value={t.rating || 5}
+                          onChange={(e) => hpArrayUpdate('testimonials', 'items', i, 'rating', parseInt(e.target.value) || 5)}
+                        />
+                        <button onClick={() => hpArrayRemove('testimonials', 'items', i)} className="text-red-400 hover:text-red-600"><FiTrash2 className="w-4 h-4" /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleSection>
+
+              {/* ── CTA Banner ── */}
+              <CollapsibleSection title="CTA Banner" icon="🎯" badge={homePage.ctaBanner?.enabled !== false ? 'ON' : 'OFF'}>
+                <SectionToggle label="Enable CTA Banner" enabled={homePage.ctaBanner?.enabled !== false} onChange={(v) => hpUpdate('ctaBanner', 'enabled', v)} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                  <Field label="Title Line 1"><TextInput value={homePage.ctaBanner?.titleLine1} onChange={(v) => hpUpdate('ctaBanner', 'titleLine1', v)} /></Field>
+                  <Field label="Title Line 2 (italic)"><TextInput value={homePage.ctaBanner?.titleLine2} onChange={(v) => hpUpdate('ctaBanner', 'titleLine2', v)} /></Field>
+                  <div className="md:col-span-2">
+                    <Field label="Subtitle"><TextArea value={homePage.ctaBanner?.subtitle} onChange={(v) => hpUpdate('ctaBanner', 'subtitle', v)} rows={2} /></Field>
+                  </div>
+                  <Field label="Primary Button Text"><TextInput value={homePage.ctaBanner?.primaryButtonText} onChange={(v) => hpUpdate('ctaBanner', 'primaryButtonText', v)} /></Field>
+                  <Field label="Primary Button Link"><TextInput value={homePage.ctaBanner?.primaryButtonLink} onChange={(v) => hpUpdate('ctaBanner', 'primaryButtonLink', v)} /></Field>
+                  <Field label="Secondary Button Text"><TextInput value={homePage.ctaBanner?.secondaryButtonText} onChange={(v) => hpUpdate('ctaBanner', 'secondaryButtonText', v)} /></Field>
+                  <Field label="Secondary Button Link"><TextInput value={homePage.ctaBanner?.secondaryButtonLink} onChange={(v) => hpUpdate('ctaBanner', 'secondaryButtonLink', v)} /></Field>
+                </div>
+              </CollapsibleSection>
+
+              {/* ── Bottom Save ── */}
+              <div className="flex justify-end pt-2">
+                <SaveButton onClick={() => save('homePage', homePage, 'Homepage')} saving={saving} label="Save All Homepage Changes" />
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════
+              BRANDING TAB
+              ══════════════════════════════════════════════════════ */}
+          {activeTab === 'branding' && (
+            <Card>
+              <h3 className="text-lg font-bold text-gray-900 mb-6">Branding</h3>
+              <div className="space-y-4">
+                <Field label="Site Name"><TextInput value={branding.siteName} onChange={(v) => setBranding(prev => ({ ...prev, siteName: v }))} /></Field>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field label="Logo URL"><TextInput value={branding.logo?.url} onChange={(v) => setBranding(prev => ({ ...prev, logo: { ...prev.logo, url: v } }))} placeholder="https://..." /></Field>
+                  <Field label="Favicon URL"><TextInput value={branding.favicon?.url} onChange={(v) => setBranding(prev => ({ ...prev, favicon: { ...prev.favicon, url: v } }))} placeholder="https://..." /></Field>
+                </div>
+              </div>
+              <div className="pt-6 border-t mt-6 flex justify-end">
+                <SaveButton onClick={() => save('branding', branding, 'Branding')} saving={saving} />
+              </div>
+            </Card>
+          )}
+
+          {/* ══════════════════════════════════════════════════════
+              BANNERS TAB
+              ══════════════════════════════════════════════════════ */}
+          {activeTab === 'banners' && (
+            <Card>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-gray-900">Banners</h3>
+                <button onClick={handleAddBanner} className="text-sm text-amber-600 hover:text-amber-800 font-medium flex items-center gap-1"><FiPlus className="w-4 h-4" /> Add Banner</button>
+              </div>
+              <div className="space-y-4">
+                {(banners || []).map((banner, i) => (
+                  <div key={banner.id || i} className="border border-gray-100 rounded-xl p-4 space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <TextInput value={banner.title} onChange={(v) => handleBannerChange(i, 'title', v)} placeholder="Banner title" />
+                      <TextInput value={banner.subtitle || banner.description} onChange={(v) => { handleBannerChange(i, 'subtitle', v); handleBannerChange(i, 'description', v); }} placeholder="Subtitle" />
+                      <TextInput value={banner.imageUrl || banner.image} onChange={(v) => { handleBannerChange(i, 'imageUrl', v); handleBannerChange(i, 'image', v); }} placeholder="Image URL" />
+                      <TextInput value={banner.link || banner.buttonLink} onChange={(v) => { handleBannerChange(i, 'link', v); handleBannerChange(i, 'buttonLink', v); }} placeholder="Link" />
+                      <TextInput value={banner.buttonText} onChange={(v) => handleBannerChange(i, 'buttonText', v)} placeholder="Button text" />
+                      <SectionToggle label="Active" enabled={banner.isActive !== false} onChange={(v) => handleBannerChange(i, 'isActive', v)} />
+                    </div>
+                    <div className="flex items-center gap-2 pt-2 border-t border-gray-50">
+                      <button className="text-xs text-gray-400 hover:text-gray-600" onClick={() => handleMoveBanner(i, -1)} disabled={i === 0}><FiArrowUp /></button>
+                      <button className="text-xs text-gray-400 hover:text-gray-600" onClick={() => handleMoveBanner(i, 1)} disabled={i === banners.length - 1}><FiArrowDown /></button>
+                      <button className="text-xs text-red-400 hover:text-red-600 ml-auto flex items-center gap-1" onClick={() => handleRemoveBanner(i)}><FiTrash2 className="w-3 h-3" /> Remove</button>
+                    </div>
+                  </div>
+                ))}
+                {banners.length === 0 && <p className="text-sm text-gray-400 text-center py-6">No banners yet. Click &ldquo;Add Banner&rdquo; to create one.</p>}
+              </div>
+              <div className="pt-6 border-t mt-6 flex justify-end">
+                <SaveButton onClick={async () => {
+                  try {
+                    setSaving(true);
+                    const updated = [...banners];
+                    for (let i = 0; i < updated.length; i++) {
+                      if (updated[i]._file) {
+                        const url = await handleUploadImage(updated[i]._file);
+                        updated[i].imageUrl = url;
+                        delete updated[i]._file; delete updated[i]._preview; delete updated[i]._isNew;
+                      }
+                    }
+                    await adminAPI.updateSettings({ banners: updated });
+                    toast.success('Banners saved!');
+                    setBanners(updated);
+                    refreshSettings();
+                  } catch (e) { toast.error('Failed to save banners'); }
+                  finally { setSaving(false); }
+                }} saving={saving} label="Save Banners" />
+              </div>
+            </Card>
+          )}
+
+          {/* ══════════════════════════════════════════════════════
+              ANNOUNCEMENT TAB
+              ══════════════════════════════════════════════════════ */}
+          {activeTab === 'announcement' && (
+            <Card>
+              <h3 className="text-lg font-bold text-gray-900 mb-1">Announcement Bar</h3>
+              <p className="text-sm text-gray-500 mb-6">Top-of-page banner shown to all visitors.</p>
+              <div className="space-y-4">
+                <SectionToggle label="Enable Announcement Bar" enabled={announcementBar.enabled !== false} onChange={(v) => setAnnouncementBar(prev => ({ ...prev, enabled: v }))} />
+                <Field label="Text"><TextInput value={announcementBar.text} onChange={(v) => setAnnouncementBar(prev => ({ ...prev, text: v }))} placeholder="Free shipping on all orders above ₹999" /></Field>
+                <Field label="Optional Link"><TextInput value={announcementBar.link} onChange={(v) => setAnnouncementBar(prev => ({ ...prev, link: v }))} placeholder="/products" /></Field>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Background Color">
+                    <input type="color" value={announcementBar.backgroundColor || '#10b981'} onChange={(e) => setAnnouncementBar(prev => ({ ...prev, backgroundColor: e.target.value }))} className="h-10 w-16 border border-gray-200 rounded-lg cursor-pointer" />
+                  </Field>
+                  <Field label="Text Color">
+                    <input type="color" value={announcementBar.textColor || '#ffffff'} onChange={(e) => setAnnouncementBar(prev => ({ ...prev, textColor: e.target.value }))} className="h-10 w-16 border border-gray-200 rounded-lg cursor-pointer" />
+                  </Field>
+                </div>
+                <SectionToggle label="Allow users to dismiss" enabled={announcementBar.dismissible !== false} onChange={(v) => setAnnouncementBar(prev => ({ ...prev, dismissible: v }))} />
+              </div>
+              <div className="pt-6 border-t mt-6 flex justify-end">
+                <SaveButton onClick={() => save('announcementBar', announcementBar, 'Announcement')} saving={saving} />
+              </div>
+            </Card>
+          )}
+
+          {/* ══════════════════════════════════════════════════════
+              THEME TAB
+              ══════════════════════════════════════════════════════ */}
+          {activeTab === 'theme' && (
+            <Card>
+              <h3 className="text-lg font-bold text-gray-900 mb-6">Theme Colors</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                {[
+                  { key: 'primaryColor', label: 'Primary', def: '#3B2F2F' },
+                  { key: 'secondaryColor', label: 'Secondary', def: '#E5D3B3' },
+                  { key: 'backgroundColor', label: 'Background', def: '#fafaf9' },
+                  { key: 'textColor', label: 'Text', def: '#1c1917' },
+                ].map(c => (
+                  <Field key={c.key} label={c.label}>
+                    <input type="color" className="h-12 w-full border border-gray-200 rounded-lg cursor-pointer"
+                      value={advancedSettings.theme?.[c.key] || c.def}
+                      onChange={(e) => setAdvancedSettings(prev => ({ ...prev, theme: { ...prev.theme, [c.key]: e.target.value } }))}
+                    />
+                  </Field>
+                ))}
+              </div>
+              <div className="pt-6 border-t mt-6 flex justify-end">
+                <SaveButton onClick={() => saveAdvanced('theme', advancedSettings.theme || {})} saving={saving} />
+              </div>
+            </Card>
+          )}
+
+          {/* ══════════════════════════════════════════════════════
+              POLICIES TAB
+              ══════════════════════════════════════════════════════ */}
+          {activeTab === 'policies' && (
+            <Card>
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Policies & Pages</h3>
+                  <p className="text-sm text-gray-500">Edit structured JSON content for site pages.</p>
+                </div>
+                <div className="flex gap-2">
+                  <select value={selectedPolicy} onChange={(e) => setSelectedPolicy(e.target.value)} className="px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none">
+                    <option value="shippingPolicy">Shipping Policy</option>
+                    <option value="returnsPolicy">Returns Policy</option>
+                    <option value="aboutPage">About Page</option>
+                    <option value="faqPage">FAQ Page</option>
+                    <option value="footerContent">Footer Content</option>
+                  </select>
+                  <SaveButton onClick={() => {
+                    try {
+                      const val = JSON.parse(document.getElementById('policy-editor').value);
+                      saveAdvanced(selectedPolicy, val);
+                    } catch { toast.error('Invalid JSON'); }
+                  }} saving={saving} label="Save" />
+                </div>
+              </div>
+              <textarea
+                id="policy-editor"
+                className="w-full h-[500px] font-mono text-xs p-4 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white transition-colors outline-none"
+                defaultValue={JSON.stringify(advancedSettings[selectedPolicy] || {}, null, 2)}
+                key={selectedPolicy}
+                spellCheck={false}
+              />
+              <p className="text-xs text-gray-400 mt-2">Be careful editing JSON — ensure valid structure with correct quotes and commas.</p>
+            </Card>
+          )}
+
+          {/* ══════════════════════════════════════════════════════
+              CONTACT TAB
+              ══════════════════════════════════════════════════════ */}
+          {activeTab === 'contact' && (
+            <Card>
+              <h3 className="text-lg font-bold text-gray-900 mb-6">Contact Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="md:col-span-2">
+                  <Field label="Business Address"><TextArea value={advancedSettings.contactInfo?.address} onChange={(v) => setAdvancedSettings(prev => ({ ...prev, contactInfo: { ...prev.contactInfo, address: v } }))} /></Field>
+                </div>
+                <Field label="Phone"><TextInput value={advancedSettings.contactInfo?.phone} onChange={(v) => setAdvancedSettings(prev => ({ ...prev, contactInfo: { ...prev.contactInfo, phone: v } }))} /></Field>
+                <Field label="Email"><TextInput value={advancedSettings.contactInfo?.email} onChange={(v) => setAdvancedSettings(prev => ({ ...prev, contactInfo: { ...prev.contactInfo, email: v } }))} /></Field>
+                <div className="md:col-span-2 flex gap-6 pt-2">
+                  {['showAddress', 'showPhone', 'showEmail'].map(k => (
+                    <SectionToggle key={k} label={k.replace('show', 'Show ')} enabled={advancedSettings.contactInfo?.[k] ?? true} onChange={(v) => setAdvancedSettings(prev => ({ ...prev, contactInfo: { ...prev.contactInfo, [k]: v } }))} />
+                  ))}
+                </div>
+              </div>
+              <div className="pt-6 border-t mt-6 flex justify-end">
+                <SaveButton onClick={() => saveAdvanced('contactInfo', advancedSettings.contactInfo)} saving={saving} />
+              </div>
+            </Card>
+          )}
+
+          {/* ══════════════════════════════════════════════════════
+              SYSTEM TAB
+              ══════════════════════════════════════════════════════ */}
+          {activeTab === 'system' && (
+            <Card>
+              <h3 className="text-lg font-bold text-gray-900 mb-6">System</h3>
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                <div>
+                  <h4 className="font-semibold text-gray-800 text-sm">Maintenance Mode</h4>
+                  <p className="text-xs text-gray-500">Temporarily disable the storefront.</p>
+                </div>
+                <SectionToggle label="" enabled={advancedSettings.maintenanceMode?.enabled ?? false} onChange={(v) => setAdvancedSettings(prev => ({ ...prev, maintenanceMode: { ...prev.maintenanceMode, enabled: v } }))} />
+              </div>
+              {advancedSettings.maintenanceMode?.enabled && (
+                <div className="mt-4">
+                  <Field label="Maintenance Message"><TextArea value={advancedSettings.maintenanceMode?.message} onChange={(v) => setAdvancedSettings(prev => ({ ...prev, maintenanceMode: { ...prev.maintenanceMode, message: v } }))} rows={2} /></Field>
+                </div>
+              )}
+              <div className="pt-6 border-t mt-6 flex justify-end">
+                <SaveButton onClick={() => saveAdvanced('maintenanceMode', advancedSettings.maintenanceMode)} saving={saving} />
+              </div>
+            </Card>
+          )}
+
+        </div>
+      </div>
+    </AdminLayout>
+  );
 }
 

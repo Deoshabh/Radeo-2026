@@ -1,4 +1,118 @@
 export const SITE_SETTINGS_DEFAULTS = {
+  /* ════════════════════════════════════════════════════════════
+     HOME PAGE — All sections editable from Admin CMS
+     ════════════════════════════════════════════════════════════ */
+  homePage: {
+    hero: {
+      enabled: true,
+      eyebrow: 'Est. 2008 — Handcrafted in Agra',
+      titleLine1: 'Where Craft',
+      titleLine2: 'Becomes',
+      titleLine3: 'Legacy',
+      description: 'Each pair is shaped by sixteen years of mastery — hand-lasted, hand-stitched, and finished to an heirloom standard that only improves with age.',
+      primaryButtonText: 'Explore Collection',
+      primaryButtonLink: '/products',
+      secondaryButtonText: 'Our Process',
+      secondaryButtonLink: '#craft',
+      image: '',
+      stats: [
+        { label: 'Years', value: 16, suffix: '+' },
+        { label: 'Pairs Crafted', value: 48, suffix: 'K+' },
+        { label: 'Artisans', value: 12, suffix: '' },
+      ],
+    },
+    marquee: {
+      enabled: true,
+      text: 'Full-Grain Leather\u2002◆\u2002Goodyear Welt\u2002◆\u2002Hand-Burnished\u2002◆\u2002Free Shipping in India\u2002◆\u2002Lifetime Resoling\u2002◆\u2002Cork Footbed\u2002◆\u2002Handcrafted in Agra',
+    },
+    collection: {
+      enabled: true,
+      label: 'Curated Selection',
+      title: 'The Collection',
+      useRealProducts: true,
+      productLimit: 4,
+      productSelection: 'latest',
+      manualProductIds: [],
+    },
+    craft: {
+      enabled: true,
+      label: 'Our Process',
+      titleLine1: 'The Art of',
+      titleLine2: 'Shoemaking',
+      images: [
+        { id: 'craft-1', url: '', alt: 'Artisan hand-stitching leather' },
+        { id: 'craft-2', url: '', alt: 'Workshop overview' },
+        { id: 'craft-3', url: '', alt: 'Shoe lasting process' },
+        { id: 'craft-4', url: '', alt: 'Hand burnishing finish' },
+      ],
+      features: [
+        { num: '01', name: 'Goodyear Welt', desc: 'A 200-year-old construction method that lets the sole be replaced — extending every pair\'s life by decades.' },
+        { num: '02', name: 'Hand-Burnished', desc: 'Each shoe is burnished by hand, giving the leather a rich, luminous patina unique to its wearer.' },
+        { num: '03', name: 'Cork Insole', desc: 'A natural cork footbed moulds to your foot over time, providing bespoke comfort with every step.' },
+        { num: '04', name: 'Full-Grain', desc: 'Only the finest full-grain hides are selected — sourced from heritage tanneries across three continents.' },
+      ],
+    },
+    heritage: {
+      enabled: true,
+      label: 'Our Heritage',
+      titleLine1: 'Crafted in',
+      titleLine2: 'Agra',
+      description: 'From the city of the Taj Mahal — Agra has been the heart of India\'s leather craft for centuries. RADEO continues this tradition, blending Mughal-era artisanship with contemporary design in every pair we create.',
+      image: '',
+      points: [
+        { icon: '🏛️', title: 'Heritage City', desc: 'Agra\'s leather craft tradition spans over 400 years, rooted in Mughal artisanship.' },
+        { icon: '✋', title: 'Master Craftsmen', desc: 'Our karigars (artisans) carry generations of skill passed down through families.' },
+        { icon: '🌿', title: 'Locally Sourced', desc: 'Premium hides sourced from India\'s finest tanneries in Kanpur and Chennai.' },
+      ],
+    },
+    story: {
+      enabled: true,
+      label: 'Our Story',
+      titleLine1: 'Born From',
+      titleLine2: 'Passion',
+      paragraphs: [
+        'Founded in 2008, RADEO started as a small atelier in Agra with a singular vision — to create leather shoes that rival the finest European makers, rooted in Indian craftsmanship.',
+        'Today, our twelve artisans continue that tradition. Every pair passes through over 200 hand operations before it earns the RADEO name.',
+      ],
+      quote: 'A great shoe isn\'t made — it\'s born. Every cut, every stitch, every burnish is a conversation between the artisan and the leather.',
+      image: '',
+      ctaText: 'Our Story',
+      ctaLink: '/about',
+    },
+    testimonials: {
+      enabled: true,
+      items: [
+        {
+          id: 'testimonial-1',
+          text: 'The Langham Oxford is, without exaggeration, the finest shoe I have worn. The leather develops a patina that tells your story. Exceptional.',
+          author: 'Arjun Mehta, Mumbai',
+          rating: 5,
+        },
+        {
+          id: 'testimonial-2',
+          text: 'I\'ve worn bespoke from London and Florence. RADEO stands shoulder to shoulder with the best — at a fraction of the price. Truly remarkable craftsmanship.',
+          author: 'Vikram Singh, New Delhi',
+          rating: 5,
+        },
+        {
+          id: 'testimonial-3',
+          text: 'Every detail speaks of care. From the unboxing ritual to the first step on pavement — this is what luxury should feel like. My fourth pair.',
+          author: 'Priya Sharma, Bangalore',
+          rating: 5,
+        },
+      ],
+    },
+    ctaBanner: {
+      enabled: true,
+      titleLine1: 'Step Into',
+      titleLine2: 'Legacy',
+      subtitle: 'Handcrafted to order. Delivered to your door. Free shipping across India.',
+      primaryButtonText: 'Shop Collection',
+      primaryButtonLink: '/products',
+      secondaryButtonText: 'Book an Appointment',
+      secondaryButtonLink: '/contact',
+    },
+  },
   homeSections: {
     heroSection: {
       enabled: true,

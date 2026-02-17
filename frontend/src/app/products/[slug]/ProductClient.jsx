@@ -126,13 +126,13 @@ export default function ProductClient({ product }) {
     return (
         <>
             <ProductMetadata product={product} />
-            <div className="min-h-screen bg-primary-50 pt-24">
-                <div className="container-custom section-padding">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div className="min-h-screen bg-[#faf8f4] pt-24">
+                <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-8 lg:py-12">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
                         {/* Image Gallery */}
                         <div className="space-y-4">
                             {/* Main Image */}
-                            <div className="relative aspect-square bg-white rounded-lg overflow-hidden group">
+                            <div className="relative aspect-square bg-white overflow-hidden group border border-[#e8e0d0]">
                                 <Image
                                     src={filteredImages[selectedImage]?.url || filteredImages[selectedImage] || '/placeholder.jpg'}
                                     alt={product.name}
@@ -147,14 +147,14 @@ export default function ProductClient({ product }) {
                                     <>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); prevImage(); }}
-                                            className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-primary-900 p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+                                            className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white text-[#2a1a0a] p-2.5 opacity-0 group-hover:opacity-100 transition-all duration-200 z-10 border border-[#e8e0d0]"
                                             aria-label="Previous image"
                                         >
                                             <FiChevronLeft className="w-5 h-5" />
                                         </button>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); nextImage(); }}
-                                            className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-primary-900 p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white text-[#2a1a0a] p-2.5 opacity-0 group-hover:opacity-100 transition-all duration-200 z-10 border border-[#e8e0d0]"
                                             aria-label="Next image"
                                         >
                                             <FiChevronRight className="w-5 h-5" />
@@ -168,10 +168,10 @@ export default function ProductClient({ product }) {
                             {product.images360 && product.images360.length > 0 && (
                                 <div className="mt-4">
                                     <div className="flex items-center justify-between mb-2">
-                                        <h3 className="font-semibold text-primary-900 flex items-center gap-2">
-                                            <FiRotateCw /> 360° View
+                                        <h3 className="text-[11px] font-semibold text-[#2a1a0a] flex items-center gap-2 uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>
+                                            <FiRotateCw className="w-3.5 h-3.5" /> 360° View
                                         </h3>
-                                        <span className="text-xs text-primary-500">Drag to rotate</span>
+                                        <span className="text-[10px] text-[#8a7460] uppercase tracking-wider" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>Drag to rotate</span>
                                     </div>
                                     <Product360Viewer
                                         images={product.images360.map(img => img.url)}
@@ -188,7 +188,7 @@ export default function ProductClient({ product }) {
                                         <button
                                             key={idx}
                                             onClick={() => setSelectedImage(idx)}
-                                            className={`relative aspect-square bg-white rounded-lg overflow-hidden border-2 transition-all ${selectedImage === idx ? 'border-brand-brown' : 'border-transparent hover:border-primary-300'
+                                            className={`relative aspect-square bg-white overflow-hidden border-2 transition-all ${selectedImage === idx ? 'border-[#c9a96e]' : 'border-transparent hover:border-[#e8e0d0]'
                                                 }`}
                                         >
                                             <Image
@@ -208,43 +208,43 @@ export default function ProductClient({ product }) {
                         <div className="space-y-6">
                             {/* Category & Name */}
                             <div>
-                                <p className="text-sm uppercase tracking-wider text-primary-600 mb-2">
+                                <p className="text-[11px] uppercase tracking-[0.2em] text-[#c9a96e] mb-3 font-medium" style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>
                                     {product.category?.name}
                                 </p>
-                                <h1 className="font-serif text-4xl lg:text-5xl font-bold text-primary-900 mb-4">
+                                <h1 className="text-3xl lg:text-4xl font-bold text-[#2a1a0a] mb-4" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>
                                     {product.name}
                                 </h1>
 
                                 {/* Price with Discount Display */}
                                 {product.comparePrice && product.comparePrice > product.price ? (
                                     <div className="flex items-center gap-3 flex-wrap">
-                                        <p className="text-3xl font-bold text-green-600">
+                                        <p className="text-2xl font-bold text-[#2a1a0a]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>
                                             ₹{product.price?.toLocaleString('en-IN')}
                                         </p>
-                                        <p className="text-xl text-gray-500 line-through">
+                                        <p className="text-lg text-[#8a7460] line-through" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>
                                             ₹{product.comparePrice?.toLocaleString('en-IN')}
                                         </p>
-                                        <span className="bg-red-500 text-white text-sm font-bold px-3 py-1.5 rounded-full">
+                                        <span className="bg-[#2a1a0a] text-[#f2ede4] text-[10px] font-bold px-3 py-1 uppercase tracking-wider" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>
                                             {Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)}% OFF
                                         </span>
                                     </div>
                                 ) : (
-                                    <p className="text-3xl font-bold text-brand-brown">
+                                    <p className="text-2xl font-bold text-[#2a1a0a]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>
                                         ₹{product.price?.toLocaleString('en-IN')}
                                     </p>
                                 )}
                             </div>
 
                             {/* Description */}
-                            <p className="text-primary-700 leading-relaxed">
+                            <p className="text-[#5c3d1e] leading-relaxed text-lg" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>
                                 {product.description}
                             </p>
 
                             {/* Color Selection */}
                             {product.colors && product.colors.length > 0 && (
                                 <div>
-                                    <label className="block text-sm font-medium text-primary-900 mb-3">
-                                        Select Color: <span className="capitalize text-brand-brown">{getColorName(selectedColor)}</span>
+                                    <label className="block text-[11px] font-medium text-[#2a1a0a] mb-3 uppercase tracking-[0.15em]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>
+                                        Color: <span className="text-[#c9a96e] capitalize normal-case tracking-normal">{getColorName(selectedColor)}</span>
                                     </label>
                                     <div className="flex flex-wrap gap-3">
                                         {product.colors.map((color, idx) => {
@@ -275,8 +275,8 @@ export default function ProductClient({ product }) {
                             {/* Size Selection */}
                             {product.sizes && product.sizes.length > 0 && (
                                 <div>
-                                    <label className="block text-sm font-medium text-primary-900 mb-3">
-                                        Select Size (UK)
+                                    <label className="block text-[11px] font-medium text-[#2a1a0a] mb-3 uppercase tracking-[0.15em]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>
+                                        Size (UK)
                                     </label>
                                     <div className="flex flex-wrap gap-3">
                                         {product.sizes.map((sizeItem, idx) => {
@@ -287,12 +287,13 @@ export default function ProductClient({ product }) {
                                                     key={idx}
                                                     onClick={() => setSelectedSize(sizeValue)}
                                                     disabled={stock !== null && stock === 0}
-                                                    className={`px-6 py-3 border-2 rounded-lg font-medium transition-all ${selectedSize === sizeValue
-                                                        ? 'border-brand-brown bg-brand-brown text-white'
+                                                    className={`px-5 py-2.5 border font-medium transition-all text-sm ${selectedSize === sizeValue
+                                                        ? 'border-[#2a1a0a] bg-[#2a1a0a] text-[#f2ede4]'
                                                         : stock === 0
-                                                            ? 'border-primary-200 bg-primary-100 text-primary-400 cursor-not-allowed'
-                                                            : 'border-primary-200 hover:border-brand-brown'
+                                                            ? 'border-[#e8e0d0] bg-[#f2ede4] text-[#c4b8a4] cursor-not-allowed'
+                                                            : 'border-[#e8e0d0] hover:border-[#2a1a0a] text-[#2a1a0a]'
                                                         }`}
+                                                    style={{ fontFamily: "var(--font-dm-mono, monospace)" }}
                                                 >
                                                     {sizeValue}
                                                     {stock !== null && stock === 0 && ' (Out of Stock)'}
@@ -304,82 +305,84 @@ export default function ProductClient({ product }) {
                             )}
 
                             {/* Stock Status */}
-                            <div className={`flex items-center gap-2 text-sm ${product.inStock ? 'text-green-600' : 'text-red-600'}`}>
+                            <div className={`flex items-center gap-2 text-[11px] uppercase tracking-[0.1em] ${product.inStock ? 'text-[#2a6a2a]' : 'text-[#8a2a2a]'}`} style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>
                                 {product.inStock ? (
                                     <>
-                                        <FiCheck className="w-5 h-5" />
-                                        <span className="font-medium">In Stock - Made to Order</span>
+                                        <FiCheck className="w-4 h-4" />
+                                        <span className="font-medium">In Stock — Made to Order</span>
                                     </>
                                 ) : (
                                     <span className="font-medium">Currently Unavailable</span>
                                 )}
                             </div>
 
-                            {/* Action Buttons - Always Show */}
-                            <div className="flex gap-4">
+                            {/* Action Buttons */}
+                            <div className="flex gap-3">
                                 <button
                                     onClick={handleBuyNow}
                                     disabled={!product.inStock}
-                                    className={`flex-1 text-lg py-4 ${product.inStock
-                                        ? 'btn btn-primary'
-                                        : 'bg-primary-200 text-primary-500 cursor-not-allowed hover:bg-primary-200'
+                                    className={`flex-1 py-4 text-[12px] uppercase tracking-[0.2em] font-medium transition-all ${product.inStock
+                                        ? 'bg-[#2a1a0a] text-[#f2ede4] hover:bg-[#5c3d1e]'
+                                        : 'bg-[#e8e0d0] text-[#8a7460] cursor-not-allowed'
                                         }`}
+                                    style={{ fontFamily: "var(--font-dm-mono, monospace)" }}
                                 >
                                     {product.inStock ? 'Buy Now' : 'Out of Stock'}
                                 </button>
                                 <button
                                     onClick={handleAddToCart}
                                     disabled={!product.inStock}
-                                    className={`flex-1 text-lg py-4 flex items-center justify-center gap-2 ${product.inStock
-                                        ? 'btn btn-secondary'
-                                        : 'bg-primary-200 text-primary-500 cursor-not-allowed hover:bg-primary-200'
+                                    className={`flex-1 py-4 text-[12px] uppercase tracking-[0.2em] font-medium flex items-center justify-center gap-2 transition-all ${product.inStock
+                                        ? 'border border-[#2a1a0a] text-[#2a1a0a] hover:bg-[#2a1a0a] hover:text-[#f2ede4]'
+                                        : 'border border-[#e8e0d0] text-[#8a7460] cursor-not-allowed'
                                         }`}
+                                    style={{ fontFamily: "var(--font-dm-mono, monospace)" }}
                                 >
-                                    <FiShoppingCart />
+                                    <FiShoppingCart className="w-4 h-4" />
                                     {product.inStock ? 'Add to Cart' : 'Unavailable'}
                                 </button>
                                 <button
                                     onClick={handleToggleWishlist}
-                                    className={`btn ${inWishlist ? 'bg-red-500 text-white hover:bg-red-600' : 'btn-ghost'} px-6 py-4`}
+                                    className={`px-5 py-4 border transition-all ${inWishlist ? 'bg-[#2a1a0a] text-[#f2ede4] border-[#2a1a0a]' : 'border-[#e8e0d0] text-[#8a7460] hover:border-[#2a1a0a] hover:text-[#2a1a0a]'}`}
                                 >
-                                    <FiHeart className={`w-6 h-6 ${inWishlist ? 'fill-current' : ''}`} />
+                                    <FiHeart className={`w-5 h-5 ${inWishlist ? 'fill-current' : ''}`} />
                                 </button>
                             </div>
 
                             {/* Trust Badges */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 border-t border-primary-200">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 border-t border-[#e8e0d0]">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                                        <FiAward className="w-5 h-5 text-brand-brown" />
+                                    <div className="w-10 h-10 bg-[#f2ede4] flex items-center justify-center">
+                                        <FiAward className="w-5 h-5 text-[#c9a96e]" />
                                     </div>
                                     <div>
-                                        <p className="font-medium text-sm">Handcrafted</p>
-                                        <p className="text-xs text-primary-600">Premium Quality</p>
+                                        <p className="font-medium text-sm text-[#2a1a0a]">Handcrafted</p>
+                                        <p className="text-[10px] text-[#8a7460] uppercase tracking-wider" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>Premium Quality</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                                        <FiTruck className="w-5 h-5 text-brand-brown" />
+                                    <div className="w-10 h-10 bg-[#f2ede4] flex items-center justify-center">
+                                        <FiTruck className="w-5 h-5 text-[#c9a96e]" />
                                     </div>
                                     <div>
-                                        <p className="font-medium text-sm">Free Delivery</p>
-                                        <p className="text-xs text-primary-600">7-10 Business Days</p>
+                                        <p className="font-medium text-sm text-[#2a1a0a]">Free Delivery</p>
+                                        <p className="text-[10px] text-[#8a7460] uppercase tracking-wider" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>7-10 Business Days</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                                        <FiShield className="w-5 h-5 text-brand-brown" />
+                                    <div className="w-10 h-10 bg-[#f2ede4] flex items-center justify-center">
+                                        <FiShield className="w-5 h-5 text-[#c9a96e]" />
                                     </div>
                                     <div>
-                                        <p className="font-medium text-sm">Premium Leather</p>
-                                        <p className="text-xs text-primary-600">Finest Materials</p>
+                                        <p className="font-medium text-sm text-[#2a1a0a]">Premium Leather</p>
+                                        <p className="text-[10px] text-[#8a7460] uppercase tracking-wider" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>Finest Materials</p>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Made to Order Notice */}
-                            <div className="bg-brand-cream/30 rounded-lg p-4 border border-brand-tan/20">
-                                <p className="text-sm text-primary-800">
+                            <div className="bg-[#f2ede4] p-4 border border-[#e8e0d0]">
+                                <p className="text-sm text-[#5c3d1e]" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>
                                     <strong>Made to Order:</strong> This product is custom-crafted upon order.
                                     Please allow 7-10 business days for production and delivery.
                                 </p>
@@ -389,52 +392,29 @@ export default function ProductClient({ product }) {
 
                     {/* Product Details Tabs */}
                     <div className="mt-16">
-                        <div className="border-b border-primary-200 mb-8">
+                        <div className="border-b border-[#e8e0d0] mb-8">
                             <div className="flex gap-8">
-                                <button
-                                    onClick={() => setActiveTab('description')}
-                                    className={`pb-4 font-medium transition-colors ${activeTab === 'description'
-                                        ? 'border-b-2 border-brand-brown text-brand-brown'
-                                        : 'text-primary-600 hover:text-primary-900'
-                                        }`}
-                                >
-                                    Description
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('specifications')}
-                                    className={`pb-4 font-medium transition-colors ${activeTab === 'specifications'
-                                        ? 'border-b-2 border-brand-brown text-brand-brown'
-                                        : 'text-primary-600 hover:text-primary-900'
-                                        }`}
-                                >
-                                    Specifications
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('care')}
-                                    className={`pb-4 font-medium transition-colors ${activeTab === 'care'
-                                        ? 'border-b-2 border-brand-brown text-brand-brown'
-                                        : 'text-primary-600 hover:text-primary-900'
-                                        }`}
-                                >
-                                    Care Instructions
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('reviews')}
-                                    className={`pb-4 font-medium transition-colors ${activeTab === 'reviews'
-                                        ? 'border-b-2 border-brand-brown text-brand-brown'
-                                        : 'text-primary-600 hover:text-primary-900'
-                                        }`}
-                                >
-                                    Reviews
-                                </button>
+                                {['description', 'specifications', 'care', 'reviews'].map(tab => (
+                                    <button
+                                        key={tab}
+                                        onClick={() => setActiveTab(tab)}
+                                        className={`pb-4 text-[11px] uppercase tracking-[0.2em] font-medium transition-colors ${activeTab === tab
+                                            ? 'border-b-2 border-[#2a1a0a] text-[#2a1a0a]'
+                                            : 'text-[#8a7460] hover:text-[#2a1a0a]'
+                                            }`}
+                                        style={{ fontFamily: "var(--font-dm-mono, monospace)" }}
+                                    >
+                                        {tab === 'care' ? 'Care' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
                         <div className="prose max-w-none">
                             {activeTab === 'description' && (
                                 <div>
-                                    <h3 className="font-serif text-2xl font-bold mb-4">Product Description</h3>
-                                    <p className="text-primary-700 leading-relaxed">
+                                    <h3 className="text-2xl font-bold mb-4 text-[#2a1a0a]" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>Product Description</h3>
+                                    <p className="text-[#5c3d1e] leading-relaxed text-lg" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>
                                         {product.description || 'Crafted with precision and attention to detail, this shoe embodies timeless elegance and superior craftsmanship.'}
                                     </p>
                                 </div>
@@ -442,8 +422,8 @@ export default function ProductClient({ product }) {
 
                             {activeTab === 'specifications' && (
                                 <div>
-                                    <h3 className="font-serif text-2xl font-bold mb-4">Specifications</h3>
-                                    <ul className="space-y-2 text-primary-700">
+                                    <h3 className="text-2xl font-bold mb-4 text-[#2a1a0a]" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>Specifications</h3>
+                                    <ul className="space-y-2 text-[#5c3d1e]" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>
                                         {product.specifications?.material && (
                                             <li><strong>Material:</strong> {product.specifications.material}</li>
                                         )}
@@ -474,18 +454,18 @@ export default function ProductClient({ product }) {
 
                             {activeTab === 'care' && (
                                 <div>
-                                    <h3 className="font-serif text-2xl font-bold mb-4">Care Instructions</h3>
+                                    <h3 className="text-2xl font-bold mb-4 text-[#2a1a0a]" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>Care Instructions</h3>
                                     {product.careInstructions && product.careInstructions.length > 0 ? (
-                                        <ul className="space-y-2 text-primary-700">
+                                        <ul className="space-y-2 text-[#5c3d1e]" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>
                                             {product.careInstructions.map((instruction, index) => (
                                                 <li key={index} className="flex gap-3">
-                                                    <span className="text-brand-brown font-semibold">•</span>
+                                                    <span className="text-[#c9a96e] font-semibold">&bull;</span>
                                                     <span>{instruction}</span>
                                                 </li>
                                             ))}
                                         </ul>
                                     ) : (
-                                        <p className="text-primary-600">No care instructions available for this product.</p>
+                                        <p className="text-[#8a7460]" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>No care instructions available for this product.</p>
                                     )}
                                 </div>
                             )}
@@ -498,7 +478,7 @@ export default function ProductClient({ product }) {
                         </div>
                     </div>
                 </div>
-            </div >
+            </div>
         </>
     );
 }
