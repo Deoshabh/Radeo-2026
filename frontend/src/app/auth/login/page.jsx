@@ -2,14 +2,25 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { isAuthenticated, loading } = useAuth();
 
   useEffect(() => {
-    // Redirect to Firebase authentication
+    if (!loading && isAuthenticated) {
+      router.replace('/');
+      return;
+    }
+
+    // Redirect to Firebase authentication for unauthenticated users
     router.replace('/auth/firebase-login');
-  }, [router]);
+  }, [router, isAuthenticated, loading]);
+
+  if (!loading && isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-white">

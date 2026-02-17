@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FiArrowLeft, FiMail, FiPhone } from 'react-icons/fi';
@@ -16,10 +16,20 @@ import Cookies from 'js-cookie';
 
 export default function FirebaseLoginPage() {
   const router = useRouter();
-  const { updateUser } = useAuth();
+  const { updateUser, isAuthenticated, loading } = useAuth();
   const { getToken } = useRecaptcha();
   const [authMethod, setAuthMethod] = useState('email'); // 'email' or 'phone'
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      router.replace('/');
+    }
+  }, [loading, isAuthenticated, router]);
+
+  if (!loading && isAuthenticated) {
+    return null;
+  }
 
   /**
    * Handle successful Firebase authentication
