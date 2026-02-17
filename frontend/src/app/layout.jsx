@@ -38,10 +38,17 @@ const dmMono = DM_Mono({
   display: 'swap',
 });
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: '#8B4513',
+};
+
 export const metadata = generateSEOMetadata({
   title: 'Radeo - Premium Handcrafted Shoes',
-  description: 'Discover exquisite handcrafted shoes made with premium materials and timeless craftsmanship.',
-  keywords: ['shoes', 'handcrafted', 'premium', 'leather', 'oxford', 'derby', 'brogue', 'loafer'],
+  description: 'Discover exquisite handcrafted shoes made with premium materials and timeless craftsmanship. Shop the finest collection of luxury footwear at Radeo.',
+  keywords: ['shoes', 'handcrafted', 'premium', 'leather', 'oxford', 'derby', 'brogue', 'loafer', 'luxury footwear', 'online shoe store India'],
 });
 
 import QueryProvider from '@/providers/QueryProvider';

@@ -20,9 +20,8 @@ export default function ReviewSection({ productId }) {
   const fetchReviews = useCallback(async (pageNum = 1, sort = 'createdAt') => {
     try {
       setLoading(true);
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
       const response = await fetch(
-        `${API_URL}/api/v1/products/${productId}/reviews?page=${pageNum}&limit=10&sort=${sort}`,
+        `/api/v1/products/${productId}/reviews?page=${pageNum}&limit=10&sort=${sort}`,
         {
           credentials: 'include',
         }

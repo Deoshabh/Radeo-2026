@@ -532,6 +532,88 @@ const SITE_SETTINGS_DEFAULTS = {
     stickyHeader: true,
     headerVariant: 'solid',
   },
+  seoSettings: {
+    global: {
+      siteName: 'Radeo',
+      siteUrl: 'https://radeo.in',
+      defaultOgImage: '/og-image.jpg',
+      twitterHandle: '@radeo_in',
+      googleVerification: '',
+      yandexVerification: '',
+    },
+    pages: {
+      home: {
+        title: 'Radeo - Premium Handcrafted Shoes | Luxury Footwear Online',
+        description: 'Shop premium handcrafted leather shoes at Radeo. Explore our exquisite collection of oxfords, derbys, brogues, loafers and more. Free shipping across India.',
+        keywords: 'premium shoes, handcrafted leather shoes, luxury footwear India, buy shoes online',
+        ogImage: '',
+        noindex: false,
+      },
+      products: {
+        title: 'Shop Premium Shoes',
+        description: 'Browse our complete collection of premium handcrafted shoes. Filter by category, material, color and price. Free shipping on orders across India.',
+        keywords: 'buy shoes online, premium shoes collection, leather shoes India, shop footwear',
+        ogImage: '',
+        noindex: false,
+      },
+      categories: {
+        title: 'Shop by Category',
+        description: 'Explore our premium shoe categories — oxfords, derbys, brogues, loafers, boots and more. Find the perfect handcrafted pair for every occasion.',
+        keywords: 'shoe categories, types of shoes, oxford shoes, derby shoes, brogue shoes, loafers',
+        ogImage: '',
+        noindex: false,
+      },
+      about: {
+        title: 'About Us',
+        description: 'Learn about Radeo — our passion for premium handcrafted shoes, our story, values, and commitment to quality craftsmanship.',
+        keywords: 'about Radeo, handcrafted shoes brand, premium shoe maker India',
+        ogImage: '',
+        noindex: false,
+      },
+      contact: {
+        title: 'Contact Us',
+        description: 'Get in touch with Radeo. Reach out for questions about orders, products, returns or anything else.',
+        keywords: 'contact Radeo, customer support, shoe store contact',
+        ogImage: '',
+        noindex: false,
+      },
+      faq: {
+        title: 'Frequently Asked Questions',
+        description: 'Find answers to common questions about Radeo — orders, shipping, returns, sizing and more.',
+        keywords: 'FAQ, frequently asked questions, shoe sizing help, shipping questions',
+        ogImage: '',
+        noindex: false,
+      },
+      shipping: {
+        title: 'Shipping Information',
+        description: 'Learn about Radeo shipping policies, delivery times, shipping costs, and delivery zones across India.',
+        keywords: 'shipping policy, delivery times, shipping costs India, free shipping shoes',
+        ogImage: '',
+        noindex: false,
+      },
+      returns: {
+        title: 'Return & Refund Policy',
+        description: 'Learn about the Radeo return and refund policy. Easy returns, hassle-free refunds, and our satisfaction guarantee.',
+        keywords: 'return policy, refund policy, easy returns, exchange shoes',
+        ogImage: '',
+        noindex: false,
+      },
+      privacy: {
+        title: 'Privacy Policy',
+        description: 'Read the Radeo privacy policy. Learn how we collect, use, and protect your personal information.',
+        keywords: 'privacy policy, data protection, personal information',
+        ogImage: '',
+        noindex: false,
+      },
+      terms: {
+        title: 'Terms of Service',
+        description: 'Read the Radeo terms of service. Understand the terms and conditions governing the use of our website.',
+        keywords: 'terms of service, terms and conditions, user agreement',
+        ogImage: '',
+        noindex: false,
+      },
+    },
+  },
 };
 
 const SETTING_CATEGORY_MAP = {
@@ -551,6 +633,7 @@ const SETTING_CATEGORY_MAP = {
   returnsPolicy: 'policies',
   maintenanceMode: 'system',
   theme: 'appearance',
+  seoSettings: 'seo',
 };
 
 const PUBLIC_SETTING_KEYS = [
@@ -570,6 +653,7 @@ const PUBLIC_SETTING_KEYS = [
   'returnsPolicy',
   'maintenanceMode',
   'theme',
+  'seoSettings',
 ];
 
 const isKnownSettingKey = (key) => Boolean(SITE_SETTINGS_DEFAULTS[key]);

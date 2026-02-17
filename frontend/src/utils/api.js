@@ -1,13 +1,72 @@
 import axios from "axios";
 import Cookies from "js-cookie";
+import { getApiUrl } from "./getApiUrl";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+// Client-side: "/api/v1" (proxied via Next.js rewrite → no CORS)
+// Server-side: full backend URL for SSR/ISR
+const API_URL = getApiUrl();
+
+/* ═══════════════════════════════════════════════════════════
+   Retry with exponential backoff
+   Retries on network errors and 502/503/504 (server down).
+   ═══════════════════════════════════════════════════════════ */
+const RETRY_CONFIG = {
+  maxRetries: 2,          // up to 2 retries (3 total attempts)
+  baseDelay: 1000,        // 1s → 2s → 4s
+  retryableStatuses: [502, 503, 504],
+};
+
+function isRetryable(error) {
+  // Network error (CORS blocks, DNS fail, server unreachable)
+  if (!error.response && (error.code === 'ERR_NETWORK' || error.message === 'Network Error')) {
+    return true;
+  }
+  // Server error responses that indicate temporary outage
+  if (error.response && RETRY_CONFIG.retryableStatuses.includes(error.response.status)) {
+    return true;
+  }
+  return false;
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Friendly error message for users
+   ═══════════════════════════════════════════════════════════ */
+export function getFriendlyError(error) {
+  if (!error) return 'Something went wrong. Please try again.';
+
+  // Server returned an error message
+  if (error.response?.data?.message) {
+    return error.response.data.message;
+  }
+
+  // Network / CORS / Server down
+  if (!error.response || error.code === 'ERR_NETWORK') {
+    return 'Unable to reach the server. Please check your connection and try again.';
+  }
+
+  const status = error.response?.status;
+  if (status === 502 || status === 503 || status === 504) {
+    return 'Our servers are temporarily unavailable. Please try again in a moment.';
+  }
+  if (status === 429) {
+    return 'Too many requests. Please wait a moment before trying again.';
+  }
+  if (status === 403) {
+    return 'Access denied. Please contact support if this persists.';
+  }
+
+  return error.message || 'Something went wrong. Please try again.';
+}
 
 // Create axios instance
 const api = axios.create({
   baseURL: API_URL,
   withCredentials: true,
+  timeout: 15000, // 15s timeout
   headers: {
     "Content-Type": "application/json",
   },
@@ -20,6 +79,10 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // Initialize retry counter
+    if (config._retryCount === undefined) {
+      config._retryCount = 0;
+    }
     return config;
   },
   (error) => {
@@ -27,39 +90,42 @@ api.interceptors.request.use(
   },
 );
 
-// Response interceptor to handle token refresh
+// Response interceptor: retry with backoff + token refresh
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // If error is 401 and we haven't retried yet
+    // ── Retry on transient failures (502/503/504/network) ──
+    if (isRetryable(error) && originalRequest._retryCount < RETRY_CONFIG.maxRetries) {
+      originalRequest._retryCount += 1;
+      const delay = RETRY_CONFIG.baseDelay * Math.pow(2, originalRequest._retryCount - 1);
+      await sleep(delay);
+      return api(originalRequest);
+    }
+
+    // ── Token refresh on 401 ──
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
-        // Backend sends refreshToken in httpOnly cookie, so we don't need to send it
         const response = await axios.post(
           `${API_URL}/auth/refresh`,
           {},
           {
-            withCredentials: true, // Important: send cookies
+            withCredentials: true,
           },
         );
 
         const { accessToken } = response.data;
-        Cookies.set("accessToken", accessToken, { expires: 1 }); // 1 day
+        Cookies.set("accessToken", accessToken, { expires: 1 });
 
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed - clear tokens
         Cookies.remove("accessToken");
         Cookies.remove("refreshToken");
 
-        // Only redirect to login if:
-        // 1. User is on a protected page route
-        // 2. OR the original request was to a protected API endpoint that requires auth
         if (typeof window !== "undefined") {
           const isProtectedPageRoute = [
             "/checkout",
@@ -67,9 +133,6 @@ api.interceptors.response.use(
             "/profile",
             "/admin",
           ].some((route) => window.location.pathname.startsWith(route));
-
-          // Don't redirect from /cart - let the page handle showing login prompt
-          // Don't redirect from product pages - users should be able to browse
 
           if (isProtectedPageRoute) {
             window.location.href = "/auth/login";
@@ -114,6 +177,7 @@ export const productAPI = {
 export const settingsAPI = {
   getPublicSettings: () => api.get("/settings/public"),
   getPublicCmsPage: (slug) => api.get(`/cms/pages/${slug}`),
+  getPublicSeoSettings: () => api.get("/seo/public"),
 };
 
 export const adminAPI = {
@@ -237,6 +301,10 @@ export const adminAPI = {
     api.get(`/admin/settings/${key}/history`, { params: { limit } }),
   updateSetting: (key, value) => api.put(`/admin/settings/${key}`, { value }),
   resetSetting: (key) => api.post(`/admin/settings/${key}/reset`),
+
+  // SEO
+  getSeoSettings: () => api.get('/admin/seo'),
+  updateSeoSettings: (seoSettings) => api.put('/admin/seo', { seoSettings }),
 };
 
 export const categoryAPI = {

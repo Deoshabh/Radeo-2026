@@ -7,7 +7,7 @@ import { FiArrowLeft, FiMail, FiPhone } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
 import EmailAuth from '@/components/auth/EmailAuth';
 import PhoneAuth from '@/components/auth/PhoneAuth';
-import { authAPI } from '@/utils/api';
+import { authAPI, getFriendlyError } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
 import { loginWithGoogle } from '@/utils/firebaseAuth';
 import { useRecaptcha, RECAPTCHA_ACTIONS } from '@/utils/recaptcha';
@@ -16,10 +16,11 @@ import Cookies from 'js-cookie';
 
 export default function FirebaseLoginPage() {
   const router = useRouter();
-  const { updateUser, isAuthenticated, loading } = useAuth();
+  const { updateUser, isAuthenticated, loading, setLoginInProgress } = useAuth();
   const { getToken } = useRecaptcha();
   const [authMethod, setAuthMethod] = useState('email'); // 'email' or 'phone'
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [syncingBackend, setSyncingBackend] = useState(false);
 
   useEffect(() => {
     if (!loading && isAuthenticated) {
@@ -33,29 +34,35 @@ export default function FirebaseLoginPage() {
 
   /**
    * Handle successful Firebase authentication
-   * Sync Firebase user with backend
-   * 
-   * ✅ SECURITY CHECKS:
-   * - Verify email returned from Firebase isn't empty
-   * - Validate backend response includes correct user email
-   * - Reject if email mismatch between Firebase and backend
+   * Sync Firebase user with backend with retry and clear error feedback
    */
   const handleFirebaseSuccess = async (result) => {
+    const toastId = 'firebase-sync';
     try {
       const { user, token } = result;
 
-      // ✅ SECURITY CHECK #1: Verify Firebase user email
-      if (!user?.email) {
-        toast.error("Unable to retrieve your email from Google. Please try again.");
+      if (!user?.email && !user?.phoneNumber) {
+        toast.error("Unable to retrieve your account info. Please try again.");
         return;
       }
 
+      if (!token) {
+        toast.error("Failed to get authentication token. Please try again.");
+        return;
+      }
 
+      // Show syncing state
+      setSyncingBackend(true);
+      toast.loading('Signing you in...', { id: toastId });
 
-      // Get reCAPTCHA token for backend verification
-      const recaptchaToken = await getToken(RECAPTCHA_ACTIONS.LOGIN);
+      // Get reCAPTCHA token
+      let recaptchaToken;
+      try {
+        recaptchaToken = await getToken(RECAPTCHA_ACTIONS.LOGIN);
+      } catch {
+        // reCAPTCHA is non-critical, continue without it
+      }
 
-      // Validate token before sending
       const payload = {
         firebaseToken: token,
         email: user.email,
@@ -66,66 +73,47 @@ export default function FirebaseLoginPage() {
         recaptchaToken
       };
 
-
-
-      if (!payload.firebaseToken) {
-        toast.error("Failed to get Firebase ID token. Please try again.");
-        return;
-      }
-
-      // Send Firebase token to backend to create/sync user session
+      // API layer handles retries automatically (2 retries with backoff)
       const response = await authAPI.firebaseLogin(payload);
 
-      // ✅ SECURITY CHECK #2: Verify returned user email matches Firebase
       if (response.data?.user) {
-        const backendUserEmail = response.data.user.email;
-        // console.log(`🔐 Backend returned user: ${backendUserEmail}`);
-
-        // CRITICAL: Email must match between Firebase and backend
-        if (backendUserEmail !== user.email) {
-          console.error(`⚠️  EMAIL MISMATCH:`, {
-            firebaseEmail: user.email,
-            backendEmail: backendUserEmail,
-            firebaseUid: user.uid,
-            backendId: response.data.user.id,
-          });
-
-          toast.error(
-            `Email mismatch detected. Firebase: ${user.email}, Backend: ${backendUserEmail}. Please contact support.`,
-          );
+        // Security: email must match (if email-based auth)
+        if (user.email && response.data.user.email && response.data.user.email !== user.email) {
+          toast.error('Account mismatch detected. Please contact support.', { id: toastId });
           return;
         }
 
-        // ✅ ALL CHECKS PASSED: Store token and update auth context
+        // Store token and update context
         if (response.data.accessToken) {
           Cookies.set('accessToken', response.data.accessToken, { expires: 1 });
         }
         updateUser(response.data.user);
-        toast.success(`Logged in as ${user.email}`);
+        toast.success(`Welcome back, ${response.data.user.name || user.email || 'User'}!`, { id: toastId });
         router.push('/');
       } else {
-        toast.error('Failed to sync with server. Please try again.');
+        toast.error('Unexpected server response. Please try again.', { id: toastId });
       }
     } catch (error) {
       console.error('Backend sync error:', {
         status: error.response?.status,
         message: error.message,
-        responseData: error.response?.data,
-        errorCode: error.code,
+        code: error.code,
       });
 
-      // Check if error is FIREBASE_UID_MISMATCH (account hijack prevention)
+      // Firebase UID mismatch (security)
       if (error.response?.data?.error === 'FIREBASE_UID_MISMATCH') {
         toast.error(
-          'Account security check failed. This email is already linked to another account. ' +
-          'If this is your account, please contact support.'
+          'This email is already linked to another account. Please contact support.',
+          { id: toastId, duration: 6000 }
         );
         return;
       }
 
-      // Show detailed error if available
-      const errorMessage = error.response?.data?.message || 'Failed to sync with server. Please try again.';
-      toast.error(errorMessage);
+      // Show user-friendly error
+      toast.error(getFriendlyError(error), { id: toastId, duration: 5000 });
+    } finally {
+      setSyncingBackend(false);
+      setLoginInProgress(false);
     }
   };
 
@@ -134,36 +122,44 @@ export default function FirebaseLoginPage() {
    */
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
+    setLoginInProgress(true); // Prevent AuthContext from double-syncing
 
     try {
       const result = await loginWithGoogle();
 
-
-
       if (!result) {
-        toast.error('No response from Google sign-in');
+        toast.error('No response from Google. Please try again.');
         setGoogleLoading(false);
+        setLoginInProgress(false);
         return;
       }
 
       if (!result.success) {
-        console.error('Google sign-in failed:', result.error);
+        // User cancelled the popup — don't show an error
+        if (result.code === 'auth/popup-closed-by-user' || result.code === 'auth/cancelled-popup-request') {
+          setGoogleLoading(false);
+          setLoginInProgress(false);
+          return;
+        }
         toast.error(result.error || 'Google sign-in failed');
         setGoogleLoading(false);
+        setLoginInProgress(false);
         return;
       }
 
       if (!result.token) {
-        console.error('⚠️  Google sign-in returned no token:', result);
         toast.error('Failed to get authentication token from Google');
         setGoogleLoading(false);
+        setLoginInProgress(false);
         return;
       }
 
+      // handleFirebaseSuccess resets loginInProgress in its finally block
       await handleFirebaseSuccess(result);
     } catch (error) {
       console.error('Google sign-in exception:', error);
-      toast.error('An error occurred during Google sign-in');
+      toast.error('An unexpected error occurred. Please try again.');
+      setLoginInProgress(false);
     } finally {
       setGoogleLoading(false);
     }
@@ -232,12 +228,16 @@ export default function FirebaseLoginPage() {
               {/* Google Sign-In Button */}
               <button
                 onClick={handleGoogleSignIn}
-                disabled={googleLoading}
+                disabled={googleLoading || syncingBackend}
                 className="w-full flex items-center justify-center gap-3 px-4 py-3 border-2 border-primary-200 rounded-lg hover:bg-primary-50 hover:border-primary-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <FcGoogle className="w-5 h-5" />
+                {syncingBackend ? (
+                  <div className="w-5 h-5 border-2 border-primary-300 border-t-brand-brown rounded-full animate-spin" />
+                ) : (
+                  <FcGoogle className="w-5 h-5" />
+                )}
                 <span className="font-medium text-primary-900">
-                  {googleLoading ? 'Connecting to Google...' : 'Continue with Google'}
+                  {syncingBackend ? 'Connecting...' : googleLoading ? 'Opening Google...' : 'Continue with Google'}
                 </span>
               </button>
             </div>

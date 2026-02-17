@@ -14,13 +14,21 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-// Initialize Firebase (singleton pattern)
+// Validate critical Firebase config (only on client — SSR will have undefined values
+// since NEXT_PUBLIC_* is inlined at build time, which is fine for the server).
+if (typeof window !== "undefined" && !firebaseConfig.apiKey) {
+  console.error(
+    "⚠️ Firebase API key is missing! Ensure NEXT_PUBLIC_FIREBASE_API_KEY " +
+    "is set at BUILD TIME in your Dokploy/Nixpacks environment variables."
+  );
+}
+
+// Initialize Firebase (singleton pattern — client-side only)
 let app;
 let auth;
 let analytics;
 
 if (typeof window !== "undefined") {
-  // Only initialize on client side
   app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
   auth = getAuth(app);
 

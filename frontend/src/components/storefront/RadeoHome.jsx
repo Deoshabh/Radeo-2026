@@ -71,9 +71,9 @@ export default function RadeoHome() {
     if (!hp.collection.enabled || !hp.collection.useRealProducts) return;
     const limit = hp.collection.productLimit || 4;
     const selection = hp.collection.productSelection || 'latest';
-    let url = `${process.env.NEXT_PUBLIC_API_URL}/products?limit=${limit}`;
-    if (selection === 'top-rated') url = `${process.env.NEXT_PUBLIC_API_URL}/products/top-rated?limit=${limit}`;
-    if (selection === 'featured') url = `${process.env.NEXT_PUBLIC_API_URL}/products?featured=true&limit=${limit}`;
+    let url = `/api/v1/products?limit=${limit}`;
+    if (selection === 'top-rated') url = `/api/v1/products/top-rated?limit=${limit}`;
+    if (selection === 'featured') url = `/api/v1/products?featured=true&limit=${limit}`;
 
     fetch(url).then(r => r.json()).then(data => {
       const prods = Array.isArray(data.products) ? data.products : (Array.isArray(data) ? data : []);

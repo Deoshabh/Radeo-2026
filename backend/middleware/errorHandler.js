@@ -12,6 +12,25 @@ const notFoundHandler = (req, res, next) => {
 
 // Global Error Handler
 const errorHandler = (err, req, res, next) => {
+  // ── Ensure CORS headers are present even on error responses ──
+  // When the error handler runs, the cors middleware may not have set
+  // headers yet (e.g. on a CORS origin callback error).  Re-apply them
+  // so the browser can still read the JSON error body.
+  const origin = req.headers.origin;
+  if (origin && !res.headersSent) {
+    // Mirror the origin if it was allowed (simple check)
+    const allowed = [
+      'https://radeo.in',
+      'https://www.radeo.in',
+      process.env.FRONTEND_URL,
+      ...(process.env.CORS_ALLOWED_ORIGINS ? process.env.CORS_ALLOWED_ORIGINS.split(',') : []),
+    ].filter(Boolean);
+    if (allowed.includes(origin) || process.env.NODE_ENV === 'development') {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+    }
+  }
+
   // Log error for debugging
   // Filter out bot noise / known scanners
   const ignorePatterns = [

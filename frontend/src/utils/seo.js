@@ -116,10 +116,14 @@ export const generateMetadata = ({
  * Generate product page metadata
  */
 export const generateProductMetadata = (product) => {
+  const imageUrl = typeof product.images?.[0] === 'string'
+    ? product.images[0]
+    : product.images?.[0]?.url || SITE_IMAGE;
+
   return generateMetadata({
     title: product.name,
     description: product.description?.substring(0, 160) || SITE_DESCRIPTION,
-    image: product.images?.[0] || SITE_IMAGE,
+    image: imageUrl,
     url: `${SITE_URL}/products/${product.slug}`,
     type: "product",
     keywords: [

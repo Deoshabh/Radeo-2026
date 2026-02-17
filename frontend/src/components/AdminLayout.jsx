@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import anime from 'animejs';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FiGrid, FiPackage, FiShoppingBag, FiUsers, FiTag, FiPercent, FiStar, FiArrowLeft, FiSettings } from 'react-icons/fi';
+import { FiGrid, FiPackage, FiShoppingBag, FiUsers, FiTag, FiPercent, FiStar, FiArrowLeft, FiSettings, FiSearch } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 import { AdminProvider, useAdmin } from '@/context/AdminContext';
 import AdminCommandPalette from '@/components/admin/AdminCommandPalette';
@@ -135,6 +135,7 @@ function AdminLayoutContent({ children }) {
     { href: '/admin/users', icon: FiUsers, label: 'Users' },
     { href: '/admin/categories', icon: FiTag, label: 'Categories' },
     { href: '/admin/coupons', icon: FiPercent, label: 'Coupons' },
+    { href: '/admin/seo', icon: FiSearch, label: 'SEO' },
     { href: '/admin/cms', icon: FiSettings, label: 'Settings' },
   ];
 

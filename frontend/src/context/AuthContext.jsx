@@ -1,7 +1,7 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect } from 'react';
-import { authAPI } from '@/utils/api';
+import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import { authAPI, getFriendlyError } from '@/utils/api';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import {
@@ -14,120 +14,140 @@ import {
 
 const AuthContext = createContext();
 
+/* ─── Helper: sync Firebase user → backend ─── */
+async function syncWithBackend(firebaseUser, token) {
+  const response = await authAPI.firebaseLogin({
+    firebaseToken: token,
+    email: firebaseUser.email,
+    uid: firebaseUser.uid,
+    displayName: firebaseUser.displayName,
+    photoURL: firebaseUser.photoURL,
+    phoneNumber: firebaseUser.phoneNumber,
+  });
+  return response.data;
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // ── Guards ──
+  // When true, the onAuthStateChanged listener skips backend sync
+  // because a login/register flow is actively handling it.
+  const loginInProgress = useRef(false);
+  const isMounted = useRef(true);
+
+  const setLoginInProgress = useCallback((active) => {
+    loginInProgress.current = active;
+  }, []);
+
   useEffect(() => {
-    // Listen for Firebase auth state changes
+    isMounted.current = true;
+
     const unsubscribe = onAuthStateChange(async (firebaseUser) => {
       try {
         if (firebaseUser) {
-          // User is signed in to Firebase
-          const token = await firebaseUser.getIdToken();
+          // ─── Guard: if a login flow is in progress, it will set the user ───
+          if (loginInProgress.current) {
+            return; // loading will be set to false by the login flow
+          }
+
           const accessToken = Cookies.get('accessToken');
 
+          // If we have a backend token, validate it
           if (accessToken) {
             try {
               const response = await authAPI.getCurrentUser();
-              setUser(response.data);
+              if (isMounted.current) setUser(response.data);
+              return;
             } catch {
-              try {
-                const response = await authAPI.firebaseLogin({
-                  firebaseToken: token,
-                  email: firebaseUser.email,
-                  uid: firebaseUser.uid,
-                });
-                const { accessToken: nextAccessToken, user: backendUser } = response.data;
-                Cookies.set('accessToken', nextAccessToken, { expires: 1 });
-                setUser(backendUser);
-              } catch (syncErr) {
-                console.error('Failed to auto-sync backend session:', syncErr);
-              }
-            }
-          } else {
-            try {
-              const response = await authAPI.firebaseLogin({
-                firebaseToken: token,
-                email: firebaseUser.email,
-                uid: firebaseUser.uid,
-              });
-              const { accessToken: nextAccessToken, user: backendUser } = response.data;
-              Cookies.set('accessToken', nextAccessToken, { expires: 1 });
-              setUser(backendUser);
-            } catch (syncErr) {
-              console.error('Failed to establish backend session from Firebase user:', syncErr);
-              setUser(null);
+              // Token invalid — clear it and try to re-establish
+              Cookies.remove('accessToken');
             }
           }
+
+          // No valid backend session — re-establish from Firebase token
+          // (handles page refresh when cookie expired but Firebase session is alive)
+          try {
+            const token = await firebaseUser.getIdToken(true);
+            const data = await syncWithBackend(firebaseUser, token);
+            if (isMounted.current) {
+              if (data.accessToken) {
+                Cookies.set('accessToken', data.accessToken, { expires: 1 });
+              }
+              setUser(data.user);
+            }
+          } catch (syncErr) {
+            console.error('Session restoration failed:', syncErr.message);
+            if (isMounted.current) setUser(null);
+          }
         } else {
-          // User is signed out of Firebase
-          setUser(null);
-          Cookies.remove('accessToken');
+          if (isMounted.current) {
+            setUser(null);
+            Cookies.remove('accessToken');
+          }
         }
       } catch (error) {
         console.error('Auth state change error:', error);
       } finally {
-        setLoading(false);
+        // Only update loading if a login flow isn't controlling it
+        if (isMounted.current && !loginInProgress.current) {
+          setLoading(false);
+        }
       }
     });
 
-    return () => unsubscribe();
+    // Safety net: ensure loading is false even if Firebase is slow/broken
+    const loadingTimeout = setTimeout(() => {
+      if (isMounted.current && loading) {
+        setLoading(false);
+      }
+    }, 8000);
+
+    return () => {
+      isMounted.current = false;
+      unsubscribe();
+      clearTimeout(loadingTimeout);
+    };
   }, []);
 
   const login = async (credentials) => {
+    loginInProgress.current = true;
     try {
-      // 1. Login with Firebase
       const { user: firebaseUser, token } = await loginWithEmail(credentials.email, credentials.password);
 
       if (!firebaseUser) return { success: false, error: 'Firebase login failed' };
 
-      // 2. Sync with Backend
-      const response = await authAPI.firebaseLogin({
-        firebaseToken: token,
-        email: firebaseUser.email,
-        uid: firebaseUser.uid
-      });
-
-      const { accessToken, user: backendUser } = response.data;
-
-      // Store accessToken
-      Cookies.set('accessToken', accessToken, { expires: 1 });
-
-      setUser(backendUser);
+      const data = await syncWithBackend(firebaseUser, token);
+      Cookies.set('accessToken', data.accessToken, { expires: 1 });
+      setUser(data.user);
+      setLoading(false);
       return { success: true };
     } catch (error) {
       console.error('Login context error:', error);
-      const message = error.response?.data?.message || error.message || 'Login failed';
-      return { success: false, error: message };
+      return { success: false, error: getFriendlyError(error) };
+    } finally {
+      loginInProgress.current = false;
     }
   };
 
   const register = async (userData) => {
+    loginInProgress.current = true;
     try {
-      // 1. Register with Firebase
       const { user: firebaseUser, token } = await registerWithEmail(userData.email, userData.password, userData.name);
 
       if (!firebaseUser) return { success: false, error: 'Firebase registration failed' };
 
-      // 2. Create User in Backend
-      const response = await authAPI.firebaseLogin({
-        firebaseToken: token,
-        email: firebaseUser.email,
-        uid: firebaseUser.uid,
-        displayName: userData.name,
-      });
-
-      const { accessToken, user: backendUser } = response.data;
-
-      Cookies.set('accessToken', accessToken, { expires: 1 });
-
-      setUser(backendUser);
+      const data = await syncWithBackend(firebaseUser, token);
+      Cookies.set('accessToken', data.accessToken, { expires: 1 });
+      setUser(data.user);
+      setLoading(false);
       return { success: true };
     } catch (error) {
       console.error('Registration context error:', error);
-      const message = error.response?.data?.message || error.message || 'Registration failed';
-      return { success: false, error: message };
+      return { success: false, error: getFriendlyError(error) };
+    } finally {
+      loginInProgress.current = false;
     }
   };
 
@@ -145,6 +165,7 @@ export const AuthProvider = ({ children }) => {
 
   const updateUser = (userData) => {
     setUser(userData);
+    setLoading(false);
   };
 
   const value = {
@@ -154,6 +175,7 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     updateUser,
+    setLoginInProgress,
     isAuthenticated: !!user,
     isAdmin: user?.role === 'admin',
   };

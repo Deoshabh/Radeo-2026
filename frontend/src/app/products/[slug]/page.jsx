@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import ProductClient from './ProductClient';
+import { generateProductMetadata } from '@/utils/seo';
 
 async function getProduct(slug) {
   try {
@@ -27,16 +28,11 @@ export async function generateMetadata({ params }) {
   if (!product) {
     return {
       title: 'Product Not Found | Radeo',
+      robots: { index: false },
     };
   }
 
-  return {
-    title: `${product.name} | Radeo`,
-    description: product.description?.substring(0, 160),
-    openGraph: {
-      images: product.images?.[0]?.url || [],
-    },
-  };
+  return generateProductMetadata(product);
 }
 
 import ProductSchema from '@/components/ProductSchema';

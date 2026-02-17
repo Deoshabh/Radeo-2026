@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { FiPhone, FiHash, FiShield } from 'react-icons/fi';
 import { setupRecaptcha, sendOTP, verifyOTP } from '@/utils/firebaseAuth';
+import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
 
 /**
@@ -17,6 +18,7 @@ export default function PhoneAuth({ onSuccess }) {
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(0);
+  const { setLoginInProgress } = useAuth();
 
   // Setup reCAPTCHA on component mount
   useEffect(() => {
@@ -77,13 +79,17 @@ export default function PhoneAuth({ onSuccess }) {
     }
 
     setLoading(true);
+    setLoginInProgress(true); // Prevent AuthContext from double-syncing
 
     const result = await verifyOTP(confirmationResult, otp);
 
     if (result.success) {
       if (onSuccess) {
         onSuccess(result);
+        // handleFirebaseSuccess resets loginInProgress in its finally block
       }
+    } else {
+      setLoginInProgress(false);
     }
 
     setLoading(false);

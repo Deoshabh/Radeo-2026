@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { FiMail, FiLock, FiUser, FiCheck } from 'react-icons/fi';
 import { loginWithEmail, registerWithEmail, resetPassword, resendVerificationEmail } from '@/utils/firebaseAuth';
+import { useAuth } from '@/context/AuthContext';
 import { useRecaptcha, RECAPTCHA_ACTIONS } from '@/utils/recaptcha';
 import toast from 'react-hot-toast';
 
@@ -13,6 +14,7 @@ import toast from 'react-hot-toast';
 export default function EmailAuth({ onSuccess, mode: initialMode = 'login' }) {
   const [mode, setMode] = useState(initialMode); // 'login', 'register', 'reset', 'verify'
   const [loading, setLoading] = useState(false);
+  const { setLoginInProgress } = useAuth();
   const { getToken } = useRecaptcha();
   const [formData, setFormData] = useState({
     email: '',
@@ -28,6 +30,7 @@ export default function EmailAuth({ onSuccess, mode: initialMode = 'login' }) {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setLoginInProgress(true); // Prevent AuthContext from double-syncing
 
     try {
       // Get reCAPTCHA token
@@ -38,13 +41,18 @@ export default function EmailAuth({ onSuccess, mode: initialMode = 'login' }) {
       if (result.success) {
         if (onSuccess) {
           onSuccess(result);
+          // handleFirebaseSuccess resets loginInProgress in its finally block
         }
       } else if (result.needsVerification) {
         setMode('verify');
+        setLoginInProgress(false);
+      } else {
+        setLoginInProgress(false);
       }
     } catch (error) {
       console.error('Login error:', error);
       toast.error('An error occurred during login');
+      setLoginInProgress(false);
     } finally {
       setLoading(false);
     }

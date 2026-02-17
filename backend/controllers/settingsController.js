@@ -164,9 +164,14 @@ exports.updateSettings = async (req, res, next) => {
       settings.publishWorkflow || {},
     );
 
+    // Always keep publishedSnapshot in sync with live data.
+    // The snapshot was previously only updated when status === 'live',
+    // which caused stale data on refresh when status was 'draft'/'scheduled'.
+    settings.publishedSnapshot = createSnapshotPayload(settings);
+    settings.markModified('publishedSnapshot');
+
     if (settings.publishWorkflow.status === 'live') {
       settings.publishWorkflow.publishedAt = new Date();
-      settings.publishedSnapshot = createSnapshotPayload(settings);
     }
 
     appendVersionSnapshot(settings, {
@@ -495,7 +500,9 @@ exports.getPublicSettings = async (req, res, next) => {
     }
 
     if (publishedSnapshot?.theme) {
-      publicSettings.theme = { ...(publicSettings.theme || {}), ...publishedSnapshot.theme };
+      // Key-value store theme should override snapshot (snapshot can be stale)
+      const kvTheme = publicSettings.theme || {};
+      publicSettings.theme = { ...publishedSnapshot.theme, ...kvTheme };
     }
 
     publicSettings.publishWorkflow = {

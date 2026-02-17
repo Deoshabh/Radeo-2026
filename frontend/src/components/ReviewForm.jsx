@@ -88,8 +88,7 @@ export default function ReviewForm({ productId, onReviewSubmitted, onCancel }) {
         formData.append('photos', file);
       });
 
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
-      const response = await fetch(`${API_URL}/products/${productId}/reviews`, {
+      const response = await fetch(`/api/v1/products/${productId}/reviews`, {
         method: 'POST',
         credentials: 'include',
         body: formData, // Don't set Content-Type header - browser will set it with boundary

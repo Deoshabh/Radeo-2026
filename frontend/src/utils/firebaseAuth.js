@@ -99,7 +99,7 @@ export const loginWithEmail = async (email, password) => {
       };
     }
 
-    toast.success("Login successful!");
+    // Don't show success toast here — let the caller show it after backend sync
     return {
       success: true,
       user: userCredential.user,
@@ -301,7 +301,7 @@ export const verifyOTP = async (confirmationResult, otp) => {
   try {
     const userCredential = await confirmationResult.confirm(otp);
 
-    toast.success("Phone verification successful!");
+    // Don't show success toast here — let the caller show it after backend sync
     return {
       success: true,
       user: userCredential.user,
@@ -485,7 +485,7 @@ export const loginWithGoogle = async () => {
       });
     }
 
-    toast.success(`Signed in as ${signedInUser.email}`);
+    // Don't show success toast here — let the caller show it after backend sync
     return {
       success: true,
       user: signedInUser,
@@ -549,7 +549,7 @@ export const getGoogleRedirectResult = async () => {
       const credential = GoogleAuthProvider.credentialFromResult(result);
       const token = credential?.accessToken;
 
-      toast.success("Google sign-in successful!");
+      // Don't show success toast here — let the caller show it after backend sync
       return {
         success: true,
         user: result.user,

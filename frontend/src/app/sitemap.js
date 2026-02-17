@@ -65,18 +65,6 @@ export default async function sitemap() {
       changeFrequency: "yearly",
       priority: 0.3,
     },
-    {
-      url: `${BASE_URL}/auth/login`,
-      lastModified: new Date().toISOString(),
-      changeFrequency: "monthly",
-      priority: 0.5,
-    },
-    {
-      url: `${BASE_URL}/auth/register`,
-      lastModified: new Date().toISOString(),
-      changeFrequency: "monthly",
-      priority: 0.5,
-    },
   ];
 
   try {

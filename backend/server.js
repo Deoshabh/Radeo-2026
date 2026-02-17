@@ -116,7 +116,7 @@ if (process.env.NODE_ENV !== "test") {
 }
 
 // ===============================
-// CORS (Production safe)
+// CORS (Production safe – triple-layer)
 // ===============================
 const allowedOrigins = [
   "https://radeo.in",
@@ -127,33 +127,38 @@ const allowedOrigins = [
 
 const allowWildcardSubdomains = process.env.CORS_ALLOW_WILDCARD_SUBDOMAINS === 'true';
 
-app.use(
-  cors({
-    origin(origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-      
-      // Check for allowed origins
-      if (allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
-        return callback(null, true);
-      }
+const corsOptions = {
+  origin(origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, server-to-server)
+    if (!origin) return callback(null, true);
 
-      // Optional wildcard allow for radeo.in subdomains (disabled by default)
-      if (allowWildcardSubdomains && /^https:\/\/[a-z0-9-]+\.radeo\.in$/i.test(origin)) {
-        return callback(null, true);
-      }
-      
-      // Log blocked origin for debugging
-      console.log('Blocked by CORS:', origin);
-      return callback(new Error("CORS not allowed"), false);
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "x-api-key"],
-    exposedHeaders: ["Set-Cookie"],
-    optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
-  }),
-);
+    // Check for allowed origins
+    if (allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+
+    // Optional wildcard allow for radeo.in subdomains (disabled by default)
+    if (allowWildcardSubdomains && /^https:\/\/[a-z0-9-]+\.radeo\.in$/i.test(origin)) {
+      return callback(null, true);
+    }
+
+    // Log blocked origin for debugging
+    console.log('Blocked by CORS:', origin);
+    return callback(new Error("CORS not allowed"), false);
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-api-key"],
+  exposedHeaders: ["Set-Cookie"],
+  optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
+  maxAge: 86400, // Cache preflight for 24h – reduces OPTIONS traffic
+};
+
+// Layer 1: Explicit OPTIONS preflight handler (runs FIRST, before any middleware)
+app.options('*', cors(corsOptions));
+
+// Layer 2: CORS middleware on all requests
+app.use(cors(corsOptions));
 
 // ===============================
 // Middleware
@@ -230,8 +235,11 @@ app.use("/api/v1/admin/filters", require("./routes/adminFilterRoutes"));
 app.use("/api/v1/admin/shiprocket", require("./routes/shiprocketRoutes"));
 app.use("/api/v1/admin/reviews", require("./routes/adminReviewRoutes"));
 app.use("/api/v1/admin/settings", require("./routes/adminSettingsRoutes"));
+app.use("/api/v1/admin/seo", require("./routes/adminSeoRoutes"));
 app.use('/api/v1/admin/cms', adminCMSRouter);
 app.use('/api/v1/cms', publicCMSRouter);
+
+app.use("/api/v1/seo", require("./routes/adminSeoRoutes"));
 
 app.use("/api/v1/coupons", require("./routes/couponRoutes"));
 app.use("/api/v1/categories", require("./routes/categoryRoutes"));

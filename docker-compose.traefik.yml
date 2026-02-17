@@ -101,8 +101,8 @@ services:
       - "traefik.http.routers.backend.tls=true"
       - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
 
-      # Attach CORS middleware to this router
-      - "traefik.http.routers.backend.middlewares=cors-headers"
+      # Attach CORS + error-page middleware to this router
+      - "traefik.http.routers.backend.middlewares=cors-headers,backend-errors"
 
       # Service configuration (points to port 5000)
       - "traefik.http.services.backend.loadbalancer.server.port=5000"
@@ -122,6 +122,15 @@ services:
 
       # Cache preflight requests for 3600 seconds (1 hour)
       - "traefik.http.middlewares.cors-headers.headers.accesscontrolmaxage=3600"
+
+      # Ensure CORS headers are added on ALL responses (including errors)
+      - "traefik.http.middlewares.cors-headers.headers.addvaryheader=true"
+      - "traefik.http.middlewares.cors-headers.headers.customresponseheaders.Access-Control-Allow-Origin=https://radeo.in"
+
+      # ====== MIDDLEWARE: Custom Error Pages (return JSON on 502/503/504) ======
+      - "traefik.http.middlewares.backend-errors.errors.status=502-504"
+      - "traefik.http.middlewares.backend-errors.errors.service=backend"
+      - "traefik.http.middlewares.backend-errors.errors.query=/"
 
       # ====== HTTP to HTTPS Redirect (Global - NOT on backend router) ======
       # This will be handled by global middleware, not per-router

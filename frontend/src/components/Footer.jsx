@@ -55,7 +55,7 @@ export default function Footer() {
 
     try {
       setNewsletterStatus('submitting');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api/v1'}/contact`, {
+      const response = await fetch(`/api/v1/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

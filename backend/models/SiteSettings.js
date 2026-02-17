@@ -67,6 +67,11 @@ const siteSettingsSchema = new mongoose.Schema(
         buttonText: { type: String, default: 'Subscribe' },
       },
     },
+    // Homepage CMS data (RadeoHome component)
+    homePage: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
     // Dynamic Layout Configuration (Visual CMS)
     layout: [
       {
