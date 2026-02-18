@@ -1,6 +1,8 @@
 const {
   RecaptchaEnterpriseServiceClient,
 } = require("@google-cloud/recaptcha-enterprise");
+const fs = require("fs");
+const path = require("path");
 
 /**
  * Google reCAPTCHA Enterprise Middleware
@@ -32,12 +34,28 @@ function initializeRecaptchaClient() {
       return null;
     }
 
+    // Resolve the credentials file path
+    const credentialsPath =
+      process.env.GOOGLE_APPLICATION_CREDENTIALS ||
+      "./google-credentials.json";
+    const resolvedPath = path.resolve(credentialsPath);
+
+    // Check if the credentials file actually exists before creating the client.
+    // The gRPC client constructor spawns background async operations that read
+    // the credentials file. If the file is missing, those internal promises
+    // reject outside our try/catch, causing an unhandled promise rejection
+    // that crashes the Node process.
+    if (!fs.existsSync(resolvedPath)) {
+      console.warn(
+        `⚠️  reCAPTCHA credentials file not found at ${resolvedPath}. Verification will be skipped.`,
+      );
+      return null;
+    }
+
     // Create the reCAPTCHA client
     // Client generation is cached (recommended) to avoid repeated initialization
     recaptchaClient = new RecaptchaEnterpriseServiceClient({
-      keyFilename:
-        process.env.GOOGLE_APPLICATION_CREDENTIALS ||
-        "./google-credentials.json",
+      keyFilename: resolvedPath,
     });
 
     console.log("✅ reCAPTCHA Enterprise client initialized");
@@ -360,9 +378,22 @@ const verifyRecaptcha = (expectedAction, minScore = 0.5, optional = false) => {
     } catch (error) {
       console.error("reCAPTCHA middleware error:", error);
 
+      // If reCAPTCHA is optional, always continue regardless of environment
+      if (optional) {
+        console.warn(
+          `⚠️  Optional reCAPTCHA error for action: ${expectedAction}. Continuing request.`,
+        );
+        req.recaptchaResult = {
+          success: false,
+          error: error.message,
+          optionalBypass: true,
+        };
+        return next();
+      }
+
       // In production, fail closed (reject request)
       // In development, fail open (allow request) for easier testing
-      if (process.env.NODE_ENV === "production" && !optional) {
+      if (process.env.NODE_ENV === "production") {
         return res.status(500).json({
           message: "reCAPTCHA verification error",
           error: "Internal server error",

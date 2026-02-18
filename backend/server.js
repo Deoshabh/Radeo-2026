@@ -308,6 +308,25 @@ async function startServer() {
   }
 }
 
+// ===============================
+// GLOBAL ERROR HANDLERS
+// ===============================
+process.on('unhandledRejection', (reason, promise) => {
+  log.error('Unhandled Promise Rejection', {
+    reason: reason instanceof Error ? { message: reason.message, stack: reason.stack } : reason,
+  });
+  // Do NOT exit — keep the server running for other requests
+});
+
+process.on('uncaughtException', (error) => {
+  log.error('Uncaught Exception', { message: error.message, stack: error.stack });
+  // For truly fatal errors, exit after logging
+  if (error.code !== 'ENOENT') {
+    process.exit(1);
+  }
+  // ENOENT from missing optional files (e.g. google-credentials.json) — keep running
+});
+
 // Only start server if not in test environment
 if (process.env.NODE_ENV !== "test") {
   startServer();
