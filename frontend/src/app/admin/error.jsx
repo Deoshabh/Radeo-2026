@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { FiAlertTriangle } from 'react-icons/fi';
 
 export default function AdminError({ error, reset }) {
   useEffect(() => {
@@ -12,7 +12,7 @@ export default function AdminError({ error, reset }) {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full bg-white rounded-lg border border-gray-200 p-8">
         <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-4">
-          <AlertTriangle className="w-6 h-6 text-red-500" />
+          <FiAlertTriangle className="w-6 h-6 text-red-500" />
         </div>
         <h2 className="text-lg font-semibold text-gray-900 mb-2">
           Something went wrong

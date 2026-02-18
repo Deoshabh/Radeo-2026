@@ -6,13 +6,14 @@ const { log } = require('../utils/logger');
 
 class CouponService {
     /**
-     * Validate a coupon code for a given cart total and user
+     * Validate a coupon code for a given cart total, user, and cart items
      * @param {string} code - The coupon code to validate
      * @param {number} cartTotal - The total amount of the cart
      * @param {string} userId - The ID of the user attempting to use the coupon
-     * @returns {Promise<object>} - Validation result { valid: boolean, discount: number, message: string, coupon: object }
+     * @param {Array} cartItems - Cart items with populated product (must include product.category)
+     * @returns {Promise<object>} - Validation result { valid, discount, message, coupon, applicableSubtotal }
      */
-    async validateCoupon(code, cartTotal, userId) {
+    async validateCoupon(code, cartTotal, userId, cartItems = []) {
         try {
             if (!code) {
                 return { valid: false, message: 'Coupon code is required' };
@@ -90,10 +91,42 @@ class CouponService {
                 }
             }
 
+            // ── Category restriction check ──
+            // If applicableCategories is populated, only items in those categories qualify
+            const applicableCatIds = (coupon.applicableCategories || []).map(id => id.toString());
+            let applicableSubtotal = cartTotal;
+
+            if (applicableCatIds.length > 0 && cartItems.length > 0) {
+                applicableSubtotal = 0;
+
+                for (const item of cartItems) {
+                    const productCatId = (
+                        item.product?.category?._id ||
+                        item.product?.category ||
+                        ''
+                    ).toString();
+
+                    if (applicableCatIds.includes(productCatId)) {
+                        applicableSubtotal = CurrencyUtils.add(
+                            applicableSubtotal,
+                            item.product.price * item.quantity,
+                        );
+                    }
+                }
+
+                if (applicableSubtotal === 0) {
+                    return {
+                        valid: false,
+                        message: 'This coupon does not apply to any items in your cart',
+                    };
+                }
+            }
+
             // Calculate discount — type is 'flat' or 'percent' (matches model enum)
+            // Discount is calculated on applicableSubtotal (full cart if no category restriction)
             let discountAmount = 0;
             if (coupon.type === 'percent') {
-                discountAmount = (cartTotal * coupon.value) / 100;
+                discountAmount = (applicableSubtotal * coupon.value) / 100;
                 if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
                     discountAmount = coupon.maxDiscount;
                 }
@@ -101,15 +134,18 @@ class CouponService {
                 discountAmount = coupon.value;
             }
 
-            // Ensure discount doesn't exceed total
-            if (discountAmount > cartTotal) {
-                discountAmount = cartTotal;
+            // Ensure discount doesn't exceed applicable subtotal
+            if (discountAmount > applicableSubtotal) {
+                discountAmount = applicableSubtotal;
             }
 
             return {
                 valid: true,
-                message: 'Coupon applied successfully',
+                message: applicableCatIds.length > 0
+                    ? `Coupon applied to eligible items (${CurrencyUtils.format(applicableSubtotal)} of ${CurrencyUtils.format(cartTotal)})`
+                    : 'Coupon applied successfully',
                 discount: Math.round(discountAmount),
+                applicableSubtotal: Math.round(applicableSubtotal),
                 coupon: {
                     _id: coupon._id,
                     code: coupon.code,

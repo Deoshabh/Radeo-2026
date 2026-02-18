@@ -43,8 +43,7 @@ const mediaSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    thumbnailUrl: String,
-    optimizedUrl: String,
+
 
     // Responsive image variants (populated by image processing queue)
     variants: {
@@ -58,7 +57,7 @@ const mediaSchema = new mongoose.Schema(
     width: Number,
     height: Number,
     aspectRatio: Number,
-    dominantColor: String,
+
     
     // Categorization
     type: {
@@ -94,42 +93,16 @@ const mediaSchema = new mongoose.Schema(
       required: true,
     },
     
-    // Access Control
-    visibility: {
-      type: String,
-      enum: ["public", "private", "protected"],
-      default: "public",
-    },
-    allowedRoles: [String],
-    
     // Metadata
     altText: String,
     caption: String,
-    description: String,
     credit: String,
-    
-    // Processing Status
-    processingStatus: {
-      type: String,
-      enum: ["pending", "processing", "optimized", "failed"],
-      default: "pending",
-    },
-    optimizationLog: [
-      {
-        action: String,
-        status: String,
-        message: String,
-        timestamp: Date,
-      },
-    ],
     
     // Retention
     isArchived: {
       type: Boolean,
       default: false,
     },
-    archivedAt: Date,
-    deleteAt: Date, // For automatic cleanup
   },
   {
     timestamps: true,
@@ -142,9 +115,7 @@ const mediaSchema = new mongoose.Schema(
 mediaSchema.index({ type: 1, category: 1 });
 mediaSchema.index({ tags: 1 });
 mediaSchema.index({ uploadedBy: 1 });
-mediaSchema.index({ visibility: 1 });
 mediaSchema.index({ isArchived: 1 });
-mediaSchema.index({ processingStatus: 1 });
 mediaSchema.index({ createdAt: -1 });
 mediaSchema.index({ usageCount: -1 });
 
@@ -239,7 +210,6 @@ mediaSchema.statics.findUnused = function (olderThanDays = 30) {
     usageCount: 0,
     createdAt: { $lt: cutoffDate },
     isArchived: false,
-    deleteAt: { $exists: false },
   });
 };
 

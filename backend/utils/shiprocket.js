@@ -807,6 +807,7 @@ class ShiprocketService {
       }
 
       // Step 2: Get recommended courier if not provided
+      let estimatedDeliveryDays = null;
       if (!courierId) {
         const rates = await this.getShippingRates({
           pickup_postcode: orderData.billing_pincode,
@@ -824,7 +825,9 @@ class ShiprocketService {
 
         if (availableCouriers.length > 0) {
           // Use the first recommended courier
-          courierId = availableCouriers[0].courier_company_id;
+          const selectedCourier = availableCouriers[0];
+          courierId = selectedCourier.courier_company_id;
+          estimatedDeliveryDays = selectedCourier.estimated_delivery_days || null;
         } else {
           throw this.buildShiprocketError(
             { response: { status: 422, data: rates }, message: "No courier available for this shipment" },
@@ -939,6 +942,7 @@ class ShiprocketService {
         awb_code: awbCode,
         courier_name: courierName,
         courier_id: courierId,
+        estimated_delivery_days: estimatedDeliveryDays,
         label_url: labelUrl,
         invoice_url: invoiceUrl,
         warnings,

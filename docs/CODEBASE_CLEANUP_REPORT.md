@@ -235,20 +235,44 @@ No action needed — these are valid architectural patterns.
 
 ## Section 15: Remaining Action Items
 
+### Completed (Post-Cleanup Sprint)
+
+All critical and high-priority action items from the initial audit have been resolved:
+
+1. **CRITICAL: Coupon category enforcement** — `couponService.validateCoupon()` now checks `applicableCategories`. Discount is calculated only on eligible items' subtotal. Admin coupon form has a category multi-select. Revenue leak fixed.
+
+2. **Dead DB field migration script** — `backend/scripts/cleanDeadFields.js` created with `--dry-run` support. Removes 25 dead fields across 4 collections: addresses (3), contentpages (6), media (10), navigationmenus (1).
+
+3. **Dead schema fields removed** — Removed from Mongoose models:
+   - `Address.js`: `verifiedDelivery`, `codAvailable`, `lastVerified`
+   - `ContentPage.js`: `passwordHash`, `publishedVersion`, `lastPublishedAt`, `lastPublishedBy`, `lastRenderedAt`, `parentPage`
+   - `Media.js`: `thumbnailUrl`, `optimizedUrl`, `dominantColor`, `visibility`, `allowedRoles`, `description`, `processingStatus`, `optimizationLog`, `archivedAt`, `deleteAt` + dead indexes removed + `findUnused` updated
+   - `NavigationMenu.js`: `maxDepth`
+
+4. **360 Viewer canvas hook consolidation** — Created `frontend/src/hooks/use360Canvas.js` with contain-scaling draw logic, DPR-aware resize, and responsive mode. Both `Product360Viewer.jsx` and `ProductViewer360.jsx` refactored to use it.
+
+5. **Media altText/caption/credit activated** — `adminCMSController.uploadMedia` now accepts these fields on create. New `PUT /admin/cms/media/:id` endpoint for editing metadata. CMS media tab has inline edit button with modal for altText/caption/credit.
+
+6. **estimatedDispatchDays wired to Shiprocket** — `createCompleteShipment()` extracts `estimated_delivery_days` from the selected courier. `shiprocketController` saves it to `order.estimatedDispatchDays`.
+
+7. **Admin orders page-enhanced to page** — `page-enhanced.jsx` renamed to `page.jsx`, re-export wrapper deleted.
+
+8. **npm audit fix** — Safe fixes applied to both frontend and backend. Remaining vulnerabilities are in transitive deps of `jest`, `nodemon`, `eslint`, `next` (require major version bumps).
+
 ### Low Priority (Future Sprint)
-1. **Coupon category enforcement** — `applicableCategories` field exists but `couponService.validateCoupon()` never checks it. Implement category filtering or remove the field.
-2. **360 Viewer consolidation** — `Product360Viewer` and `ProductViewer360` share the `use360Viewer` hook but diverge in features. Consider merging into one component with feature flags.
-3. **Dead DB field cleanup** — 25 fields across 6 models. Either implement the features or add a migration to remove dead fields from existing documents.
+- Upgrade Next.js to address remaining 37 frontend vulnerabilities (requires testing)
+- Upgrade Jest to v30+ to resolve `minimatch` / `glob` transitive vulns
+- Consider adding `firstOrderOnly` and `perUserLimit` fields to admin coupon form UI
 
 ### Monitoring
-- Run `npm audit` periodically (13 vulnerabilities reported, mostly in transitive deps)
+- Run `npm audit` periodically after dependency upgrades
 - Re-run unused import checks after major feature additions
 
 ---
 
 ## Files Modified in This Cleanup
 
-### Edited (35 files)
+### Phase 1: Initial Cleanup (35 files)
 - `frontend/src/utils/api.js` — 36 dead functions removed
 - `frontend/src/app/globals.css` — ~80 lines dead CSS removed
 - `frontend/tailwind.config.js` — 5 dead config entries removed
@@ -258,13 +282,36 @@ No action needed — these are valid architectural patterns.
 - 4 frontend files — console.log statements removed
 - `frontend/src/app/products/page.jsx` — commented-out code removed
 
-### Deleted (6 files)
+### Phase 2: Post-Cleanup Action Items (19 files)
+- `backend/services/couponService.js` — applicableCategories validation added
+- `backend/controllers/orderController.js` — passes cart items to coupon validator
+- `frontend/src/app/admin/coupons/page.jsx` — category multi-select in form
+- `backend/scripts/cleanDeadFields.js` — NEW migration script
+- `backend/models/Address.js` — 3 dead fields removed
+- `backend/models/ContentPage.js` — 6 dead fields removed
+- `backend/models/Media.js` — 10 dead fields + 2 indexes removed
+- `backend/models/NavigationMenu.js` — 1 dead field removed
+- `frontend/src/hooks/use360Canvas.js` — NEW shared canvas hook
+- `frontend/src/components/products/Product360Viewer.jsx` — uses shared hook
+- `frontend/src/components/viewer/ProductViewer360.jsx` — uses shared hook
+- `backend/utils/shiprocket.js` — extracts estimated_delivery_days
+- `backend/controllers/shiprocketController.js` — saves estimatedDispatchDays
+- `backend/controllers/adminCMSController.js` — altText/caption/credit + updateMedia
+- `backend/routes/adminCMSRoutes.js` — PUT /media/:id route
+- `frontend/src/app/admin/cms/page.jsx` — media edit modal
+- `frontend/src/utils/api.js` — updateCmsMedia API call
+- `frontend/src/hooks/useAdmin.js` — useUpdateCmsMedia hook
+- `frontend/src/app/admin/orders/page.jsx` — renamed from page-enhanced.jsx
+
+### Deleted (7 files)
 - `frontend/src/components/UserContactModal.jsx`
 - `frontend/src/components/OrderDetailsModal.jsx`
 - `frontend/src/components/ui/AnimatedEntry.jsx`
 - `frontend/src/components/admin/cms/EditSectionPanel.jsx`
 - `backend/scripts/migrate-addresses.js`
 - `backend/scripts/db-backup.sh`
+- `frontend/src/app/admin/orders/page-enhanced.jsx` (renamed to page.jsx)
 
 ### npm Changes
 - 8 unused packages uninstalled (133 sub-dependencies removed)
+- `npm audit fix` applied to both frontend and backend

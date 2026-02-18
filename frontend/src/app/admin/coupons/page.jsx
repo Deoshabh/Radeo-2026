@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatDate, formatPrice } from '@/utils/helpers';
 import { useAuth } from '@/context/AuthContext';
-import { useCoupons, useCouponStats, useCreateCoupon, useUpdateCoupon, useDeleteCoupon, useToggleCouponStatus } from '@/hooks/useAdmin';
+import { useCoupons, useCouponStats, useCreateCoupon, useUpdateCoupon, useDeleteCoupon, useToggleCouponStatus, useAdminCategories } from '@/hooks/useAdmin';
 import toast from 'react-hot-toast';
 import { FiEdit2, FiTrash2, FiPlus, FiX, FiTag, FiCalendar, FiBarChart2, FiGrid } from 'react-icons/fi';
 
@@ -17,6 +17,7 @@ export default function CouponsPage() {
   const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'performance'
   const { data: statsRaw, isLoading: statsLoading } = useCouponStats(viewMode === 'performance');
   const stats = Array.isArray(statsRaw) ? statsRaw : [];
+  const { data: categories = [] } = useAdminCategories();
   const createCouponMut = useCreateCoupon();
   const updateCouponMut = useUpdateCoupon();
   const deleteCouponMut = useDeleteCoupon();
@@ -37,6 +38,7 @@ export default function CouponsPage() {
     validFrom: '',
     validUntil: '',
     isActive: true,
+    applicableCategories: [],
   });
 
   const sortedStats = [...stats].sort((a, b) => {
@@ -75,6 +77,7 @@ export default function CouponsPage() {
         validFrom: coupon.validFrom ? new Date(coupon.validFrom).toISOString().split('T')[0] : '',
         validUntil: coupon.validUntil ? new Date(coupon.validUntil).toISOString().split('T')[0] : '',
         isActive: coupon.isActive,
+        applicableCategories: (coupon.applicableCategories || []).map(c => c._id || c),
       });
     } else {
       setEditMode(false);
@@ -89,6 +92,7 @@ export default function CouponsPage() {
         validFrom: '',
         validUntil: '',
         isActive: true,
+        applicableCategories: [],
       });
     }
     setShowModal(true);
@@ -119,6 +123,7 @@ export default function CouponsPage() {
         expiry: formData.validUntil,
         validFrom: formData.validFrom,
         usageLimit: formData.usageLimit ? Number(formData.usageLimit) : null,
+        applicableCategories: formData.applicableCategories.length > 0 ? formData.applicableCategories : [],
         // maxDiscount is not supported by backend yet
       };
 
@@ -369,14 +374,13 @@ export default function CouponsPage() {
                 </div>
               </div>
             ))}
-          </div>
+          </div>}
 
           {coupons.length === 0 && (
             <div className="text-center py-12">
               <p className="text-primary-600">No coupons found. Create your first coupon!</p>
             </div>
           )}
-          }
         </div>
 
         {/* Modal */}
@@ -520,6 +524,36 @@ export default function CouponsPage() {
                       onChange={handleChange}
                       className="w-full px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
                     />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-primary-900 mb-2">
+                    Applicable Categories
+                  </label>
+                  <p className="text-xs text-primary-500 mb-2">Leave empty to apply to all products</p>
+                  <div className="border border-primary-200 rounded-lg max-h-40 overflow-y-auto p-2 space-y-1">
+                    {(Array.isArray(categories) ? categories : []).map(cat => (
+                      <label key={cat._id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-primary-50 cursor-pointer touch-manipulation">
+                        <input
+                          type="checkbox"
+                          checked={formData.applicableCategories.includes(cat._id)}
+                          onChange={(e) => {
+                            setFormData(prev => ({
+                              ...prev,
+                              applicableCategories: e.target.checked
+                                ? [...prev.applicableCategories, cat._id]
+                                : prev.applicableCategories.filter(id => id !== cat._id),
+                            }));
+                          }}
+                          className="w-4 h-4 text-primary-900 rounded focus:ring-2 focus:ring-primary-900"
+                        />
+                        <span className="text-sm text-primary-700">{cat.name}</span>
+                      </label>
+                    ))}
+                    {(!categories || categories.length === 0) && (
+                      <p className="text-xs text-primary-400 py-2 text-center">No categories found</p>
+                    )}
                   </div>
                 </div>
 

@@ -116,13 +116,6 @@ const navigationMenuSchema = new mongoose.Schema(
       index: true,
     },
     
-    maxDepth: {
-      type: Number,
-      default: 2,
-      min: 1,
-      max: 4,
-    },
-    
     items: [menuItemSchema],
     
     // Status

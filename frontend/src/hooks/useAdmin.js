@@ -533,6 +533,15 @@ export const useDeleteOrphanedMedia = () => {
   });
 };
 
+export const useUpdateCmsMedia = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }) => adminAPI.updateCmsMedia(id, data),
+    onSuccess: () => { toast.success('Media updated'); qc.invalidateQueries({ queryKey: ['admin', 'cms-media'] }); },
+    onError: () => toast.error('Failed to update media'),
+  });
+};
+
 export const useCreateCmsMenu = () => {
   const qc = useQueryClient();
   return useMutation({

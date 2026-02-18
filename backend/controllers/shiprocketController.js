@@ -193,6 +193,11 @@ exports.createShipment = async (req, res) => {
       courier: result.courier_name,
     };
 
+    // Save estimated delivery days from Shiprocket courier
+    if (result.estimated_delivery_days) {
+      order.estimatedDispatchDays = result.estimated_delivery_days;
+    }
+
     // Update status to processing
     if (order.status === "confirmed") {
       order.status = "processing";

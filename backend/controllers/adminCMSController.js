@@ -180,7 +180,7 @@ exports.uploadMedia = async (req, res) => {
       return res.status(400).json({ message: "No file uploaded" });
     }
 
-    const { category, type } = req.body;
+    const { category, type, altText, caption, credit } = req.body;
     const file = req.file;
     const ext = path.extname(file.originalname).toLowerCase();
     
@@ -211,6 +211,9 @@ exports.uploadMedia = async (req, res) => {
       type: fileType,
       category: category || "other",
       uploadedBy: req.user.id,
+      altText: altText || "",
+      caption: caption || "",
+      credit: credit || "",
       width: 0, // Would need image processing to get dimensions
       height: 0,
     });
@@ -219,6 +222,36 @@ exports.uploadMedia = async (req, res) => {
   } catch (error) {
     log.error("Upload media error:", error);
     res.status(500).json({ message: "Server error: " + error.message });
+  }
+};
+
+// Update media metadata (altText, caption, credit, category, tags)
+exports.updateMedia = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const allowedFields = ['altText', 'caption', 'credit', 'category', 'tags'];
+    const updates = {};
+
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        updates[field] = req.body[field];
+      }
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ message: "No valid fields to update" });
+    }
+
+    const media = await Media.findByIdAndUpdate(id, updates, { new: true, runValidators: true });
+
+    if (!media) {
+      return res.status(404).json({ message: "Media not found" });
+    }
+
+    res.json({ success: true, media });
+  } catch (error) {
+    log.error("Update media error:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 

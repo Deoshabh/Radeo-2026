@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import {
   useCmsPages, useCmsMedia, useCmsMenus, useOrphanedMedia,
   useCreateCmsPage, useUpdateCmsPage, useDeleteCmsPage, usePublishCmsPage,
-  useDeleteOrphanedMedia, useCreateCmsMenu,
+  useDeleteOrphanedMedia, useCreateCmsMenu, useUpdateCmsMedia,
 } from '@/hooks/useAdmin';
 import toast from 'react-hot-toast';
 import {
@@ -233,6 +233,22 @@ export default function CMSPage() {
   const deleteMut = useDeleteCmsPage();
   const publishMut = usePublishCmsPage();
   const deleteOrphanedMut = useDeleteOrphanedMedia();
+  const updateMediaMut = useUpdateCmsMedia();
+
+  const [editingMedia, setEditingMedia] = useState(null);
+  const [mediaForm, setMediaForm] = useState({ altText: '', caption: '', credit: '' });
+
+  const openMediaEditor = (item) => {
+    setEditingMedia(item);
+    setMediaForm({ altText: item.altText || '', caption: item.caption || '', credit: item.credit || '' });
+  };
+
+  const handleSaveMedia = () => {
+    if (!editingMedia) return;
+    updateMediaMut.mutate({ id: editingMedia._id, data: mediaForm }, {
+      onSuccess: () => setEditingMedia(null),
+    });
+  };
 
   const handleDeletePage = (id, title) => {
     if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
@@ -400,8 +416,14 @@ export default function CMSPage() {
                             <FiFileText className="w-8 h-8 text-primary-400" />
                           </div>
                         )}
+                        <button onClick={() => openMediaEditor(item)}
+                          className="absolute top-2 right-2 p-1.5 bg-white/90 rounded-lg shadow opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+                          title="Edit metadata">
+                          <FiEdit2 className="w-3.5 h-3.5 text-primary-700" />
+                        </button>
                         <div className="p-2">
                           <p className="text-xs font-medium text-primary-900 truncate">{item.originalName}</p>
+                          {item.altText && <p className="text-[10px] text-primary-500 truncate mt-0.5">{item.altText}</p>}
                           <div className="flex items-center justify-between mt-1">
                             <span className="text-[10px] text-primary-400">{formatFileSize(item.fileSize)}</span>
                             {item.width && <span className="text-[10px] text-primary-400">{item.width}x{item.height}</span>}
@@ -421,6 +443,52 @@ export default function CMSPage() {
                 </>
               )}
             </div>
+
+            {/* Media Edit Modal */}
+            {editingMedia && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+                  <div className="flex items-center justify-between p-4 border-b border-primary-200">
+                    <h3 className="text-lg font-bold text-primary-900">Edit Media Metadata</h3>
+                    <button onClick={() => setEditingMedia(null)} className="p-1.5 hover:bg-primary-100 rounded-lg"><FiX className="w-5 h-5" /></button>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    {editingMedia.type === 'image' && (
+                      <img src={editingMedia.cdnUrl || editingMedia.storageUrl} alt="" className="w-full h-32 object-cover rounded-lg bg-primary-50" />
+                    )}
+                    <p className="text-xs text-primary-500 truncate">{editingMedia.originalName}</p>
+                    <div>
+                      <label className="block text-sm font-medium text-primary-900 mb-1">Alt Text</label>
+                      <input type="text" value={mediaForm.altText} onChange={e => setMediaForm(f => ({ ...f, altText: e.target.value }))}
+                        className="w-full px-3 py-2 text-sm border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
+                        placeholder="Describe the image for accessibility" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-primary-900 mb-1">Caption</label>
+                      <input type="text" value={mediaForm.caption} onChange={e => setMediaForm(f => ({ ...f, caption: e.target.value }))}
+                        className="w-full px-3 py-2 text-sm border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
+                        placeholder="Optional caption text" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-primary-900 mb-1">Credit</label>
+                      <input type="text" value={mediaForm.credit} onChange={e => setMediaForm(f => ({ ...f, credit: e.target.value }))}
+                        className="w-full px-3 py-2 text-sm border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
+                        placeholder="Photo credit / source" />
+                    </div>
+                    <div className="flex gap-3 pt-2">
+                      <button onClick={handleSaveMedia} disabled={updateMediaMut.isPending}
+                        className="flex-1 px-4 py-2 bg-primary-900 text-white rounded-lg text-sm font-medium hover:bg-primary-800 disabled:opacity-50">
+                        {updateMediaMut.isPending ? 'Saving...' : 'Save'}
+                      </button>
+                      <button onClick={() => setEditingMedia(null)}
+                        className="flex-1 px-4 py-2 border border-primary-200 rounded-lg text-sm font-medium hover:bg-primary-50">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

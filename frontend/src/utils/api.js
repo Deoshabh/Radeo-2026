@@ -187,6 +187,7 @@ export const adminAPI = {
   publishCmsPage: (id) => api.post(`/admin/cms/pages/${id}/publish`),
   deleteCmsPage: (id) => api.delete(`/admin/cms/pages/${id}`),
   getCmsMedia: (params) => api.get('/admin/cms/media', { params }),
+  updateCmsMedia: (id, data) => api.put(`/admin/cms/media/${id}`, data),
   getCmsMenus: () => api.get('/admin/cms/menus'),
   createCmsMenu: (data) => api.post('/admin/cms/menus', data),
 

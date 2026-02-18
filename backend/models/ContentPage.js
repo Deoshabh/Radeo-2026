@@ -110,7 +110,6 @@ const contentPageSchema = new mongoose.Schema(
       enum: ["public", "private", "password"],
       default: "public",
     },
-    passwordHash: String,
     
     // Scheduling
     publishAt: {
@@ -127,11 +126,6 @@ const contentPageSchema = new mongoose.Schema(
       index: true,
     },
     tags: [String],
-    parentPage: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "ContentPage",
-      default: null,
-    },
     order: {
       type: Number,
       default: 0,
@@ -141,15 +135,6 @@ const contentPageSchema = new mongoose.Schema(
     version: {
       type: Number,
       default: 1,
-    },
-    publishedVersion: {
-      type: Number,
-      default: null,
-    },
-    lastPublishedAt: Date,
-    lastPublishedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
     },
 
     // Ownership
@@ -165,7 +150,6 @@ const contentPageSchema = new mongoose.Schema(
 
     // Performance
     cacheKey: String,
-    lastRenderedAt: Date,
   },
   {
     timestamps: true,

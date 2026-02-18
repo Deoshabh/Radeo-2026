@@ -1,5 +1,6 @@
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
 import { use360Viewer } from '@/hooks/use360Viewer';
+import { use360Canvas } from '@/hooks/use360Canvas';
 import HotspotAnnotationEditor from '@/components/viewer/HotspotAnnotationEditor';
 
 export default function ProductViewer360({
@@ -11,8 +12,6 @@ export default function ProductViewer360({
     onHotspotsChange,
     className = ""
 }) {
-    const canvasRef = useRef(null);
-
     const {
         currentFrame,
         currentImageSrc,
@@ -24,6 +23,13 @@ export default function ProductViewer360({
         images,
         sensitivity,
         autoRotate
+    });
+
+    const { canvasRef } = use360Canvas({
+        currentImageSrc,
+        responsive: false,
+        fixedWidth: 800,
+        fixedHeight: 800,
     });
 
     const handleAddHotspot = (hotspot) => {
@@ -39,29 +45,6 @@ export default function ProductViewer360({
         if (!onHotspotsChange) return;
         onHotspotsChange((hotspots || []).filter((item) => item.id !== id));
     };
-
-    // Draw to canvas
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas || !currentImageSrc) return;
-
-        const ctx = canvas.getContext('2d');
-        const img = new Image();
-
-        img.onload = () => {
-            // Clear and draw
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Calculate aspect ratio fit (contain)
-            const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
-            const x = (canvas.width / 2) - (img.width / 2) * scale;
-            const y = (canvas.height / 2) - (img.height / 2) * scale;
-
-            ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
-        };
-
-        img.src = currentImageSrc;
-    }, [currentImageSrc]);
 
     if (!images || images.length === 0) {
         return <div className="w-full h-96 bg-gray-100 flex items-center justify-center text-gray-400">No frames loaded</div>;
@@ -97,7 +80,6 @@ export default function ProductViewer360({
                 onRemoveHotspot={handleRemoveHotspot}
             />
 
-            {/* Loading State or 360 Badge could go here */}
             <div className="absolute bottom-4 right-4 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-md text-xs font-bold text-gray-700 pointer-events-none">
                 360° VIEW
             </div>

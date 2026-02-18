@@ -1,13 +1,12 @@
 
 'use client';
-import { useRef, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { use360Viewer } from '@/hooks/use360Viewer';
+import { use360Canvas } from '@/hooks/use360Canvas';
 import { FiMove } from 'react-icons/fi';
 import HotspotAnnotationEditor from '@/components/viewer/HotspotAnnotationEditor';
 
 export default function Product360Viewer({ images, hotspots = [], aspectRatio = 'aspect-square', autoRotate = true }) {
-    const canvasRef = useRef(null);
-    const containerRef = useRef(null);
     const [isLoaded, setIsLoaded] = useState(false);
 
     const {
@@ -15,10 +14,14 @@ export default function Product360Viewer({ images, hotspots = [], aspectRatio = 
         handleDragStart,
         handleDragMove,
         handleDragEnd,
-        startAutoRotate,
         stopAutoRotate,
         currentImageSrc
-    } = use360Viewer({ images, sensitivity: 3 }); // decreased sensitivity for faster spin
+    } = use360Viewer({ images, sensitivity: 3 });
+
+    const { canvasRef, containerRef } = use360Canvas({
+        currentImageSrc,
+        responsive: true,
+    });
 
     // Preload images to avoid flickering
     useEffect(() => {
@@ -41,59 +44,10 @@ export default function Product360Viewer({ images, hotspots = [], aspectRatio = 
         return () => clearTimeout(timeout);
     }, [images]);
 
-    // Canvas Rendering
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas || !currentImageSrc) return;
-
-        const ctx = canvas.getContext('2d');
-        const img = new Image();
-        img.src = currentImageSrc;
-
-        img.onload = () => {
-            // clear
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // draw contain
-            const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
-            const x = (canvas.width / 2) - (img.width / 2) * scale;
-            const y = (canvas.height / 2) - (img.height / 2) * scale;
-            ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
-        };
-
-        // If image is already cached/loaded, onload might not fire immediately if we don't handle it right, 
-        // but creating new Image() usually works. For performance, we should cache Image objects, 
-        // but browser cache is usually sufficient for this simple viewer.
-
-    }, [currentFrame, currentImageSrc]);
-
     // Cleanup auto-rotate on unmount
     useEffect(() => {
-        // if (autoRotate && isLoaded) startAutoRotate(2); 
-        // Auto-rotate logic in hook needs refinement for "resume after drag", 
-        // for now let's just let user interact.
         return () => stopAutoRotate();
-    }, [autoRotate, isLoaded, startAutoRotate, stopAutoRotate]);
-
-    // Resize observer for canvas resolution
-    useEffect(() => {
-        if (!containerRef.current || !canvasRef.current) return;
-
-        const resize = () => {
-            const rect = containerRef.current.getBoundingClientRect();
-            // Set actual render resolution to match display size (or 2x for retina)
-            const dpr = window.devicePixelRatio || 1;
-            canvasRef.current.width = rect.width * dpr;
-            canvasRef.current.height = rect.height * dpr;
-
-            // Redraw immediately if possible (will happen via currentImageSrc effect naturally?)
-            // No, we need to re-trigger. 
-            // Effect [currentImageSrc] handles it if we don't clear state.
-        };
-
-        resize();
-        window.addEventListener('resize', resize);
-        return () => window.removeEventListener('resize', resize);
-    }, []);
+    }, [autoRotate, isLoaded, stopAutoRotate]);
 
     if (!images || images.length === 0) return null;
 

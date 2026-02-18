@@ -158,7 +158,7 @@ exports.createOrder = async (req, res) => {
 
     if (couponCode) {
       const couponService = require('../services/couponService');
-      const validation = await couponService.validateCoupon(couponCode, subtotal, req.user.id);
+      const validation = await couponService.validateCoupon(couponCode, subtotal, req.user.id, cart.items);
 
       if (!validation.valid) {
         return res.status(400).json({ message: validation.message });

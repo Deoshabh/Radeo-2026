@@ -16,6 +16,7 @@ const {
   // Media Library
   getAllMedia,
   uploadMedia,
+  updateMedia,
   
   // Navigation Menus
   getAllMenus,
@@ -75,6 +76,7 @@ router.delete("/pages/:id", deletePage);
 // Media Library
 router.get("/media", getAllMedia);
 router.post("/media/upload", upload.single("file"), uploadMedia);
+router.put("/media/:id", updateMedia);
 
 // Navigation Menus
 router.get("/menus", getAllMenus);
