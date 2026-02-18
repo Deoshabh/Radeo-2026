@@ -1,8 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { productAPI } from '@/utils/api';
+import { useEffect } from 'react';
 import { generateProductMetadata, JsonLd, generateProductJsonLd } from '@/utils/seo';
 
 /**

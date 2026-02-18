@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import AdminLayout from '@/components/AdminLayout';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { adminAPI } from '@/utils/api';
+import { useSeoSettings, useUpdateSeoSettings, useSeoAudit, useAutoGenerateSeo } from '@/hooks/useAdmin';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 import {
@@ -687,83 +687,59 @@ function PageSeoCard({ config, data, globalData, onChange, siteUrl, forceExpande
 // Main Page
 // ───────────────────────────────────────────────────
 export default function AdminSeoPage() {
+  const { data: rawSeoData, isLoading: loading, refetch } = useSeoSettings();
+  const updateSeoMut = useUpdateSeoSettings();
+  const auditMut = useSeoAudit();
+  const autoGenMut = useAutoGenerateSeo();
+
   const [seoSettings, setSeoSettings] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [activeCardFilter, setActiveCardFilter] = useState(null);
   const [focusedPageKey, setFocusedPageKey] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('default');
   const [expandAll, setExpandAll] = useState(false);
+  const [auditResults, setAuditResults] = useState(null);
+  const [showAuditPanel, setShowAuditPanel] = useState(false);
   const pageCardRefs = useRef({});
   const pageSectionRef = useRef(null);
-  const saveRef = useRef(null);
 
-  // Keep handleSave accessible to keyboard shortcut via ref
-  const handleSave = useCallback(async () => {
-    if (!saveRef.current?.hasChanges || saveRef.current?.saving) return;
-    try {
-      setSaving(true);
-      await adminAPI.updateSeoSettings(saveRef.current.seoSettings);
-      toast.success('SEO settings saved successfully');
-      setHasChanges(false);
-    } catch (error) {
-      console.error('Failed to save SEO settings:', error);
-      toast.error('Failed to save SEO settings');
-    } finally {
-      setSaving(false);
-    }
-  }, []);
-
-  // Keep ref in sync
+  // Initialize local form state when server data arrives
   useEffect(() => {
-    saveRef.current = { hasChanges, saving, seoSettings };
-  }, [hasChanges, saving, seoSettings]);
+    if (!rawSeoData) return;
+    const data = rawSeoData?.seoSettings || {};
+    const merged = {
+      global: { ...DEFAULTS.global, ...(data.global || {}) },
+      pages: { ...DEFAULTS.pages },
+    };
+    if (data.pages) {
+      for (const [key, val] of Object.entries(data.pages)) {
+        merged.pages[key] = { ...(DEFAULTS.pages[key] || {}), ...val };
+      }
+    }
+    setSeoSettings(merged);
+    setHasChanges(false);
+  }, [rawSeoData]);
 
-  // Ctrl+S keyboard shortcut
+  const handleSave = () => {
+    if (!hasChanges || updateSeoMut.isPending) return;
+    updateSeoMut.mutate(seoSettings, { onSuccess: () => setHasChanges(false) });
+  };
+
+  // Ctrl+S keyboard shortcut (stable ref to latest handleSave)
+  const handleSaveRef = useRef(handleSave);
+  useEffect(() => { handleSaveRef.current = handleSave; });
+
   useEffect(() => {
     const handler = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        handleSave();
+        handleSaveRef.current();
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [handleSave]);
-
-  const fetchSettings = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await adminAPI.getSeoSettings();
-      const data = response.data?.seoSettings || {};
-
-      const merged = {
-        global: { ...DEFAULTS.global, ...(data.global || {}) },
-        pages: { ...DEFAULTS.pages },
-      };
-
-      if (data.pages) {
-        for (const [key, val] of Object.entries(data.pages)) {
-          merged.pages[key] = { ...(DEFAULTS.pages[key] || {}), ...val };
-        }
-      }
-
-      setSeoSettings(merged);
-      setHasChanges(false);
-    } catch (error) {
-      console.error('Failed to fetch SEO settings:', error);
-      toast.error('Failed to load SEO settings');
-      setSeoSettings({ ...DEFAULTS });
-    } finally {
-      setLoading(false);
-    }
   }, []);
-
-  useEffect(() => {
-    fetchSettings();
-  }, [fetchSettings]);
 
   const handleGlobalChange = (field, value) => {
     setSeoSettings(prev => ({
@@ -855,7 +831,6 @@ export default function AdminSeoPage() {
 
   const scrollToPage = (pageKey) => {
     setFocusedPageKey(pageKey);
-    setActiveCardFilter(null);
     setSearchQuery('');
     setTimeout(() => {
       pageCardRefs.current[pageKey]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -874,22 +849,40 @@ export default function AdminSeoPage() {
     }, 100);
   };
 
+  // ── Product / Category SEO Audit ──
+  const runAudit = () => {
+    auditMut.mutate(undefined, {
+      onSuccess: (response) => {
+        setAuditResults(response.data);
+        setShowAuditPanel(true);
+        toast.success(`Audit complete — ${response.data?.summary?.totalIssues || 0} issues found`);
+      },
+    });
+  };
+
+  // ── Auto-Generate Product/Category SEO ──
+  const handleAutoGenerate = (type) => {
+    autoGenMut.mutate(type, {
+      onSuccess: (response) => {
+        const count = response.data?.generated?.length || 0;
+        toast.success(`Generated SEO for ${count} ${type}`);
+      },
+    });
+  };
+
   // ── Loading ──
   if (loading) {
     return (
-      <AdminLayout>
         <div className="min-h-screen bg-primary-50 flex items-center justify-center">
           <div className="flex items-center gap-3 text-primary-500">
             <FiRefreshCw className="w-5 h-5 animate-spin" />
             <span>Loading SEO settings...</span>
           </div>
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className="min-h-screen bg-primary-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-5xl">
           {/* Header */}
@@ -903,7 +896,7 @@ export default function AdminSeoPage() {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={fetchSettings}
+                onClick={() => refetch()}
                 disabled={loading}
                 className="flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium border border-primary-200 text-primary-600 hover:bg-primary-50 transition-colors"
                 title="Reload settings"
@@ -912,7 +905,7 @@ export default function AdminSeoPage() {
               </button>
               <button
                 onClick={handleSave}
-                disabled={saving || !hasChanges}
+                disabled={updateSeoMut.isPending || !hasChanges}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${
                   hasChanges
                     ? 'bg-brand-brown text-white hover:bg-brand-brown/90 shadow-md'
@@ -920,7 +913,7 @@ export default function AdminSeoPage() {
                 }`}
               >
                 <FiSave className="w-4 h-4" />
-                {saving ? 'Saving...' : 'Save Changes'}
+                {updateSeoMut.isPending ? 'Saving...' : 'Save Changes'}
                 {hasChanges && <span className="text-xs opacity-75 hidden sm:inline">(Ctrl+S)</span>}
               </button>
             </div>
@@ -1107,6 +1100,74 @@ export default function AdminSeoPage() {
               )}
             </div>
           )}
+
+          {/* Product / Category SEO Tools */}
+          <div className="bg-white rounded-xl border border-primary-200 p-5 mb-8">
+            <h2 className="text-lg font-bold text-primary-900 mb-1 flex items-center gap-2">
+              <FiZap className="w-5 h-5 text-brand-brown" />
+              Product &amp; Category SEO
+            </h2>
+            <p className="text-sm text-primary-500 mb-4">Auto-generate SEO metadata or audit existing entries</p>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={runAudit}
+                disabled={auditMut.isPending}
+                className="flex items-center gap-2 px-4 py-2.5 border border-primary-200 rounded-lg text-sm font-medium text-primary-700 hover:bg-primary-50 transition-colors disabled:opacity-50"
+              >
+                {auditMut.isPending ? <FiRefreshCw className="w-4 h-4 animate-spin" /> : <FiAlertCircle className="w-4 h-4" />}
+                Run SEO Audit
+              </button>
+              <button
+                onClick={() => handleAutoGenerate('products')}
+                disabled={autoGenMut.isPending}
+                className="flex items-center gap-2 px-4 py-2.5 border border-primary-200 rounded-lg text-sm font-medium text-primary-700 hover:bg-primary-50 transition-colors disabled:opacity-50"
+              >
+                {autoGenMut.isPending ? <FiRefreshCw className="w-4 h-4 animate-spin" /> : <FiZap className="w-4 h-4" />}
+                Generate Product SEO
+              </button>
+              <button
+                onClick={() => handleAutoGenerate('categories')}
+                disabled={autoGenMut.isPending}
+                className="flex items-center gap-2 px-4 py-2.5 border border-primary-200 rounded-lg text-sm font-medium text-primary-700 hover:bg-primary-50 transition-colors disabled:opacity-50"
+              >
+                {autoGenMut.isPending ? <FiRefreshCw className="w-4 h-4 animate-spin" /> : <FiZap className="w-4 h-4" />}
+                Generate Category SEO
+              </button>
+            </div>
+
+            {/* Audit Results Panel */}
+            {showAuditPanel && auditResults && (
+              <div className="mt-4 border-t border-primary-100 pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-primary-800">
+                    Audit Results — {auditResults.summary?.totalIssues || 0} issues across {auditResults.summary?.totalAudited || 0} items
+                  </h3>
+                  <button onClick={() => setShowAuditPanel(false)} className="text-primary-400 hover:text-primary-600">
+                    <FiX className="w-4 h-4" />
+                  </button>
+                </div>
+                {auditResults.issues?.length > 0 ? (
+                  <div className="max-h-64 overflow-y-auto space-y-2">
+                    {auditResults.issues.map((issue, idx) => (
+                      <div key={idx} className="flex items-start gap-2 px-3 py-2 rounded-lg bg-primary-50 text-sm">
+                        <span className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${
+                          issue.severity === 'high' ? 'bg-red-500' : issue.severity === 'medium' ? 'bg-amber-500' : 'bg-yellow-400'
+                        }`} />
+                        <div className="min-w-0">
+                          <span className="font-medium text-primary-800">{issue.name || issue.type}</span>
+                          <span className="text-primary-500 ml-1.5">{issue.issue || issue.message}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-green-600 flex items-center gap-1.5">
+                    <FiCheckCircle className="w-4 h-4" /> No SEO issues found. All products and categories look good!
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Global Settings */}
           <div className="bg-white rounded-xl border border-primary-200 p-5 mb-8">
@@ -1296,16 +1357,15 @@ export default function AdminSeoPage() {
               <p className="text-sm text-primary-600">You have unsaved SEO changes</p>
               <button
                 onClick={handleSave}
-                disabled={saving}
+                disabled={updateSeoMut.isPending}
                 className="flex items-center gap-2 px-5 py-2 bg-brand-brown text-white rounded-lg font-medium hover:bg-brand-brown/90 transition-colors"
               >
                 <FiSave className="w-4 h-4" />
-                {saving ? 'Saving...' : 'Save Changes'}
+                {updateSeoMut.isPending ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           )}
         </div>
       </div>
-    </AdminLayout>
   );
 }

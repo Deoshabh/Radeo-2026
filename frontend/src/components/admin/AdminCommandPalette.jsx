@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiSearch, FiCommand, FiShoppingBag, FiUsers, FiBox, FiSettings, FiHome, FiCreditCard, FiGrid } from 'react-icons/fi';
+import { FiSearch, FiCommand, FiShoppingBag, FiUsers, FiBox, FiSettings, FiHome, FiGrid } from 'react-icons/fi';
 
 export default function AdminCommandPalette() {
     const [isOpen, setIsOpen] = useState(false);

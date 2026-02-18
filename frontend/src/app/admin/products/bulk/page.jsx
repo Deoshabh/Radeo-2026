@@ -1,13 +1,11 @@
 'use client';
 
-import AdminLayout from '@/components/AdminLayout';
 import BulkProductEditor from '@/components/admin/products/BulkProductEditor';
 import { FiArrowLeft } from 'react-icons/fi';
 import Link from 'next/link';
 
 export default function BulkEditPage() {
     return (
-        <AdminLayout>
             <div className="container mx-auto px-4 py-6 h-screen flex flex-col">
                 <div className="mb-4 flex items-center justify-between flex-shrink-0">
                     <div className="flex items-center gap-4">
@@ -25,6 +23,5 @@ export default function BulkEditPage() {
                     <BulkProductEditor />
                 </div>
             </div>
-        </AdminLayout>
     );
 }

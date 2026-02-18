@@ -45,6 +45,14 @@ const mediaSchema = new mongoose.Schema(
     },
     thumbnailUrl: String,
     optimizedUrl: String,
+
+    // Responsive image variants (populated by image processing queue)
+    variants: {
+      thumb: String,  // 200x200 cover
+      card: String,   // 600x600 inside
+      full: String,   // 1200x1200 inside
+    },
+    processedAt: Date,
     
     // Image-specific fields
     width: Number,

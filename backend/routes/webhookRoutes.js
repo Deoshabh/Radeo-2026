@@ -14,19 +14,27 @@ const {
   getWebhookLogs,
   retryWebhook,
 } = require("../controllers/webhookController");
+const {
+  handleRazorpayWebhook,
+} = require("../controllers/razorpayWebhookController");
 
 /**
- * PUBLIC WEBHOOK ENDPOINT
- * POST /api/webhooks/shiprocket
- * - No authentication required (called by Shiprocket servers)
- * - Protected by IP whitelist and signature verification
+ * PUBLIC WEBHOOK ENDPOINTS
+ * No authentication required (called by external servers)
  */
+
+// POST /api/webhooks/shiprocket
+// Protected by IP whitelist and signature verification
 router.post(
   "/shiprocket",
   verifyShiprocketIP,
   verifyShiprocketSignature,
   handleShiprocketWebhook,
 );
+
+// POST /api/webhooks/razorpay
+// Protected by HMAC signature verification (x-razorpay-signature header)
+router.post("/razorpay", handleRazorpayWebhook);
 
 /**
  * ADMIN ENDPOINTS

@@ -2,7 +2,7 @@
 'use client';
 import { useRef, useEffect, useState } from 'react';
 import { use360Viewer } from '@/hooks/use360Viewer';
-import { FiMove, FiZoomIn } from 'react-icons/fi';
+import { FiMove } from 'react-icons/fi';
 import HotspotAnnotationEditor from '@/components/viewer/HotspotAnnotationEditor';
 
 export default function Product360Viewer({ images, hotspots = [], aspectRatio = 'aspect-square', autoRotate = true }) {

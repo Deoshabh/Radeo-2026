@@ -1,7 +1,9 @@
 const mongoose = require("mongoose");
 const Product = require("../models/Product");
+const Category = require("../models/Category");
 const Review = require("../models/Review");
 const { getOrSetCache } = require("../utils/cache");
+const { log } = require("../utils/logger");
 
 // Escape special regex characters to prevent ReDoS attacks
 const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -36,31 +38,13 @@ exports.getAllProducts = async (req, res) => {
       async () => {
         const query = { isActive: true };
 
-        // Search functionality
+        // Search functionality â€” use MongoDB text index for performance
+        let useTextScore = false;
         if (search && search.trim()) {
           const searchTerm = search.trim();
-          // Escape regex characters
-          const escapedSearch = escapeRegex(searchTerm);
-          
-          // Create regex: case insensitive
-          const searchRegex = new RegExp(escapedSearch, "i");
-          
-          // Optimization: Also check for exact matches or starts-with for higher relevance explicitly if we had text score
-          // For now, we keep the $or but ensure we aren't doing unnecessary lookups if search text is too short
-          if (searchTerm.length > 2) {
-             query.$or = [
-              { name: searchRegex },
-              { description: searchRegex },
-              { brand: searchRegex },
-              { category: searchRegex },
-              { "tags": searchRegex }, // Ensure tags is treated as array/string field
-            ];
-          } else {
-             // For very short strings, limit scope to name/brand to avoid slow description scans
-             query.$or = [
-              { name: searchRegex },
-              { brand: searchRegex },
-            ];
+          if (searchTerm.length >= 2) {
+            query.$text = { $search: searchTerm };
+            useTextScore = true;
           }
         }
 
@@ -69,9 +53,15 @@ exports.getAllProducts = async (req, res) => {
           query.featured = true;
         }
 
-        // Filter by category if provided
+        // Filter by category if provided (look up by slug or ObjectId)
         if (category) {
-          query.category = category.toLowerCase();
+          if (mongoose.Types.ObjectId.isValid(category)) {
+            query.category = category;
+          } else {
+            const cat = await Category.findOne({ slug: category.toLowerCase() }).select('_id').lean();
+            if (cat) query.category = cat._id;
+            else query.category = null; // no match → return empty
+          }
         }
 
         // Filter by specific product IDs if provided
@@ -91,7 +81,7 @@ exports.getAllProducts = async (req, res) => {
             }
 
             if (validIdList.length !== idList.length) {
-              console.warn("Ignoring invalid product ids in ids filter");
+              log.warn("Ignoring invalid product ids in ids filter");
             }
 
             query._id = { $in: validIdList };
@@ -129,11 +119,12 @@ exports.getAllProducts = async (req, res) => {
           }
         }
 
-        console.log("📦 Fetching products with query:", query);
-
         // Build sort options
         let sortOptions = {};
-        if (sortBy) {
+        if (useTextScore && !sortBy) {
+          // Sort by text relevance when searching without explicit sort
+          sortOptions = { score: { $meta: "textScore" } };
+        } else if (sortBy) {
           const sortOrder = order === "asc" ? 1 : -1;
           sortOptions[sortBy] = sortOrder;
         } else {
@@ -141,17 +132,20 @@ exports.getAllProducts = async (req, res) => {
           sortOptions = { createdAt: -1 };
         }
 
-        console.log("📊 Sorting by:", sortOptions);
+        let mongooseQuery = Product.find(query).populate('category', 'name slug');
 
-        let mongooseQuery = Product.find(query).sort(sortOptions);
-
-        // Optional limit support for lightweight list views
-        if (limit && Number(limit) > 0) {
-          mongooseQuery = mongooseQuery.limit(Number(limit));
+        // Add text score projection for relevance sorting
+        if (useTextScore) {
+          mongooseQuery = mongooseQuery.select({ score: { $meta: "textScore" } });
         }
 
+        mongooseQuery = mongooseQuery.sort(sortOptions);
+
+        // Enforce pagination with safe default limit
+        const effectiveLimit = Math.min(Number(limit) || 50, 200);
+        mongooseQuery = mongooseQuery.limit(effectiveLimit);
+
         const results = await mongooseQuery;
-        console.log(`✅ Found ${results.length} products`);
         return results;
       },
       ttl,
@@ -159,7 +153,7 @@ exports.getAllProducts = async (req, res) => {
 
     res.json(products);
   } catch (error) {
-    console.error("Get products error:", error);
+    log.error("Get products error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -209,7 +203,7 @@ exports.getTopRatedProducts = async (req, res) => {
 
     return res.json(sortedProducts);
   } catch (error) {
-    console.error("Get top-rated products error:", error);
+    log.error("Get top-rated products error:", error);
     return res.status(500).json({ message: "Server error" });
   }
 };
@@ -231,32 +225,24 @@ exports.searchProducts = async (req, res) => {
     const products = await getOrSetCache(
       cacheKey,
       async () => {
-        const searchRegex = new RegExp(escapeRegex(searchQuery), "i");
-
         const results = await Product.find({
           isActive: true,
-          $or: [
-            { name: searchRegex },
-            { description: searchRegex },
-            { brand: searchRegex },
-            { category: searchRegex },
-            { tags: searchRegex },
-          ],
+          $text: { $search: searchQuery },
         })
-          .limit(20)
-          .select("name slug images price category brand")
-          .sort({ featured: -1, createdAt: -1 });
-          
+          .select({ name: 1, slug: 1, images: 1, price: 1, category: 1, brand: 1, score: { $meta: "textScore" } })
+          .sort({ score: { $meta: "textScore" } })
+          .limit(20);
+
         return results;
       },
-      600 // 10 minutes cache
+      120, // 2-minute cache for search results
     );
 
-    console.log(`🔍 Search for "${q}": found ${products.length} results`);
+    log.info(`ðŸ” Search for "${q}": found ${products.length} results`);
 
     res.json(products);
   } catch (error) {
-    console.error("Search products error:", error);
+    log.error("Search products error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -273,7 +259,7 @@ exports.getProductBySlug = async (req, res) => {
         const foundProduct = await Product.findOne({
           slug,
           isActive: true,
-        });
+        }).populate('category', 'name slug');
         return foundProduct;
       },
       900, // 15 minutes cache
@@ -285,7 +271,7 @@ exports.getProductBySlug = async (req, res) => {
 
     res.json(product);
   } catch (error) {
-    console.error("Get product by slug error:", error);
+    log.error("Get product by slug error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -303,7 +289,7 @@ exports.getCategories = async (req, res) => {
 
     res.json(categories);
   } catch (error) {
-    console.error("Get categories error:", error);
+    log.error("Get categories error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -326,7 +312,7 @@ exports.getBrands = async (req, res) => {
 
     res.json(brands);
   } catch (error) {
-    console.error("Get brands error:", error);
+    log.error("Get brands error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -372,7 +358,7 @@ exports.getMaterials = async (req, res) => {
     const materials = Array.from(materialsSet).sort();
     res.json(materials);
   } catch (error) {
-    console.error("Get materials error:", error);
+    log.error("Get materials error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -400,7 +386,7 @@ exports.getPriceRange = async (req, res) => {
       res.json({ min: 0, max: 100000 });
     }
   } catch (error) {
-    console.error("Get price range error:", error);
+    log.error("Get price range error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -416,7 +402,7 @@ exports.getColors = async (req, res) => {
     const sortedColors = colors.filter(Boolean).sort();
     res.json(sortedColors);
   } catch (error) {
-    console.error("Get colors error:", error);
+    log.error("Get colors error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -454,7 +440,7 @@ exports.getSizes = async (req, res) => {
 
     res.json(sizes);
   } catch (error) {
-    console.error("Get sizes error:", error);
+    log.error("Get sizes error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

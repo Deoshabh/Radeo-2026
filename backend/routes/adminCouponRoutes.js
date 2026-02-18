@@ -6,6 +6,7 @@ const {
   updateCoupon,
   deleteCoupon,
   toggleCouponStatus,
+  getCouponStats,
 } = require("../controllers/adminCouponController");
 const { authenticate } = require("../middleware/auth");
 const admin = require("../middleware/admin");
@@ -13,6 +14,9 @@ const admin = require("../middleware/admin");
 // All routes require authentication and admin role
 router.use(authenticate);
 router.use(admin);
+
+// @route   GET /api/v1/admin/coupons/stats
+router.get("/stats", getCouponStats);
 
 // @route   GET /api/v1/admin/coupons
 router.get("/", getAllCoupons);

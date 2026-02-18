@@ -3,7 +3,6 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { authAPI, getFriendlyError } from '@/utils/api';
 import Cookies from 'js-cookie';
-import toast from 'react-hot-toast';
 import {
   loginWithEmail,
   registerWithEmail,

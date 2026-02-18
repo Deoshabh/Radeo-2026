@@ -7,12 +7,12 @@ const orderItemSchema = new mongoose.Schema(
       ref: "Product",
       required: true,
     },
-    name: String,
-    image: String,
+    name: { type: String, required: true },
+    image: { type: String, required: true },
     size: String,
     color: { type: String, default: "" },
-    quantity: Number,
-    price: Number, // snapshot price in INR
+    quantity: { type: Number, required: true, min: 1 },
+    price: { type: Number, required: true, min: 0 }, // snapshot price in INR
   },
   { _id: false },
 );
@@ -36,8 +36,7 @@ const orderSchema = new mongoose.Schema(
     subtotal: Number,
     shippingCost: { type: Number, default: 0 },
     discount: { type: Number, default: 0 },
-    total: Number,
-    totalAmount: Number, // Same as total, for frontend clarity
+    totalAmount: { type: Number, required: true, min: 0 }
 
     coupon: {
       code: String,
@@ -76,11 +75,12 @@ const orderSchema = new mongoose.Schema(
       },
       status: {
         type: String,
-        enum: ["pending", "paid", "failed"],
+        enum: ["pending", "paid", "failed", "refunded"],
         default: "pending",
       },
       transactionId: String,
       razorpayOrderId: String,
+      refundId: String,
     },
 
     shipping: {
@@ -138,6 +138,15 @@ const orderSchema = new mongoose.Schema(
       default: "confirmed",
     },
 
+    cancellation: {
+      reason: String,
+      cancelledAt: Date,
+      cancelledBy: {
+        type: String,
+        enum: ["customer", "admin", "system"],
+      },
+    },
+
     fulfillmentType: {
       type: String,
       default: "made_to_order",
@@ -148,8 +157,24 @@ const orderSchema = new mongoose.Schema(
       default: 3,
     },
   },
-  { timestamps: true },
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } },
 );
+
+// Backward-compat virtual: .total → .totalAmount
+orderSchema.virtual("total").get(function () {
+  return this.totalAmount;
+});
+
+// Virtual: item count
+orderSchema.virtual("itemCount").get(function () {
+  return this.items.reduce((sum, item) => sum + item.quantity, 0);
+});
+
+// Indexes for common query patterns
+orderSchema.index({ user: 1, createdAt: -1 });
+orderSchema.index({ status: 1, createdAt: -1 });
+orderSchema.index({ "payment.status": 1 });
+orderSchema.index({ createdAt: -1 });
 
 // Note: orderId is now generated in the controller
 // This hook is kept for backward compatibility in case orderId is not provided

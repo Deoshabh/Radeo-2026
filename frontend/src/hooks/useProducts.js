@@ -73,3 +73,15 @@ export const useToggleFeatured = () => {
       onError: () => toast.error('Failed to update featured status'),
     });
   };
+
+export const useUpdateProductStock = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, sizes, stock }) => adminAPI.updateProduct(id, { sizes, stock }),
+    onSuccess: () => {
+      toast.success('Stock updated');
+      queryClient.invalidateQueries(['products']);
+    },
+    onError: () => toast.error('Failed to update stock'),
+  });
+};

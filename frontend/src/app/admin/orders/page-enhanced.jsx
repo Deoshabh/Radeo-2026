@@ -5,17 +5,18 @@
  * Features: Quick actions, risk flags, aging indicators, bulk operations, timeline
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { adminAPI } from '@/utils/api';
+import { useOrders, useTrackShipment, useShiprocketSync, useBulkCreateShipments, useBulkUpdateOrderStatus } from '@/hooks/useAdmin';
 import { exportOrdersToCSV } from '@/utils/exportCSV';
-import AdminLayout from '@/components/AdminLayout';
 import ShiprocketShipmentModal from '@/components/ShiprocketShipmentModal';
 import OrderTimelinePanel from '@/components/OrderTimelinePanel';
 import ViewContactModal from '@/components/ViewContactModal';
 import BulkActionsBar from '@/components/BulkActionsBar';
-import OrderDetailsModal from '@/components/OrderDetailsModal';
+import OrderDrawer from '@/components/admin/orders/OrderDrawer';
+import OrderKanbanBoard from '@/components/admin/orders/OrderKanbanBoard';
 import UserHistoryModal from '@/components/UserHistoryModal';
 import { formatPrice } from '@/utils/helpers';
 import toast from 'react-hot-toast';
@@ -38,18 +39,17 @@ import {
   FiDownload,
   FiRefreshCw,
   FiFileText,
+  FiList,
+  FiColumns,
 } from 'react-icons/fi';
 
 export default function AdminOrdersDashboard() {
   const router = useRouter();
   const { user, isAuthenticated, loading } = useAuth();
-  const [orders, setOrders] = useState([]);
-  const [loadingOrders, setLoadingOrders] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalOrders, setTotalOrders] = useState(0);
   const [limit] = useState(20);
 
   // Sorting State
@@ -69,55 +69,38 @@ export default function AdminOrdersDashboard() {
   const [showUserHistory, setShowUserHistory] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [expandedRow, setExpandedRow] = useState(null);
-  const [syncingShiprocket, setSyncingShiprocket] = useState(false);
+  const [viewMode, setViewMode] = useState('table'); // 'table' | 'kanban'
 
+  // ── Debounced search ────────────────────────────────────────────
   useEffect(() => {
-    if (!loading && (!isAuthenticated || user?.role !== 'admin')) {
-      router.push('/');
-    }
-  }, [user, isAuthenticated, loading, router]);
-
-  const fetchOrders = async () => {
-    try {
-      setLoadingOrders(true);
-      const params = {
-        page: currentPage,
-        limit,
-        status: filterStatus,
-        search: searchQuery,
-        sortBy,
-        order: sortOrder
-      };
-
-      const response = await adminAPI.getAllOrders(params);
-      const data = response.data;
-
-      setOrders(data.orders || []);
-      setTotalPages(data.totalPages || 1);
-      setTotalOrders(data.totalOrders || 0);
-      setSelectedOrders([]); // Clear selection on new data fetch
-    } catch (error) {
-      toast.error('Failed to fetch orders');
-      console.error(error);
-    } finally {
-      setLoadingOrders(false);
-    }
-  };
+    const t = setTimeout(() => setDebouncedSearch(searchQuery), 400);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
   // Reset page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, filterStatus, sortBy, sortOrder]);
+  useEffect(() => { setCurrentPage(1); }, [searchQuery, filterStatus, sortBy, sortOrder]);
 
-  // Debounced fetch for search and filters
-  useEffect(() => {
-    if (isAuthenticated && user?.role === 'admin') {
-      const timeout = setTimeout(() => {
-        fetchOrders();
-      }, 400);
-      return () => clearTimeout(timeout);
-    }
-  }, [isAuthenticated, user, currentPage, searchQuery, filterStatus, sortBy, sortOrder]);
+  // Clear selection when query params change
+  useEffect(() => { setSelectedOrders([]); }, [currentPage, debouncedSearch, filterStatus, sortBy, sortOrder]);
+
+  // ── React Query: orders list ────────────────────────────────────
+  const queryParams = useMemo(() => ({
+    page: currentPage, limit,
+    status: filterStatus,
+    search: debouncedSearch,
+    sortBy, order: sortOrder,
+  }), [currentPage, limit, filterStatus, debouncedSearch, sortBy, sortOrder]);
+
+  const { data: ordersData, isLoading: loadingOrders, refetch: refetchOrders } = useOrders(queryParams);
+  const orders = ordersData?.orders || [];
+  const totalPages = ordersData?.totalPages || 1;
+  const totalOrders = ordersData?.totalOrders || 0;
+
+  // ── Mutation hooks ──────────────────────────────────────────────
+  const trackMut = useTrackShipment();
+  const syncMut = useShiprocketSync();
+  const bulkCreateMut = useBulkCreateShipments();
+  const bulkStatusMut = useBulkUpdateOrderStatus();
 
   // Selection handlers
   const toggleOrderSelection = (orderId) => {
@@ -210,17 +193,13 @@ export default function AdminOrdersDashboard() {
     toast.success('Opening label...');
   };
 
-  const handleViewTracking = async (order) => {
-    try {
-      await adminAPI.trackShipment(order._id);
-      await fetchOrders();
-      toast.success('Tracking synced from Shiprocket');
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to sync tracking from Shiprocket');
-    } finally {
-      setSelectedOrder(order);
-      setExpandedRow(expandedRow === order._id ? null : order._id);
-    }
+  const handleViewTracking = (order) => {
+    trackMut.mutate(order._id, {
+      onSettled: () => {
+        setSelectedOrder(order);
+        setExpandedRow(expandedRow === order._id ? null : order._id);
+      },
+    });
   };
 
   const handleGenerateInvoice = async (order) => {
@@ -232,7 +211,7 @@ export default function AdminOrdersDashboard() {
         response.data?.data?.response?.invoice_url ||
         null;
 
-      await fetchOrders();
+      await refetchOrders();
 
       if (invoiceUrl) {
         window.open(invoiceUrl, '_blank');
@@ -288,36 +267,16 @@ export default function AdminOrdersDashboard() {
     }
   };
 
-  const handleRunShiprocketSync = async () => {
-    try {
-      setSyncingShiprocket(true);
-      const response = await adminAPI.triggerShiprocketReconciliation();
-      const summary = response.data?.data || {};
-      await fetchOrders();
-      toast.success(
-        `Sync done: ${summary.updated || 0} updated, ${summary.failed || 0} failed`,
-      );
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to run Shiprocket sync');
-    } finally {
-      setSyncingShiprocket(false);
-    }
+  const handleRunShiprocketSync = () => {
+    syncMut.mutate();
   };
 
   // Bulk action handlers
-  const handleBulkCreateShipments = async () => {
+  const handleBulkCreateShipments = () => {
     if (selectedOrders.length === 0) return;
-
-    try {
-      const response = await adminAPI.bulkCreateShipments(selectedOrders);
-      toast.success(
-        `Processed ${selectedOrders.length} orders: ${response.data.results.success.length} successful`
-      );
-      fetchOrders();
-      setSelectedOrders([]);
-    } catch (error) {
-      toast.error('Bulk shipment creation failed');
-    }
+    bulkCreateMut.mutate(selectedOrders, {
+      onSuccess: () => setSelectedOrders([]),
+    });
   };
 
   const handleBulkPrintLabels = async () => {
@@ -352,31 +311,22 @@ export default function AdminOrdersDashboard() {
     }
   };
 
-  const handleBulkUpdateStatus = async (status) => {
+  const handleBulkUpdateStatus = (status) => {
     if (selectedOrders.length === 0) return;
-
-    try {
-      await adminAPI.bulkUpdateStatus(selectedOrders, status);
-      toast.success(`Updated ${selectedOrders.length} orders to ${status}`);
-      fetchOrders();
-      setSelectedOrders([]);
-    } catch (error) {
-      toast.error('Bulk status update failed');
-    }
+    bulkStatusMut.mutate({ orderIds: selectedOrders, status }, {
+      onSuccess: () => setSelectedOrders([]),
+    });
   };
 
   if (loading || loadingOrders) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-900"></div>
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -388,6 +338,15 @@ export default function AdminOrdersDashboard() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {/* View toggle */}
+            <div className="flex bg-gray-100 p-0.5 rounded-lg">
+              <button onClick={() => setViewMode('table')}
+                className={`p-2 rounded-md transition-colors ${viewMode === 'table' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                title="Table view"><FiList className="w-4 h-4" /></button>
+              <button onClick={() => setViewMode('kanban')}
+                className={`p-2 rounded-md transition-colors ${viewMode === 'kanban' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                title="Kanban view"><FiColumns className="w-4 h-4" /></button>
+            </div>
             <button
               onClick={handleRunShiprocketSync}
               disabled={syncingShiprocket}
@@ -451,7 +410,20 @@ export default function AdminOrdersDashboard() {
           />
         )}
 
+        {/* Kanban View */}
+        {viewMode === 'kanban' && (
+          <OrderKanbanBoard
+            orders={orders}
+            onRefresh={fetchOrders}
+            onCardClick={(order) => {
+              setSelectedOrder(order);
+              setShowDetailsModal(true);
+            }}
+          />
+        )}
+
         {/* Orders Table */}
+        {viewMode === 'table' && (
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -766,9 +738,8 @@ export default function AdminOrdersDashboard() {
             </div>
           </div>
         </div>
+        )}
       </div>
-
-      {/* Modals */}
       {selectedOrder && (
         <ShiprocketShipmentModal
           order={selectedOrder}
@@ -798,13 +769,14 @@ export default function AdminOrdersDashboard() {
       )}
 
       {showDetailsModal && selectedOrder && (
-        <OrderDetailsModal
+        <OrderDrawer
           order={selectedOrder}
           isOpen={showDetailsModal}
           onClose={() => {
             setShowDetailsModal(false);
             setSelectedOrder(null);
           }}
+          onStatusUpdate={() => fetchOrders()}
         />
       )}
 
@@ -819,6 +791,4 @@ export default function AdminOrdersDashboard() {
           }}
         />
       )}
-    </AdminLayout>
-  );
-}
+

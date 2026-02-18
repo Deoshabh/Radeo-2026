@@ -59,12 +59,21 @@ const reviewSchema = new mongoose.Schema({
     index: true
   },
   ai_tags: {
-    nsfw_score: Number, // 0.0 to 1.0 (NudeNet)
-    contains_prohibited_objects: Boolean, // YOLO
-    detected_objects: [String], // List of objects found
-    duplicate_hash: String, // Perceptual hash
-    is_duplicate: Boolean
-  }
+    moderation_score: Number,
+    moderation_flags: [String],
+    moderation_action: { type: String, enum: ['approve', 'flag', 'reject'] },
+    processedAt: Date,
+  },
+
+  // Admin reply
+  adminReply: {
+    text: { type: String, trim: true, maxLength: 2000 },
+    repliedAt: Date,
+    repliedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+  },
+
+  // Admin notes (internal, not shown to customer)
+  adminNotes: { type: String, trim: true, maxLength: 1000 }
 }, {
   timestamps: true
 });

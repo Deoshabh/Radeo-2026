@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const { authenticate, authorize } = require("../middleware/auth");
-const { validateRequest } = require("../middleware/validateRequest");
+const { sanitizeHtmlFields } = require("../middleware/sanitizeHtml");
 
 const {
   // Content Pages
@@ -67,8 +67,8 @@ router.use(authorize("admin", "designer", "publisher"));
 // Content Pages
 router.get("/pages", getAllPages);
 router.get("/pages/:id", getPage);
-router.post("/pages", createPage);
-router.put("/pages/:id", updatePage);
+router.post("/pages", sanitizeHtmlFields("content", "excerpt"), createPage);
+router.put("/pages/:id", sanitizeHtmlFields("content", "excerpt"), updatePage);
 router.post("/pages/:id/publish", publishPage);
 router.delete("/pages/:id", deletePage);
 

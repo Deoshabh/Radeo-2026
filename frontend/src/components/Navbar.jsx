@@ -477,8 +477,8 @@ export default function Navbar() {
                     className="flex items-center gap-3 px-4 py-2.5 hover:bg-[color:var(--color-page-bg)] transition-colors"
                   >
                     {cat.image?.url ? (
-                      <div className="w-9 h-9 rounded overflow-hidden flex-shrink-0 bg-gray-50">
-                        <img src={cat.image.url} alt={cat.name} className="w-full h-full object-cover" />
+                      <div className="w-9 h-9 rounded overflow-hidden flex-shrink-0 bg-gray-50 relative">
+                        <Image src={cat.image.url} alt={cat.name} fill sizes="36px" className="object-cover" />
                       </div>
                     ) : (
                       <div className="w-9 h-9 rounded bg-[color:var(--color-subtle-bg)] flex items-center justify-center flex-shrink-0">

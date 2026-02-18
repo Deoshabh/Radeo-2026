@@ -3,6 +3,7 @@ const NavigationMenu = require("../models/NavigationMenu");
 const Media = require("../models/Media");
 const { uploadBuffer } = require("../utils/minio");
 const path = require("path");
+const { log } = require("../utils/logger");
 
 /* =====================
    Content Pages
@@ -28,7 +29,7 @@ exports.getAllPages = async (req, res) => {
 
     res.json({ success: true, pages });
   } catch (error) {
-    console.error("Get all pages error:", error);
+    log.error("Get all pages error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -42,7 +43,7 @@ exports.getPage = async (req, res) => {
     }
     res.json({ success: true, page });
   } catch (error) {
-    console.error("Get page error:", error);
+    log.error("Get page error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -72,7 +73,7 @@ exports.createPage = async (req, res) => {
     await page.save();
     res.status(201).json({ success: true, page });
   } catch (error) {
-    console.error("Create page error:", error);
+    log.error("Create page error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -92,7 +93,7 @@ exports.updatePage = async (req, res) => {
     await page.save();
     res.json({ success: true, page });
   } catch (error) {
-    console.error("Update page error:", error);
+    log.error("Update page error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -112,7 +113,7 @@ exports.publishPage = async (req, res) => {
     await page.save();
     res.json({ success: true, page });
   } catch (error) {
-    console.error("Publish page error:", error);
+    log.error("Publish page error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -128,7 +129,7 @@ exports.deletePage = async (req, res) => {
     await page.deleteOne();
     res.json({ success: true, message: "Page deleted" });
   } catch (error) {
-    console.error("Delete page error:", error);
+    log.error("Delete page error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -167,7 +168,7 @@ exports.getAllMedia = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Get media error:", error);
+    log.error("Get media error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -216,7 +217,7 @@ exports.uploadMedia = async (req, res) => {
 
     res.status(201).json({ success: true, media });
   } catch (error) {
-    console.error("Upload media error:", error);
+    log.error("Upload media error:", error);
     res.status(500).json({ message: "Server error: " + error.message });
   }
 };
@@ -230,7 +231,7 @@ exports.getAllMenus = async (req, res) => {
     const menus = await NavigationMenu.find().sort({ name: 1 });
     res.json({ success: true, menus });
   } catch (error) {
-    console.error("Get menus error:", error);
+    log.error("Get menus error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -262,7 +263,7 @@ exports.createMenu = async (req, res) => {
 
     res.status(201).json({ success: true, menu });
   } catch (error) {
-    console.error("Create menu error:", error);
+    log.error("Create menu error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -282,7 +283,7 @@ exports.updateMenuItems = async (req, res) => {
 
     res.json({ success: true, menu });
   } catch (error) {
-    console.error("Update menu items error:", error);
+    log.error("Update menu items error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -302,7 +303,7 @@ exports.getPublicPage = async (req, res) => {
 
     res.json({ success: true, page });
   } catch (error) {
-    console.error("Get public page error:", error);
+    log.error("Get public page error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -329,7 +330,7 @@ exports.getPublicMenu = async (req, res) => {
 
     res.json({ success: true, menu: menuObj });
   } catch (error) {
-    console.error("Get public menu error:", error);
+    log.error("Get public menu error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

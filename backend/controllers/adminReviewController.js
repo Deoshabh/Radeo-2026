@@ -1,3 +1,4 @@
+const { log } = require('../utils/logger');
 const Review = require("../models/Review");
 const Product = require("../models/Product");
 const User = require("../models/User");
@@ -85,7 +86,7 @@ exports.getAllReviews = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Get all reviews error:", error);
+    log.error("Get all reviews error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -107,7 +108,7 @@ exports.getReviewById = async (req, res) => {
 
     res.json(review);
   } catch (error) {
-    console.error("Get review by ID error:", error);
+    log.error("Get review by ID error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -138,7 +139,7 @@ exports.toggleReviewHidden = async (req, res) => {
       review,
     });
   } catch (error) {
-    console.error("Toggle review hidden error:", error);
+    log.error("Toggle review hidden error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -168,7 +169,7 @@ exports.updateReviewNotes = async (req, res) => {
       review,
     });
   } catch (error) {
-    console.error("Update review notes error:", error);
+    log.error("Update review notes error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -196,7 +197,7 @@ exports.deleteReview = async (req, res) => {
           const key = urlParts.slice(4).join("/"); // Get everything after bucket name
           await deleteObject(key);
         } catch (err) {
-          console.error("Error deleting photo from MinIO:", err);
+          log.error("Error deleting photo from MinIO:", err);
           // Continue even if photo deletion fails
         }
       }
@@ -206,7 +207,7 @@ exports.deleteReview = async (req, res) => {
 
     res.json({ message: "Review deleted successfully" });
   } catch (error) {
-    console.error("Delete review error:", error);
+    log.error("Delete review error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -234,7 +235,7 @@ exports.bulkHideReviews = async (req, res) => {
       modifiedCount: result.modifiedCount,
     });
   } catch (error) {
-    console.error("Bulk hide reviews error:", error);
+    log.error("Bulk hide reviews error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -259,7 +260,7 @@ exports.bulkDeleteReviews = async (req, res) => {
       deletedCount: result.deletedCount,
     });
   } catch (error) {
-    console.error("Bulk delete reviews error:", error);
+    log.error("Bulk delete reviews error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -364,7 +365,57 @@ exports.getReviewStats = async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    console.error("Get review stats error:", error);
+    log.error("Get review stats error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// @desc    Reply to a review (admin reply visible to customers)
+// @route   PATCH /api/v1/admin/reviews/:id/reply
+// @access  Private/Admin
+exports.replyToReview = async (req, res) => {
+  try {
+    const { text } = req.body;
+
+    if (!text || !text.trim()) {
+      return res.status(400).json({ message: "Reply text is required" });
+    }
+
+    const review = await Review.findById(req.params.id);
+    if (!review) {
+      return res.status(404).json({ message: "Review not found" });
+    }
+
+    review.adminReply = {
+      text: text.trim(),
+      repliedAt: new Date(),
+      repliedBy: req.user.id,
+    };
+    await review.save();
+
+    res.json({ message: "Reply added successfully", review });
+  } catch (error) {
+    log.error("Reply to review error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// @desc    Delete admin reply from a review
+// @route   DELETE /api/v1/admin/reviews/:id/reply
+// @access  Private/Admin
+exports.deleteReply = async (req, res) => {
+  try {
+    const review = await Review.findById(req.params.id);
+    if (!review) {
+      return res.status(404).json({ message: "Review not found" });
+    }
+
+    review.adminReply = undefined;
+    await review.save();
+
+    res.json({ message: "Reply deleted", review });
+  } catch (error) {
+    log.error("Delete reply error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

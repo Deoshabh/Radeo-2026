@@ -4,13 +4,14 @@
 // ===============================
 const Order = require("../models/Order");
 const WebhookLog = require("../models/WebhookLog");
+const { log } = require("../utils/logger");
 const {
   emitOrderUpdate,
   emitGlobalShipmentUpdate,
 } = require("../utils/soketi");
 
 /**
- * Status mapping: Shiprocket status → Order status
+ * Status mapping: Shiprocket status â†’ Order status
  */
 const STATUS_MAPPING = {
   "AWB GENERATED": "processing",
@@ -32,7 +33,7 @@ const STATUS_MAPPING = {
 };
 
 /**
- * Lifecycle status mapping: Shiprocket status → Lifecycle status
+ * Lifecycle status mapping: Shiprocket status â†’ Lifecycle status
  */
 const LIFECYCLE_MAPPING = {
   "ORDER PLACED": "ready_to_ship",
@@ -116,8 +117,8 @@ const processWebhookAsync = async (webhookLog) => {
       webhookLog.error = "Order not found";
       webhookLog.processedAt = new Date();
       await webhookLog.save();
-      console.log(
-        `⚠️ Webhook: Order not found for event ${webhookLog.eventId}`,
+      log.info(
+        `âš ï¸ Webhook: Order not found for event ${webhookLog.eventId}`,
       );
       return;
     }
@@ -168,16 +169,16 @@ const processWebhookAsync = async (webhookLog) => {
     const newOrderStatus =
       derivedFromText || mapStatusFromShipmentStatusId(shipmentStatusId);
     if (newOrderStatus && newOrderStatus !== order.status) {
-      console.log(
-        `📦 Order ${order.orderId}: Status ${order.status} → ${newOrderStatus}`,
+      log.info(
+        `ðŸ“¦ Order ${order.orderId}: Status ${order.status} â†’ ${newOrderStatus}`,
       );
       order.status = newOrderStatus;
     }
 
     // Log lifecycle transition
     if (oldLifecycleStatus !== newLifecycleStatus) {
-      console.log(
-        `🔄 Order ${order.orderId}: Lifecycle ${oldLifecycleStatus} → ${newLifecycleStatus}`,
+      log.info(
+        `ðŸ”„ Order ${order.orderId}: Lifecycle ${oldLifecycleStatus} â†’ ${newLifecycleStatus}`,
       );
     }
 
@@ -213,17 +214,39 @@ const processWebhookAsync = async (webhookLog) => {
     // Update webhook log
     webhookLog.status = "processed";
     webhookLog.orderId = order._id;
-    webhookLog.result = `Order ${order.orderId} updated: ${oldStatus} → ${currentStatus}`;
+    webhookLog.result = `Order ${order.orderId} updated: ${oldStatus} â†’ ${currentStatus}`;
     webhookLog.processedAt = new Date();
     await webhookLog.save();
 
-    console.log(`✅ Webhook processed: ${webhookLog.eventId}`);
+    log.info(`Webhook processed: ${webhookLog.eventId}`);
   } catch (error) {
-    console.error("❌ Webhook processing error:", error);
-    webhookLog.status = "failed";
+    log.error("Webhook processing error:", error);
+    webhookLog.retryCount = (webhookLog.retryCount || 0) + 1;
     webhookLog.error = error.message;
     webhookLog.processedAt = new Date();
-    await webhookLog.save();
+
+    // Schedule retry with exponential backoff if under max retries
+    if (webhookLog.retryCount < (webhookLog.maxRetries || 5)) {
+      const backoffMs = Math.min(
+        1000 * Math.pow(2, webhookLog.retryCount), // 2s, 4s, 8s, 16s, 32s
+        60000, // cap at 1 minute
+      );
+      webhookLog.status = "pending";
+      webhookLog.nextRetryAt = new Date(Date.now() + backoffMs);
+      await webhookLog.save();
+
+      log.info(
+        `Webhook ${webhookLog.eventId} scheduled for retry #${webhookLog.retryCount} in ${backoffMs}ms`,
+      );
+
+      setTimeout(() => processWebhookAsync(webhookLog), backoffMs);
+    } else {
+      webhookLog.status = "failed";
+      await webhookLog.save();
+      log.error(
+        `Webhook ${webhookLog.eventId} failed permanently after ${webhookLog.retryCount} retries`,
+      );
+    }
   }
 };
 
@@ -239,7 +262,7 @@ exports.handleShiprocketWebhook = async (req, res) => {
       req.headers["x-real-ip"] ||
       req.connection.remoteAddress;
 
-    console.log("📦 Shiprocket webhook received:", {
+    log.info("ðŸ“¦ Shiprocket webhook received:", {
       awb: payload.awb || payload.awb_code,
       status: payload.current_status || payload.shipment_status,
       ip: clientIP,
@@ -251,7 +274,7 @@ exports.handleShiprocketWebhook = async (req, res) => {
     // Check if event already processed (idempotency)
     const existingLog = await WebhookLog.findOne({ eventId });
     if (existingLog) {
-      console.log(`⚠️ Webhook: Duplicate event ${eventId} (already processed)`);
+      log.info(`âš ï¸ Webhook: Duplicate event ${eventId} (already processed)`);
       // Return 200 to prevent Shiprocket retries
       return res.status(200).json({
         success: true,
@@ -290,7 +313,7 @@ exports.handleShiprocketWebhook = async (req, res) => {
     // In production, use a proper job queue like Bull or BullMQ
     setImmediate(() => processWebhookAsync(webhookLog));
   } catch (error) {
-    console.error("❌ Webhook handler error:", error);
+    log.error("âŒ Webhook handler error:", error);
 
     // Still return 200 to prevent Shiprocket retries
     res.status(200).json({
@@ -329,7 +352,7 @@ exports.getWebhookLogs = async (req, res) => {
       total: count,
     });
   } catch (error) {
-    console.error("Get webhook logs error:", error);
+    log.error("Get webhook logs error:", error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -360,20 +383,27 @@ exports.retryWebhook = async (req, res) => {
       });
     }
 
-    // Reset status and retry
+    // Reset status and retry (manual retries don't count against maxRetries)
     webhookLog.status = "pending";
     webhookLog.error = null;
+    webhookLog.retryCount = 0; // Reset for manual retry
     await webhookLog.save();
 
+    // Process synchronously for manual retry so admin sees result
     await processWebhookAsync(webhookLog);
+
+    // Reload to get updated status
+    const updated = await WebhookLog.findById(logId);
 
     res.json({
       success: true,
-      message: "Webhook reprocessing initiated",
-      data: webhookLog,
+      message: updated.status === "processed"
+        ? "Webhook reprocessed successfully"
+        : "Webhook reprocessing failed — check error",
+      data: updated,
     });
   } catch (error) {
-    console.error("Retry webhook error:", error);
+    log.error("Retry webhook error:", error);
     res.status(500).json({
       success: false,
       message: error.message,

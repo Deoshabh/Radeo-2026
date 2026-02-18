@@ -1,4 +1,8 @@
+const { log } = require('../utils/logger');
+const mongoose = require('mongoose');
 const Product = require("../models/Product");
+const Category = require("../models/Category");
+const StockMovement = require("../models/StockMovement");
 const { invalidateCache } = require("../utils/cache");
 
 // @desc    Get all products (admin view)
@@ -24,7 +28,12 @@ exports.getAllProducts = async (req, res) => {
     }
 
     if (category && category !== 'all') {
-      filter.category = category.toLowerCase();
+      if (mongoose.Types.ObjectId.isValid(category)) {
+        filter.category = category;
+      } else {
+        const cat = await Category.findOne({ slug: category.toLowerCase() }).select('_id').lean();
+        if (cat) filter.category = cat._id;
+      }
     }
 
     if (brand && brand !== 'all') {
@@ -49,6 +58,7 @@ exports.getAllProducts = async (req, res) => {
     const total = await Product.countDocuments(filter);
     const skip = (page - 1) * limit;
     const products = await Product.find(filter)
+      .populate('category', 'name slug')
       .sort(sortOptions)
       .skip(skip)
       .limit(limit);
@@ -66,7 +76,7 @@ exports.getAllProducts = async (req, res) => {
       totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
-    console.error("Get all products error:", error);
+    log.error("Get all products error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -87,24 +97,19 @@ exports.bulkDeleteProducts = async (req, res) => {
     // 1. Find all products to be deleted to get their images
     const products = await Product.find({ _id: { $in: ids } });
 
-    // 2. Delete images from MinIO
+    // 2. Delete images from MinIO (parallel)
     const { deleteObject } = require("../utils/minio");
-    let deletedImagesCount = 0;
+    const allKeys = products.flatMap(p =>
+      (p.images || []).map(img => img.key || (typeof img === 'string' ? img.split('/product-media/')[1] : null)).filter(Boolean)
+    );
 
-    for (const product of products) {
-        if (product.images && product.images.length > 0) {
-            for (const image of product.images) {
-                 try {
-                    const objectKey = image.key || (typeof image === 'string' ? image.split('/product-media/')[1] : null);
-                    if (objectKey) {
-                        await deleteObject(objectKey);
-                        deletedImagesCount++;
-                    }
-                 } catch (err) {
-                     console.error(`Failed to delete image for product ${product._id}:`, err);
-                 }
-            }
-        }
+    const deleteResults = await Promise.allSettled(
+      allKeys.map(key => deleteObject(key))
+    );
+    const deletedImagesCount = deleteResults.filter(r => r.status === 'fulfilled').length;
+    const failedDeletes = deleteResults.filter(r => r.status === 'rejected');
+    if (failedDeletes.length > 0) {
+      log.warn(`Bulk delete: ${failedDeletes.length} image deletions failed`);
     }
 
     // 3. Delete products from DB
@@ -119,7 +124,7 @@ exports.bulkDeleteProducts = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Bulk delete products error:", error);
+    log.error("Bulk delete products error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -153,7 +158,7 @@ exports.bulkUpdateStatus = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Bulk update status error:", error);
+    log.error("Bulk update status error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -172,7 +177,7 @@ exports.getProductById = async (req, res) => {
 
     res.json(product);
   } catch (error) {
-    console.error("Get product by ID error:", error);
+    log.error("Get product by ID error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -206,7 +211,7 @@ exports.createProduct = async (req, res) => {
     } = req.body;
 
     // Log incoming data for debugging
-    console.log(
+    log.info(
       "Creating product with data:",
       JSON.stringify(
         {
@@ -227,7 +232,7 @@ exports.createProduct = async (req, res) => {
 
     // Validate required fields
     if (!name || !slug || !description || !category || !price) {
-      console.log("❌ Validation failed - missing required fields:", {
+      log.info("âŒ Validation failed - missing required fields:", {
         name: !!name,
         slug: !!slug,
         description: !!description,
@@ -247,12 +252,17 @@ exports.createProduct = async (req, res) => {
       });
     }
 
-    // Check if slug already exists
-    const existingProduct = await Product.findOne({ slug });
-    if (existingProduct) {
-      return res
-        .status(400)
-        .json({ message: "Product with this slug already exists" });
+    // Auto-resolve slug collision with -2, -3, etc.
+    let finalSlug = slug;
+    let slugConflict = await Product.findOne({ slug: finalSlug });
+    if (slugConflict) {
+      let suffix = 2;
+      while (slugConflict) {
+        finalSlug = `${slug}-${suffix}`;
+        slugConflict = await Product.findOne({ slug: finalSlug });
+        suffix++;
+        if (suffix > 50) break; // safety limit
+      }
     }
 
     // Parse sizes if it's a string (from JSON)
@@ -262,7 +272,7 @@ exports.createProduct = async (req, res) => {
         try {
           parsedSizes = JSON.parse(sizes);
         } catch (e) {
-          console.error("Failed to parse sizes:", e);
+          log.error("Failed to parse sizes:", e);
           parsedSizes = [];
         }
       } else if (Array.isArray(sizes)) {
@@ -277,7 +287,7 @@ exports.createProduct = async (req, res) => {
         try {
           parsedImages = JSON.parse(images);
         } catch (e) {
-          console.error("Failed to parse images:", e);
+          log.error("Failed to parse images:", e);
           parsedImages = [];
         }
       } else if (Array.isArray(images)) {
@@ -292,7 +302,7 @@ exports.createProduct = async (req, res) => {
         try {
           parsedColors = JSON.parse(colors);
         } catch (e) {
-          console.error("Failed to parse colors:", e);
+          log.error("Failed to parse colors:", e);
           parsedColors = [];
         }
       } else if (Array.isArray(colors)) {
@@ -307,7 +317,7 @@ exports.createProduct = async (req, res) => {
         try {
           parsedTags = JSON.parse(tags);
         } catch (e) {
-          console.error("Failed to parse tags:", e);
+          log.error("Failed to parse tags:", e);
           parsedTags = [];
         }
       } else if (Array.isArray(tags)) {
@@ -322,7 +332,7 @@ exports.createProduct = async (req, res) => {
         try {
           parsedImages360 = JSON.parse(images360);
         } catch (e) {
-          console.error("Failed to parse images360:", e);
+          log.error("Failed to parse images360:", e);
           parsedImages360 = [];
         }
       } else if (Array.isArray(images360)) {
@@ -337,7 +347,7 @@ exports.createProduct = async (req, res) => {
         try {
           parsedHotspots360 = JSON.parse(hotspots360);
         } catch (e) {
-          console.error("Failed to parse hotspots360:", e);
+          log.error("Failed to parse hotspots360:", e);
           parsedHotspots360 = [];
         }
       } else if (Array.isArray(hotspots360)) {
@@ -360,7 +370,7 @@ exports.createProduct = async (req, res) => {
     // Create product
     const product = await Product.create({
       name,
-      slug,
+      slug: finalSlug,
       description,
       specifications: specifications || "",
       materialAndCare: materialAndCare || "",
@@ -382,7 +392,7 @@ exports.createProduct = async (req, res) => {
       isOutOfStock: false, // Default to not out of stock
     });
 
-    console.log("✅ Product created successfully:", {
+    log.info("âœ… Product created successfully:", {
       id: product._id,
       name: product.name,
       slug: product.slug,
@@ -397,9 +407,9 @@ exports.createProduct = async (req, res) => {
 
     res.status(201).json(product);
   } catch (error) {
-    console.error("❌ Create product error:", error);
-    console.error("Error name:", error.name);
-    console.error("Error message:", error.message);
+    log.error("âŒ Create product error:", error);
+    log.error("Error name:", error.name);
+    log.error("Error message:", error.message);
     if (error.code === 11000) {
       return res
         .status(400)
@@ -505,7 +515,7 @@ exports.updateProduct = async (req, res) => {
 
     res.json(product);
   } catch (error) {
-    console.error("Update product error:", error);
+    log.error("Update product error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -536,7 +546,7 @@ exports.toggleProductStatus = async (req, res) => {
 
     res.json(productResponse);
   } catch (error) {
-    console.error("Toggle product status error:", error);
+    log.error("Toggle product status error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -561,7 +571,7 @@ exports.toggleProductFeatured = async (req, res) => {
 
     res.json(product);
   } catch (error) {
-    console.error("Toggle product featured error:", error);
+    log.error("Toggle product featured error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -594,7 +604,7 @@ exports.updateProductStatus = async (req, res) => {
 
     res.json(product);
   } catch (error) {
-    console.error("Update product status error:", error);
+    log.error("Update product status error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -611,13 +621,13 @@ exports.deleteProduct = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    console.log(`🗑️  Deleting product: ${product.name} (${product.slug})`);
+    log.info(`ðŸ—‘ï¸  Deleting product: ${product.name} (${product.slug})`);
 
     // Delete all product images from MinIO
     if (product.images && product.images.length > 0) {
       const { deleteObject } = require("../utils/minio");
 
-      console.log(`📦 Product has ${product.images.length} images to delete`);
+      log.info(`ðŸ“¦ Product has ${product.images.length} images to delete`);
 
       for (const image of product.images) {
         try {
@@ -625,9 +635,9 @@ exports.deleteProduct = async (req, res) => {
           const objectKey = image.key || null;
 
           if (objectKey) {
-            console.log(`  Deleting image: ${objectKey}`);
+            log.info(`  Deleting image: ${objectKey}`);
             await deleteObject(objectKey);
-            console.log(`  ✅ Deleted: ${objectKey}`);
+            log.info(`  âœ… Deleted: ${objectKey}`);
           } else {
             // Fallback: try parsing URL if key is missing
             const imageUrl = typeof image === "string" ? image : image.url;
@@ -635,32 +645,32 @@ exports.deleteProduct = async (req, res) => {
               const urlParts = imageUrl.split("/product-media/");
               if (urlParts.length > 1) {
                 const objectName = urlParts[1];
-                console.log(`  Deleting image (from URL): ${objectName}`);
+                log.info(`  Deleting image (from URL): ${objectName}`);
                 await deleteObject(objectName);
-                console.log(`  ✅ Deleted: ${objectName}`);
+                log.info(`  âœ… Deleted: ${objectName}`);
               } else {
-                console.log(`  ⚠️  Could not parse image URL: ${imageUrl}`);
+                log.info(`  âš ï¸  Could not parse image URL: ${imageUrl}`);
               }
             } else {
-              console.log(`  ⚠️  Image has no key or url:`, image);
+              log.info(`  âš ï¸  Image has no key or url:`, image);
             }
           }
         } catch (imageError) {
-          console.error(`  ❌ Failed to delete image:`, imageError.message);
+          log.error(`  âŒ Failed to delete image:`, imageError.message);
           // Continue deleting other images even if one fails
         }
       }
 
-      console.log(`✅ Finished deleting images for product: ${product.name}`);
+      log.info(`âœ… Finished deleting images for product: ${product.name}`);
     } else {
-      console.log(`ℹ️  Product has no images to delete`);
+      log.info(`â„¹ï¸  Product has no images to delete`);
     }
 
     // Delete product from database
     await Product.findByIdAndDelete(id);
 
-    console.log(
-      `✅ Product deleted from database: ${product.name} (ID: ${id})`,
+    log.info(
+      `âœ… Product deleted from database: ${product.name} (ID: ${id})`,
     );
 
     // Invalidate product cache
@@ -676,8 +686,45 @@ exports.deleteProduct = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Delete product error:", error);
+    log.error("Delete product error:", error);
     const isDevEnv = process.env.NODE_ENV === "development";
     res.status(500).json({ message: "Server error", ...(isDevEnv && { error: error.message }) });
+  }
+};
+
+// @desc    Get stock movement history for a product
+// @route   GET /api/v1/admin/products/stock-movements/:productId
+// @access  Private/Admin
+exports.getStockMovements = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 200);
+    const skip = (page - 1) * limit;
+    const { type } = req.query;
+
+    const filter = { product: productId };
+    if (type) filter.type = type;
+
+    const [movements, total] = await Promise.all([
+      StockMovement.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate("performedBy", "name email")
+        .lean(),
+      StockMovement.countDocuments(filter),
+    ]);
+
+    res.json({
+      success: true,
+      movements,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (error) {
+    log.error("Get stock movements error:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };

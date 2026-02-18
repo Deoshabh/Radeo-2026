@@ -1,4 +1,9 @@
 const axios = require("axios");
+const { log } = require("./logger");
+const { cacheClient } = require("../config/redis");
+
+const SHIPROCKET_TOKEN_KEY = "shiprocket:auth:token";
+const SHIPROCKET_TOKEN_TTL = 82800; // 23 hours in seconds
 
 class ShiprocketService {
   constructor() {
@@ -7,9 +12,38 @@ class ShiprocketService {
     this.password = process.env.SHIPROCKET_PASSWORD;
     this.token = null;
     this.tokenExpiry = null;
-    
+    this._retrying = false;
+
+    // Create axios instance with 401 interceptor for auto-retry
+    this.client = axios.create({ baseURL: this.baseURL });
+    this.client.interceptors.response.use(null, async (error) => {
+      if (error.response?.status === 401 && !this._retrying) {
+        this._retrying = true;
+        try {
+          await this.clearCachedToken();
+          const token = await this.authenticate();
+          error.config.headers.Authorization = `Bearer ${token}`;
+          return this.client.request(error.config);
+        } finally {
+          this._retrying = false;
+        }
+      }
+      return Promise.reject(error);
+    });
+
     if (!this.email || !this.password) {
-      console.warn("⚠️ Shiprocket credentials (SHIPROCKET_EMAIL, SHIPROCKET_PASSWORD) are missing.");
+      log.warn("⚠️ Shiprocket credentials (SHIPROCKET_EMAIL, SHIPROCKET_PASSWORD) are missing.");
+    }
+  }
+
+  /**
+   * Clear cached token from Valkey and in-memory
+   */
+  async clearCachedToken() {
+    this.token = null;
+    this.tokenExpiry = null;
+    if (cacheClient?.isReady) {
+      await cacheClient.del(SHIPROCKET_TOKEN_KEY).catch(() => {});
     }
   }
 
@@ -29,7 +63,16 @@ class ShiprocketService {
    */
   async authenticate() {
     try {
-      // Check if token is still valid
+      // Check Valkey cache first
+      if (cacheClient?.isReady) {
+        const cached = await cacheClient.get(SHIPROCKET_TOKEN_KEY).catch(() => null);
+        if (cached) {
+          this.token = cached;
+          return cached;
+        }
+      }
+
+      // Check in-memory fallback
       if (this.token && this.tokenExpiry && new Date() < this.tokenExpiry) {
         return this.token;
       }
@@ -57,10 +100,15 @@ class ShiprocketService {
       // Set expiry to 9.5 days from now (safer than 10 days)
       this.tokenExpiry = new Date(Date.now() + 9.5 * 24 * 60 * 60 * 1000);
 
-      console.log("✅ Shiprocket authenticated successfully");
+      // Cache in Valkey for 23 hours
+      if (cacheClient?.isReady) {
+        await cacheClient.set(SHIPROCKET_TOKEN_KEY, this.token, { EX: SHIPROCKET_TOKEN_TTL }).catch(() => {});
+      }
+
+      log.info("✅ Shiprocket authenticated successfully");
       return this.token;
     } catch (error) {
-      console.error(
+      log.error(
         "❌ Shiprocket authentication failed:",
         error.response?.data || error.message,
       );
@@ -214,7 +262,7 @@ class ShiprocketService {
 
       return response.data;
     } catch (error) {
-      console.error(
+      log.error(
         "❌ Get shipping rates failed:",
         error.response?.data || error.message,
       );
@@ -296,10 +344,10 @@ class ShiprocketService {
         );
       }
 
-      console.log("✅ Shiprocket order created:", response.data);
+      log.info("✅ Shiprocket order created:", response.data);
       return response.data;
     } catch (error) {
-      console.error(
+      log.error(
         "❌ Create Shiprocket order failed:",
         error.response?.data || error.message,
       );
@@ -343,7 +391,7 @@ class ShiprocketService {
         );
       }
 
-      console.log("✅ AWB assigned successfully:", response.data);
+      log.info("✅ AWB assigned successfully:", response.data);
 
       return {
         awb_code: this.extractFirstByKeys(response.data, ["awb_code", "awb"]),
@@ -353,7 +401,7 @@ class ShiprocketService {
         ]),
       };
     } catch (error) {
-      console.error(
+      log.error(
         "❌ Assign AWB failed:",
         error.response?.data || error.message,
       );
@@ -398,10 +446,10 @@ class ShiprocketService {
         );
       }
 
-      console.log("✅ Pickup scheduled successfully:", response.data);
+      log.info("✅ Pickup scheduled successfully:", response.data);
       return response.data;
     } catch (error) {
-      console.error(
+      log.error(
         "❌ Schedule pickup failed:",
         error.response?.data || error.message,
       );
@@ -438,10 +486,10 @@ class ShiprocketService {
         );
       }
 
-      console.log("✅ Label generated successfully");
+      log.info("✅ Label generated successfully");
       return response.data;
     } catch (error) {
-      console.error(
+      log.error(
         "❌ Generate label failed:",
         error.response?.data || error.message,
       );
@@ -478,10 +526,10 @@ class ShiprocketService {
         );
       }
 
-      console.log("✅ Manifest generated successfully");
+      log.info("✅ Manifest generated successfully");
       return response.data;
     } catch (error) {
-      console.error(
+      log.error(
         "❌ Generate manifest failed:",
         error.response?.data || error.message,
       );
@@ -518,10 +566,10 @@ class ShiprocketService {
         );
       }
 
-      console.log("✅ Manifest print URL generated");
+      log.info("✅ Manifest print URL generated");
       return response.data;
     } catch (error) {
-      console.error(
+      log.error(
         "❌ Print manifest failed:",
         error.response?.data || error.message,
       );
@@ -558,10 +606,10 @@ class ShiprocketService {
         );
       }
 
-      console.log("✅ Invoice URL generated");
+      log.info("✅ Invoice URL generated");
       return response.data;
     } catch (error) {
-      console.error(
+      log.error(
         "❌ Generate invoice failed:",
         error.response?.data || error.message,
       );
@@ -588,7 +636,7 @@ class ShiprocketService {
 
       return response.data;
     } catch (error) {
-      console.error(
+      log.error(
         "❌ Track by AWB failed:",
         error.response?.data || error.message,
       );
@@ -615,7 +663,7 @@ class ShiprocketService {
 
       return response.data;
     } catch (error) {
-      console.error(
+      log.error(
         "❌ Track by order ID failed:",
         error.response?.data || error.message,
       );
@@ -642,7 +690,7 @@ class ShiprocketService {
 
       return response.data;
     } catch (error) {
-      console.error(
+      log.error(
         "❌ Track by shipment ID failed:",
         error.response?.data || error.message,
       );
@@ -679,10 +727,10 @@ class ShiprocketService {
         );
       }
 
-      console.log("✅ Shipment cancelled successfully");
+      log.info("✅ Shipment cancelled successfully");
       return response.data;
     } catch (error) {
-      console.error(
+      log.error(
         "❌ Cancel shipment failed:",
         error.response?.data || error.message,
       );
@@ -708,7 +756,7 @@ class ShiprocketService {
 
       return response.data;
     } catch (error) {
-      console.error(
+      log.error(
         "❌ Get pickup addresses failed:",
         error.response?.data || error.message,
       );
@@ -896,7 +944,7 @@ class ShiprocketService {
         warnings,
       };
     } catch (error) {
-      console.error(
+      log.error(
         "❌ Complete shipment creation failed:",
         error.response?.data || error.message,
       );

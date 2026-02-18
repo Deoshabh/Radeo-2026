@@ -73,7 +73,8 @@ export default function RootLayout({ children }) {
     <html lang="en" className={`${dmSans.variable} ${cormorant.variable} ${jakarta.variable} ${lora.variable} ${baskerville.variable} ${spaceMono.variable}`}>
       <head>
         <link rel="preconnect" href="https://api.radeo.in" />
-        <script src={`https://www.google.com/recaptcha/enterprise.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`} async defer></script>
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+        <div id="turnstile-container" style={{ display: 'none' }} />
       </head>
       <body className="antialiased">
         <ErrorBoundary>

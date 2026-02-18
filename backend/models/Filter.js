@@ -37,5 +37,6 @@ const filterSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-
+filterSchema.index({ type: 1, isActive: 1 });
+filterSchema.index({ displayOrder: 1 });
 module.exports = mongoose.model("Filter", filterSchema);

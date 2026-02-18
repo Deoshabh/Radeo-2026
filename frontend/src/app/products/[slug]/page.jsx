@@ -36,7 +36,7 @@ export async function generateMetadata({ params }) {
   return generateProductMetadata(product);
 }
 
-import ProductSchema from '@/components/ProductSchema';
+import { JsonLd, generateProductJsonLd } from '@/utils/seo';
 
 export default async function ProductPage({ params }) {
   const product = await getProduct(params.slug);
@@ -47,7 +47,7 @@ export default async function ProductPage({ params }) {
 
   return (
     <>
-      <ProductSchema product={product} />
+      <JsonLd data={generateProductJsonLd(product)} />
       <ProductClient product={product} />
     </>
   );

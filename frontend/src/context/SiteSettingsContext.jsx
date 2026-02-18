@@ -1,14 +1,14 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { settingsAPI } from '@/utils/api';
 import { SITE_SETTINGS_DEFAULTS } from '@/constants/siteSettingsDefaults';
 import { normalizeSettingsLayout } from '@/utils/layoutSchema';
 
-const CACHE_KEY = 'site-settings-cache-v1';
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes (was 1 hour)
 const THEME_PREVIEW_MODE_KEY = 'theme-preview-mode-v1';
 const THEME_PREVIEW_MODE_EVENT = 'theme-preview-mode-changed';
+const SETTINGS_QUERY_KEY = ['siteSettings'];
 
 const SiteSettingsContext = createContext(null);
 
@@ -106,51 +106,37 @@ const buildPrimaryScale = (baseHex) => {
   };
 };
 
-const readCache = () => {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-
-    const parsed = JSON.parse(raw);
-    if (!parsed?.expiresAt || Date.now() > parsed.expiresAt) {
-      localStorage.removeItem(CACHE_KEY);
-      return null;
-    }
-
-    return parsed.settings || null;
-  } catch {
-    return null;
-  }
-};
-
-const writeCache = (settings) => {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  try {
-    localStorage.setItem(
-      CACHE_KEY,
-      JSON.stringify({
-        settings,
-        expiresAt: Date.now() + CACHE_TTL_MS,
-      }),
-    );
-  } catch {
-    // Ignore cache write failures
-  }
-};
+// (localStorage cache removed — React Query handles caching)
 
 export function SiteSettingsProvider({ children }) {
-  const [settings, setSettings] = useState(SITE_SETTINGS_DEFAULTS);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const queryClient = useQueryClient();
   const [prefersDark, setPrefersDark] = useState(false);
   const [themePreviewMode, setThemePreviewMode] = useState('default');
+  const [localOverrides, setLocalOverrides] = useState(null);
+
+  // React Query replaces localStorage cache with staleTime/gcTime
+  const { data: fetchedSettings, isLoading, error: queryError } = useQuery({
+    queryKey: SETTINGS_QUERY_KEY,
+    queryFn: async () => {
+      const response = await settingsAPI.getPublicSettings();
+      return response?.data?.settings || {};
+    },
+    staleTime: 5 * 60 * 1000,   // 5 minutes before refetch
+    gcTime: 10 * 60 * 1000,     // 10 minutes in garbage-collectible cache
+    refetchOnWindowFocus: true,
+    retry: 2,
+  });
+
+  const settings = useMemo(
+    () => normalizeSettings(localOverrides ? deepMerge(fetchedSettings || {}, localOverrides) : fetchedSettings),
+    [fetchedSettings, localOverrides],
+  );
+  const loading = isLoading;
+  const error = queryError;
+
+  const refreshSettings = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: SETTINGS_QUERY_KEY });
+  }, [queryClient]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -205,44 +191,25 @@ export function SiteSettingsProvider({ children }) {
     return () => mediaQuery.removeListener(handleChange);
   }, []);
 
-  const fetchSettings = useCallback(async ({ force = false } = {}) => {
-    try {
-      if (!force) {
-        const cached = readCache();
-        if (cached) {
-          setSettings(normalizeSettings(cached));
-          setLoading(false);
-        }
-      }
+  // (Settings fetch handled by React Query above)
 
-      const response = await settingsAPI.getPublicSettings();
-      const remoteSettings = response?.data?.settings || {};
-      const merged = normalizeSettings(remoteSettings);
-
-      setSettings(merged);
-      writeCache(merged);
-      setError(null);
-    } catch (err) {
-      console.error('Failed to fetch site settings:', err);
-      setError(err);
-
-      if (typeof window !== 'undefined') {
-        const cached = readCache();
-        if (cached) {
-          setSettings(normalizeSettings(cached));
-        }
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchSettings();
-  }, [fetchSettings]);
+  // Hash guard: skip expensive CSS variable recalculation when theme hasn't changed
+  const lastThemeHashRef = useRef(null);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
+
+    // Build a fingerprint from the inputs that affect CSS variables
+    const themeFingerprint = JSON.stringify({
+      theme: settings?.theme,
+      prefersDark,
+      themePreviewMode,
+    });
+
+    if (themeFingerprint === lastThemeHashRef.current) {
+      return; // Theme unchanged — skip expensive CSS variable recalculation
+    }
+    lastThemeHashRef.current = themeFingerprint;
 
     const root = document.documentElement;
     const theme = settings?.theme || {};
@@ -394,13 +361,7 @@ export function SiteSettingsProvider({ children }) {
     const handleMessage = (event) => {
       const { type, payload } = event.data;
       if (type === 'THEME_UPDATE' && payload) {
-        setSettings((prev) => {
-          // If payload is the full settings object or a specific section
-          // We need to be careful about what we are merging.
-          // The Visual Editor sends the 'theme' object or 'homeSections' object.
-          // Let's assume payload IS the new settings object or a partial.
-          return deepMerge(prev, payload);
-        });
+        setLocalOverrides((prev) => deepMerge(prev || {}, payload));
       }
     };
 
@@ -413,9 +374,9 @@ export function SiteSettingsProvider({ children }) {
       settings,
       loading,
       error,
-      refreshSettings: () => fetchSettings({ force: true }),
+      refreshSettings,
     }),
-    [settings, loading, error, fetchSettings],
+    [settings, loading, error, refreshSettings],
   );
 
   return <SiteSettingsContext.Provider value={value}>{children}</SiteSettingsContext.Provider>;

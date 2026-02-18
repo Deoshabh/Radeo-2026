@@ -1,7 +1,10 @@
-const { generateSignedUploadUrl, deleteObject, uploadBuffer } = require("../utils/minio");
+const { log } = require('../utils/logger');
+const { generateSignedUploadUrl, deleteObject, uploadBuffer, BUCKETS } = require("../utils/minio");
 const sharp = require("sharp");
 const Product = require("../models/Product");
+const Media = require("../models/Media");
 const { getOrSetCache, invalidateCache } = require("../utils/cache");
+const { generateVariants, getImageMetadata } = require('../utils/imageOptimizer');
 
 /**
  * Generate signed upload URL for admin
@@ -11,7 +14,7 @@ exports.getUploadUrl = async (req, res) => {
   try {
     const { fileName, fileType, productSlug } = req.body;
     
-    console.log("Values:" , req.body); // Debug log
+    log.info("Values:" , req.body); // Debug log
 
     // Validate input
     if (!fileName || !fileType) {
@@ -51,7 +54,7 @@ exports.getUploadUrl = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error("Error generating upload URL:", error);
+    log.error("Error generating upload URL:", error);
     res.status(500).json({
       success: false,
       message: error.message || "Failed to generate upload URL",
@@ -81,7 +84,7 @@ exports.deleteMedia = async (req, res) => {
       message: "Media deleted successfully",
     });
   } catch (error) {
-    console.error("Error deleting media:", error);
+    log.error("Error deleting media:", error);
     res.status(500).json({
       success: false,
       message: error.message || "Failed to delete media",
@@ -152,7 +155,7 @@ exports.uploadFrames = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error uploading frames:", error);
+    log.error("Error uploading frames:", error);
     res.status(500).json({
       success: false,
       message: error.message || "Failed to upload frames",
@@ -218,10 +221,202 @@ exports.getFrameManifest = async (req, res) => {
       data: manifest,
     });
   } catch (error) {
-    console.error("Error fetching frame manifest:", error);
+    log.error("Error fetching frame manifest:", error);
     res.status(500).json({
       success: false,
       message: error.message || "Failed to fetch frame manifest",
     });
   }
 };
+
+/**
+ * Optimize an uploaded image â€” generates multiple size variants + WebP
+ * POST /api/v1/admin/media/optimize
+ * Body: multipart/form-data with "image" file + optional "preset" (product|category|banner) + optional "folder"
+ */
+exports.optimizeAndUpload = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "No image file provided",
+      });
+    }
+
+    const { preset = "product", folder = "uploads" } = req.body;
+    const inputBuffer = req.file.buffer;
+    const originalName = req.file.originalname
+      .toLowerCase()
+      .replace(/[^a-z0-9.-]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/\.[^.]+$/, ""); // Strip extension â€” we'll use .webp
+
+    // Get metadata for the original
+    const metadata = await getImageMetadata(inputBuffer);
+
+    // Generate all variants for the chosen preset
+    const variants = await generateVariants(inputBuffer, preset);
+    const timestamp = Date.now();
+    const uploadResults = {};
+
+    // Upload each variant to MinIO
+    await Promise.all(
+      Object.entries(variants).map(async ([variantName, result]) => {
+        if (result.error) {
+          uploadResults[variantName] = { error: result.error };
+          return;
+        }
+
+        const key = `products/${folder}/${originalName}-${variantName}-${timestamp}.webp`;
+        const publicUrl = await uploadBuffer(result.buffer, key, "image/webp");
+
+        uploadResults[variantName] = {
+          url: publicUrl,
+          key,
+          width: result.info.width,
+          height: result.info.height,
+          size: result.info.size,
+          savings: result.info.savings + "%",
+        };
+      }),
+    );
+
+    res.json({
+      success: true,
+      data: {
+        original: {
+          name: req.file.originalname,
+          size: inputBuffer.length,
+          format: metadata.format,
+          width: metadata.width,
+          height: metadata.height,
+        },
+        variants: uploadResults,
+      },
+    });
+  } catch (error) {
+    log.error("Error optimizing image:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to optimize image",
+    });
+  }
+};
+
+/**
+ * Get image metadata without processing
+ * POST /api/v1/admin/media/metadata
+ * Body: multipart/form-data with "image" file
+ */
+exports.getMetadata = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "No image file provided",
+      });
+    }
+
+    const metadata = await getImageMetadata(req.file.buffer);
+
+    res.json({
+      success: true,
+      data: metadata,
+    });
+  } catch (error) {
+    log.error("Error reading image metadata:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to get image metadata",
+    });
+  }
+};
+
+/**
+ * Get orphaned media files (usageCount = 0, older than N days)
+ * GET /api/v1/admin/media/orphaned?days=30&limit=50
+ */
+exports.getOrphanedMedia = async (req, res) => {
+  try {
+    const days = Math.max(parseInt(req.query.days, 10) || 30, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 200);
+
+    const orphaned = await Media.findUnused(days).limit(limit).lean();
+
+    const totalSize = orphaned.reduce((sum, m) => sum + (m.fileSize || 0), 0);
+
+    res.json({
+      success: true,
+      count: orphaned.length,
+      totalSizeBytes: totalSize,
+      totalSizeHuman: formatBytes(totalSize),
+      media: orphaned,
+    });
+  } catch (error) {
+    log.error("Get orphaned media error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+/**
+ * Bulk delete orphaned media files
+ * DELETE /api/v1/admin/media/orphaned/bulk
+ * Body: { ids: ["id1", "id2", ...] }
+ */
+exports.deleteOrphanedMedia = async (req, res) => {
+  try {
+    const { ids } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "ids array is required",
+      });
+    }
+
+    if (ids.length > 100) {
+      return res.status(400).json({
+        success: false,
+        message: "Maximum 100 items per bulk delete",
+      });
+    }
+
+    // Only delete media that is actually orphaned (usageCount = 0)
+    const mediaItems = await Media.find({
+      _id: { $in: ids },
+      usageCount: 0,
+    });
+
+    const results = { deleted: 0, failed: 0, skipped: ids.length - mediaItems.length };
+
+    for (const item of mediaItems) {
+      try {
+        // Delete from MinIO
+        await deleteObject(item.key, item.bucket || BUCKETS.MEDIA);
+        // Delete from DB
+        await Media.deleteOne({ _id: item._id });
+        results.deleted++;
+      } catch (err) {
+        log.error("Failed to delete orphaned media", { id: item._id, error: err.message });
+        results.failed++;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Deleted ${results.deleted} orphaned files`,
+      results,
+    });
+  } catch (error) {
+    log.error("Bulk delete orphaned media error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+function formatBytes(bytes) {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+}

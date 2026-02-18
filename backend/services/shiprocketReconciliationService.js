@@ -1,9 +1,13 @@
 const Order = require("../models/Order");
 const shiprocketService = require("../utils/shiprocket");
 const { log } = require("../utils/logger");
+const { tokenClient } = require("../config/redis");
 
 let reconciliationInterval = null;
 let isRunning = false;
+
+const LOCK_KEY = "lock:shiprocket-reconciliation";
+const LOCK_TTL = 540; // 9 minutes (interval is 10 minutes)
 
 const ACTIVE_ORDER_STATUSES = ["processing", "shipped"];
 
@@ -170,6 +174,20 @@ const reconcileActiveShipments = async () => {
     return { skipped: true, reason: "already_running" };
   }
 
+  // Acquire Valkey distributed lock
+  let lockAcquired = false;
+  try {
+    const result = await tokenClient.set(LOCK_KEY, `pid-${process.pid}`, "EX", LOCK_TTL, "NX");
+    lockAcquired = result === "OK";
+  } catch {
+    // Valkey down — fall through, use local isRunning guard
+    lockAcquired = true;
+  }
+
+  if (!lockAcquired) {
+    return { skipped: true, reason: "valkey_lock_held" };
+  }
+
   isRunning = true;
 
   const startedAt = Date.now();
@@ -227,6 +245,8 @@ const reconcileActiveShipments = async () => {
     return summary;
   } finally {
     isRunning = false;
+    // Release Valkey lock
+    try { await tokenClient.del(LOCK_KEY); } catch { /* ignore */ }
   }
 };
 

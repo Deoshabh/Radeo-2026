@@ -8,6 +8,9 @@ const {
   createAdmin,
   getUserHistory,
   getSecurityEvents,
+  sendPasswordReset,
+  forceLogout,
+  impersonateUser,
 } = require("../controllers/adminUserController");
 const { authenticate } = require("../middleware/auth");
 const admin = require("../middleware/admin");
@@ -29,6 +32,15 @@ router.get("/security-events", getSecurityEvents);
 
 // @route   GET /api/v1/admin/users/:id/history (must come before /:id)
 router.get("/:id/history", validateRequest(mongoIdSchema), getUserHistory);
+
+// @route   POST /api/v1/admin/users/:id/send-password-reset
+router.post("/:id/send-password-reset", validateRequest(mongoIdSchema), sendPasswordReset);
+
+// @route   POST /api/v1/admin/users/:id/force-logout
+router.post("/:id/force-logout", validateRequest(mongoIdSchema), forceLogout);
+
+// @route   POST /api/v1/admin/users/:id/impersonate
+router.post("/:id/impersonate", validateRequest(mongoIdSchema), impersonateUser);
 
 // @route   GET /api/v1/admin/users/:id
 router.get("/:id", validateRequest(mongoIdSchema), getUserById);

@@ -6,6 +6,7 @@ const {
   getSettingsByKeys,
   upsertSetting,
 } = require('../utils/siteSettings');
+const { autoGenerateSeo, auditSeo } = require('../controllers/seoController');
 
 // @route   GET /api/v1/admin/seo
 // @desc    Get all SEO settings
@@ -56,5 +57,15 @@ router.get('/public', async (req, res, next) => {
     next(err);
   }
 });
+
+// @route   POST /api/v1/admin/seo/auto-generate
+// @desc    Auto-generate SEO metadata for products/categories
+// @access  Admin
+router.post('/auto-generate', authenticate, admin, autoGenerateSeo);
+
+// @route   GET /api/v1/admin/seo/audit
+// @desc    Audit SEO across all products/categories
+// @access  Admin
+router.get('/audit', authenticate, admin, auditSeo);
 
 module.exports = router;

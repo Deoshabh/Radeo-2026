@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import anime from 'animejs';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FiGrid, FiPackage, FiShoppingBag, FiUsers, FiTag, FiPercent, FiStar, FiArrowLeft, FiSettings, FiSearch } from 'react-icons/fi';
+import { FiGrid, FiPackage, FiShoppingBag, FiUsers, FiTag, FiPercent, FiStar, FiArrowLeft, FiSettings, FiSearch, FiBarChart2, FiDatabase, FiFilter, FiFileText } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 import { AdminProvider, useAdmin } from '@/context/AdminContext';
 import AdminCommandPalette from '@/components/admin/AdminCommandPalette';
@@ -136,7 +136,11 @@ function AdminLayoutContent({ children }) {
     { href: '/admin/categories', icon: FiTag, label: 'Categories' },
     { href: '/admin/coupons', icon: FiPercent, label: 'Coupons' },
     { href: '/admin/seo', icon: FiSearch, label: 'SEO' },
-    { href: '/admin/cms', icon: FiSettings, label: 'Settings' },
+    { href: '/admin/analytics', icon: FiBarChart2, label: 'Analytics' },
+    { href: '/admin/inventory', icon: FiDatabase, label: 'Inventory' },
+    { href: '/admin/filters', icon: FiFilter, label: 'Filters' },
+    { href: '/admin/cms', icon: FiFileText, label: 'CMS' },
+    { href: '/admin/settings', icon: FiSettings, label: 'Settings' },
   ];
 
   const isActive = (href, exact = false) => {

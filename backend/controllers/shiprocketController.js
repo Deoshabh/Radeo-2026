@@ -1,5 +1,6 @@
 const Order = require("../models/Order");
 const shiprocketService = require("../utils/shiprocket");
+const { log } = require("../utils/logger");
 const {
   reconcileActiveShipments,
 } = require("../services/shiprocketReconciliationService");
@@ -103,7 +104,7 @@ exports.getShippingRates = async (req, res) => {
       data: rates,
     });
   } catch (error) {
-    console.error("Get shipping rates error:", error);
+    log.error("Get shipping rates error:", error);
     return sendShiprocketError(res, error, "Failed to get shipping rates");
   }
 };
@@ -209,7 +210,7 @@ exports.createShipment = async (req, res) => {
       order: order,
     });
   } catch (error) {
-    console.error("Create shipment error:", error);
+    log.error("Create shipment error:", error);
     return sendShiprocketError(res, error, "Failed to create shipment");
   }
 };
@@ -251,7 +252,7 @@ exports.generateLabel = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error("Generate label error:", error);
+    log.error("Generate label error:", error);
     return sendShiprocketError(res, error, "Failed to generate label");
   }
 };
@@ -317,7 +318,7 @@ exports.trackShipment = async (req, res) => {
       data: trackingData,
     });
   } catch (error) {
-    console.error("Track shipment error:", error);
+    log.error("Track shipment error:", error);
     return sendShiprocketError(res, error, "Failed to track shipment");
   }
 };
@@ -361,7 +362,7 @@ exports.cancelShipment = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error("Cancel shipment error:", error);
+    log.error("Cancel shipment error:", error);
     return sendShiprocketError(res, error, "Failed to cancel shipment");
   }
 };
@@ -380,7 +381,7 @@ exports.getShiprocketHealth = async (req, res) => {
       data: health,
     });
   } catch (error) {
-    console.error("Shiprocket health check error:", error);
+    log.error("Shiprocket health check error:", error);
     return sendShiprocketError(res, error, "Shiprocket health check failed");
   }
 };
@@ -399,7 +400,7 @@ exports.triggerShiprocketReconciliation = async (_req, res) => {
       data: summary,
     });
   } catch (error) {
-    console.error("Trigger Shiprocket reconciliation error:", error);
+    log.error("Trigger Shiprocket reconciliation error:", error);
     return sendShiprocketError(
       res,
       error,
@@ -449,7 +450,7 @@ exports.getPickupAddresses = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Get pickup addresses error:", error);
+    log.error("Get pickup addresses error:", error);
     return sendShiprocketError(res, error, "Failed to get pickup addresses");
   }
 };
@@ -495,7 +496,7 @@ exports.schedulePickup = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error("Schedule pickup error:", error);
+    log.error("Schedule pickup error:", error);
     return sendShiprocketError(res, error, "Failed to schedule pickup");
   }
 };
@@ -542,7 +543,7 @@ exports.generateManifest = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error("Generate manifest error:", error);
+    log.error("Generate manifest error:", error);
     return sendShiprocketError(res, error, "Failed to generate manifest");
   }
 };
@@ -592,7 +593,7 @@ exports.generateInvoice = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error("Generate invoice error:", error);
+    log.error("Generate invoice error:", error);
     return sendShiprocketError(res, error, "Failed to generate invoice");
   }
 };
@@ -630,7 +631,7 @@ exports.markAsShipped = async (req, res) => {
       order,
     });
   } catch (error) {
-    console.error("Mark as shipped error:", error);
+    log.error("Mark as shipped error:", error);
     return sendShiprocketError(res, error, "Failed to mark order as shipped");
   }
 };
@@ -645,7 +646,7 @@ exports.handleWebhook = async (req, res) => {
     if (process.env.SHIPROCKET_WEBHOOK_SECRET) {
       const receivedToken = req.headers["x-api-key"];
       if (receivedToken !== process.env.SHIPROCKET_WEBHOOK_SECRET) {
-        console.log("⚠️ Webhook unauthorized: Invalid security token");
+        log.info("Ã¢Å¡Â Ã¯Â¸Â Webhook unauthorized: Invalid security token");
         return res.status(401).json({
           success: false,
           message: "Unauthorized: Invalid security token",
@@ -655,7 +656,7 @@ exports.handleWebhook = async (req, res) => {
 
     const webhookData = req.body;
 
-    console.log("📦 Shiprocket webhook received:", webhookData);
+    log.info("Ã°Å¸â€œÂ¦ Shiprocket webhook received:", webhookData);
 
     // Extract order ID from webhook data
     const shiprocketOrderId = webhookData.sr_order_id || webhookData.order_id;
@@ -681,7 +682,7 @@ exports.handleWebhook = async (req, res) => {
     }
 
     if (!order) {
-      console.log("⚠️ Order not found for webhook data");
+      log.info("Ã¢Å¡Â Ã¯Â¸Â Order not found for webhook data");
       return res
         .status(200)
         .json({ success: true, message: "Order not found" });
@@ -708,14 +709,14 @@ exports.handleWebhook = async (req, res) => {
 
     await order.save();
 
-    console.log(`✅ Order ${order.orderId} updated with webhook data`);
+    log.info(`Ã¢Å“â€¦ Order ${order.orderId} updated with webhook data`);
 
     res.status(200).json({
       success: true,
       message: "Webhook processed successfully",
     });
   } catch (error) {
-    console.error("Webhook handler error:", error);
+    log.error("Webhook handler error:", error);
     // Always return 200 to avoid webhook retries
     res.status(200).json({
       success: false,

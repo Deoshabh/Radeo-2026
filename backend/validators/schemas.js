@@ -364,4 +364,39 @@ module.exports = {
 
   // Common
   mongoIdSchema,
+
+  // Settings
+  updateSettingsSchema: z.object({
+    body: z.object({
+      branding: z.object({
+        logo: z.object({ url: z.string().url().optional(), alt: z.string().max(200).optional() }).optional(),
+        favicon: z.object({ url: z.string().url().optional() }).optional(),
+        siteName: z.string().max(100).optional(),
+      }).optional(),
+      banners: z.array(z.object({
+        image: z.string().optional(),
+        title: z.string().max(200).optional(),
+        subtitle: z.string().max(500).optional(),
+        link: z.string().max(500).optional(),
+        isActive: z.boolean().optional(),
+      })).max(20).optional(),
+      announcementBar: z.object({
+        enabled: z.boolean().optional(),
+        text: z.string().max(500).optional(),
+        link: z.string().max(500).optional(),
+        backgroundColor: z.string().max(20).optional(),
+        textColor: z.string().max(20).optional(),
+      }).optional(),
+      homePage: z.any().optional(),
+      homeSections: z.any().optional(),
+      layout: z.array(z.any()).optional(),
+      layoutSchemaVersion: z.number().int().min(1).optional(),
+      theme: z.record(z.any()).optional(),
+      publishWorkflow: z.object({
+        status: z.enum(['draft', 'scheduled', 'live']).optional(),
+        scheduledAt: z.string().datetime().optional().nullable(),
+      }).optional(),
+      versionLabel: z.string().max(100).optional(),
+    }).strict(),
+  }),
 };

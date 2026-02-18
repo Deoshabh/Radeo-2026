@@ -48,7 +48,6 @@ function ProductsContent() {
   const fetchMaterials = async () => {
     try {
       const response = await productAPI.getMaterials();
-      // console.log('ðŸ“¦ Materials API response:', response.data);
       setMaterials(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Failed to fetch materials:', error);
@@ -58,7 +57,6 @@ function ProductsContent() {
   const fetchPriceRange = useCallback(async () => {
     try {
       const response = await productAPI.getPriceRange();
-      // console.log('ðŸ“¦ Price Range API response:', response.data);
       if (response.data) {
         setPriceRange(response.data);
         setSelectedPriceRange((prev) => prev || response.data);
@@ -71,7 +69,6 @@ function ProductsContent() {
   const fetchColors = async () => {
     try {
       const response = await productAPI.getColors();
-      // console.log('ðŸ“¦ Colors API response:', response.data);
       setColors(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Failed to fetch colors:', error);
@@ -81,7 +78,6 @@ function ProductsContent() {
   const fetchSizes = async () => {
     try {
       const response = await productAPI.getSizes();
-      // console.log('ðŸ“¦ Sizes API response:', response.data);
       setSizes(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Failed to fetch sizes:', error);

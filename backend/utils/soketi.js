@@ -2,6 +2,7 @@
 // Soketi (Pusher) Client Configuration
 // ===============================
 const Pusher = require("pusher");
+const { log } = require("./logger");
 
 /**
  * Initialize Soketi client
@@ -32,9 +33,9 @@ const emitOrderUpdate = async (orderId, data) => {
       timestamp: new Date().toISOString(),
       ...data,
     });
-    console.log(`✅ Soketi: Emitted tracking-update for order ${orderId}`);
+    log.info(`âœ… Soketi: Emitted tracking-update for order ${orderId}`);
   } catch (error) {
-    console.error("❌ Soketi emit error:", error.message);
+    log.error("âŒ Soketi emit error:", error.message);
   }
 };
 
@@ -48,9 +49,9 @@ const emitGlobalShipmentUpdate = async (data) => {
       timestamp: new Date().toISOString(),
       ...data,
     });
-    console.log(`✅ Soketi: Emitted global shipment-update`);
+    log.info(`âœ… Soketi: Emitted global shipment-update`);
   } catch (error) {
-    console.error("❌ Soketi emit error:", error.message);
+    log.error("âŒ Soketi emit error:", error.message);
   }
 };
 
@@ -66,9 +67,28 @@ const emitAdminOrderCreated = async (order) => {
       customer: order.shippingAddress?.fullName,
       timestamp: new Date().toISOString(),
     });
-    console.log(`✅ Soketi: Emitted admin order:created for ${order.orderId}`);
+    log.info(`âœ… Soketi: Emitted admin order:created for ${order.orderId}`);
   } catch (error) {
-    console.error("❌ Soketi emit error:", error.message);
+    log.error("âŒ Soketi emit error:", error.message);
+  }
+};
+
+/**
+ * Emit new contact message event to admin dashboard
+ * @param {Object} contact - The created contact message object
+ */
+const emitAdminContactMessage = async (contact) => {
+  try {
+    await soketi.trigger("admin-updates", "contact:new", {
+      id: contact._id,
+      name: contact.name,
+      email: contact.email,
+      subject: contact.subject || "(no subject)",
+      preview: (contact.message || "").slice(0, 120),
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    // Fire-and-forget â€” don't break contact form submission
   }
 };
 
@@ -77,4 +97,5 @@ module.exports = {
   emitOrderUpdate,
   emitGlobalShipmentUpdate,
   emitAdminOrderCreated,
+  emitAdminContactMessage,
 };

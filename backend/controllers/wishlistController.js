@@ -1,4 +1,6 @@
 const Wishlist = require("../models/Wishlist");
+const Product = require("../models/Product");
+const { log } = require("../utils/logger");
 
 // @desc    Get user's wishlist
 // @route   GET /api/v1/wishlist
@@ -15,7 +17,7 @@ exports.getWishlist = async (req, res) => {
 
     res.json(wishlist);
   } catch (error) {
-    console.error("Get wishlist error:", error);
+    log.error("Get wishlist error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -54,7 +56,7 @@ exports.toggleWishlistItem = async (req, res) => {
     await wishlist.populate("products");
     res.json(wishlist);
   } catch (error) {
-    console.error("Toggle wishlist error:", error);
+    log.error("Toggle wishlist error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -75,7 +77,43 @@ exports.clearWishlist = async (req, res) => {
 
     res.json({ message: "Wishlist cleared" });
   } catch (error) {
-    console.error("Clear wishlist error:", error);
+    log.error("Clear wishlist error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// @desc    Get product recommendations based on wishlist categories
+// @route   GET /api/v1/wishlist/recommendations
+// @access  Private
+exports.getWishlistRecommendations = async (req, res) => {
+  try {
+    const wishlist = await Wishlist.findOne({ user: req.user.id }).populate(
+      "products",
+      "category",
+    );
+
+    if (!wishlist || wishlist.products.length === 0) {
+      return res.json({ success: true, recommendations: [] });
+    }
+
+    const wishlistProductIds = wishlist.products.map((p) => p._id);
+    const categories = [
+      ...new Set(wishlist.products.map((p) => p.category).filter(Boolean)),
+    ];
+
+    const recommendations = await Product.find({
+      _id: { $nin: wishlistProductIds },
+      category: { $in: categories },
+      isActive: true,
+    })
+      .sort({ averageRating: -1, numReviews: -1 })
+      .limit(8)
+      .select("name price images category averageRating numReviews slug")
+      .lean();
+
+    res.json({ success: true, recommendations });
+  } catch (error) {
+    log.error("Wishlist recommendations error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

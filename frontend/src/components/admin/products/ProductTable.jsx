@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import Image from 'next/image';
 import {
     FiChevronUp,
@@ -6,10 +7,129 @@ import {
     FiEyeOff,
     FiStar,
     FiEdit2,
-    FiTrash2
+    FiTrash2,
+    FiCheck,
+    FiX,
+    FiChevronRight,
+    FiAlertCircle,
 } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 import { formatPrice } from '@/utils/helpers';
+import { useUpdateProductStock } from '@/hooks/useProducts';
+
+/* ── Health Score ──────────────────────────────────────────── */
+function computeHealth(p) {
+  let score = 0;
+  const checks = [];
+  // 1. Images (20)
+  const hasImages = p.images?.length > 0;
+  if (hasImages) score += 20; else checks.push('No images');
+  // 2. Description (20)
+  const hasDesc = (p.description?.length || 0) > 20;
+  if (hasDesc) score += 20; else checks.push('Short/no description');
+  // 3. Pricing (20)
+  const hasPricing = p.price > 0;
+  if (hasPricing) score += 20; else checks.push('No price set');
+  // 4. Stock (20)
+  const hasStock = p.stock > 0 || p.sizes?.some(s => s.stock > 0);
+  if (hasStock) score += 20; else checks.push('Out of stock');
+  // 5. Category (20)
+  const hasCat = !!p.category;
+  if (hasCat) score += 20; else checks.push('No category');
+  return { score, checks };
+}
+
+function HealthBadge({ score, checks }) {
+  const color = score >= 80 ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+    : score >= 60 ? 'text-amber-700 bg-amber-50 border-amber-200'
+    : 'text-red-700 bg-red-50 border-red-200';
+  const ring = score >= 80 ? 'stroke-emerald-500' : score >= 60 ? 'stroke-amber-500' : 'stroke-red-500';
+  const circumference = 2 * Math.PI * 10;
+  const dashoffset = circumference - (score / 100) * circumference;
+
+  return (
+    <div className="group relative flex items-center gap-1.5">
+      <svg width="28" height="28" viewBox="0 0 28 28" className="shrink-0">
+        <circle cx="14" cy="14" r="10" fill="none" className="stroke-gray-200" strokeWidth="3" />
+        <circle cx="14" cy="14" r="10" fill="none" className={ring} strokeWidth="3"
+          strokeDasharray={circumference} strokeDashoffset={dashoffset}
+          strokeLinecap="round" transform="rotate(-90 14 14)" />
+        <text x="14" y="14" textAnchor="middle" dominantBaseline="central" className="fill-gray-700 text-[8px] font-bold">{score}</text>
+      </svg>
+      {checks.length > 0 && (
+        <div className="hidden group-hover:block absolute bottom-full left-0 mb-1 bg-gray-900 text-white text-[11px] px-2.5 py-1.5 rounded-lg shadow-lg whitespace-nowrap z-20">
+          {checks.map((c, i) => <div key={i} className="flex items-center gap-1"><FiAlertCircle className="w-3 h-3 text-amber-400" /> {c}</div>)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Inline Stock Editor ──────────────────────────────────── */
+function StockEditor({ product }) {
+  const [expanded, setExpanded] = useState(false);
+  const [editSizes, setEditSizes] = useState(null);
+  const stockMutation = useUpdateProductStock();
+
+  const startEdit = () => {
+    setExpanded(true);
+    setEditSizes((product.sizes || []).map(s => ({ ...s })));
+  };
+
+  const cancelEdit = () => { setExpanded(false); setEditSizes(null); };
+
+  const handleSave = () => {
+    if (!editSizes) return;
+    const totalStock = editSizes.reduce((sum, s) => sum + (parseInt(s.stock) || 0), 0);
+    stockMutation.mutate({ id: product._id, sizes: editSizes, stock: totalStock }, { onSuccess: () => cancelEdit() });
+  };
+
+  const updateSize = (idx, val) => {
+    setEditSizes(prev => prev.map((s, i) => i === idx ? { ...s, stock: parseInt(val) || 0 } : s));
+  };
+
+  const hasSizes = product.sizes && product.sizes.length > 0;
+
+  return (
+    <div>
+      <div className="flex items-center gap-1.5">
+        <span className={`text-sm font-medium ${product.stock <= 10 ? 'text-red-600' : product.stock <= 30 ? 'text-amber-600' : 'text-emerald-600'}`}>
+          {product.stock}
+        </span>
+        {hasSizes && (
+          <button onClick={expanded ? cancelEdit : startEdit}
+            className="p-0.5 text-gray-400 hover:text-gray-600 transition-colors">
+            <FiChevronRight className={`w-3.5 h-3.5 transition-transform ${expanded ? 'rotate-90' : ''}`} />
+          </button>
+        )}
+      </div>
+      {expanded && editSizes && (
+        <div className="mt-2 bg-gray-50 rounded-lg p-2.5 space-y-1.5 min-w-[140px]">
+          {editSizes.map((s, i) => (
+            <div key={i} className="flex items-center gap-2 text-xs">
+              <span className="text-gray-500 w-8 text-right font-medium">{s.size}</span>
+              <input
+                type="number" min="0" value={s.stock}
+                onChange={(e) => updateSize(i, e.target.value)}
+                className="w-16 px-2 py-1 border border-gray-200 rounded text-xs text-center focus:ring-1 focus:ring-gray-900 focus:border-gray-900"
+              />
+            </div>
+          ))}
+          <div className="flex gap-1 pt-1.5 border-t border-gray-200">
+            <button onClick={handleSave} disabled={stockMutation.isPending}
+              className="flex-1 inline-flex items-center justify-center gap-1 bg-gray-900 text-white text-[11px] font-medium py-1 rounded hover:bg-gray-800 disabled:opacity-50">
+              <FiCheck className="w-3 h-3" /> Save
+            </button>
+            <button onClick={cancelEdit}
+              className="flex-1 inline-flex items-center justify-center gap-1 bg-white text-gray-600 text-[11px] font-medium py-1 rounded border border-gray-200 hover:bg-gray-50">
+              <FiX className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ProductTable({
     products,
@@ -98,6 +218,7 @@ export default function ProductTable({
                                     {sortBy === 'stock' && (sortOrder === 'asc' ? <FiChevronUp /> : <FiChevronDown />)}
                                 </div>
                             </th>
+                            <th className="px-4 py-4 text-left text-sm font-semibold text-primary-900">Health</th>
                             <th className="px-6 py-4 text-left text-sm font-semibold text-primary-900">Status</th>
                             <th className="px-6 py-4 text-left text-sm font-semibold text-primary-900">Actions</th>
                         </tr>
@@ -135,9 +256,10 @@ export default function ProductTable({
                                 </td>
                                 <td className="px-6 py-4 text-primary-900 font-semibold">{formatPrice(product.price ?? 0)}</td>
                                 <td className="px-6 py-4">
-                                    <span className={`text-sm font-medium ${product.stock <= 10 ? 'text-red-600' : 'text-green-600'}`}>
-                                        {product.stock} units
-                                    </span>
+                                    <StockEditor product={product} />
+                                </td>
+                                <td className="px-4 py-4">
+                                    {(() => { const h = computeHealth(product); return <HealthBadge score={h.score} checks={h.checks} />; })()}
                                 </td>
                                 <td className="px-6 py-4">
                                     <div className="flex flex-col gap-1">

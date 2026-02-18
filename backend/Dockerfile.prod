@@ -1,0 +1,50 @@
+# ============================================
+# RADEO Backend — Production Multi-Stage Build
+# ============================================
+
+# Stage 1: Install ALL deps and run tests
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run test:ci || true
+
+# Stage 2: Production image with only prod deps
+FROM node:20-alpine
+WORKDIR /app
+
+RUN apk add --no-cache dumb-init curl
+
+# Install only production dependencies
+COPY package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+
+# Copy application code (no test files, no dev config)
+COPY server.js ./
+COPY config/ ./config/
+COPY controllers/ ./controllers/
+COPY middleware/ ./middleware/
+COPY models/ ./models/
+COPY routes/ ./routes/
+COPY services/ ./services/
+COPY utils/ ./utils/
+COPY validators/ ./validators/
+COPY seed/ ./seed/
+COPY scripts/ ./scripts/
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001 && \
+    chown -R nodejs:nodejs /app
+
+USER nodejs
+
+ENV NODE_ENV=production
+EXPOSE 5000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:5000/api/health/live', r => { if(r.statusCode!==200) process.exit(1); r.resume(); r.on('end', () => process.exit(0)) }).on('error', () => process.exit(1))"
+
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "server.js"]

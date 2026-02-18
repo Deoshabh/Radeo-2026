@@ -11,6 +11,7 @@ const {
   login,
   refresh,
   logout,
+  logoutAll,
   getCurrentUser,
   changePassword,
   forgotPassword,
@@ -70,5 +71,6 @@ router.post(
 // Protected auth routes
 router.get("/me", authenticate, getCurrentUser);
 router.post("/change-password", authenticate, changePassword);
+router.delete("/logout-all", authenticate, logoutAll);
 
 module.exports = router;

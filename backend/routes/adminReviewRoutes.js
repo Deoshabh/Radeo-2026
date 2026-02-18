@@ -9,6 +9,8 @@ const {
   bulkHideReviews,
   bulkDeleteReviews,
   getReviewStats,
+  replyToReview,
+  deleteReply,
 } = require("../controllers/adminReviewController");
 const { authenticate } = require("../middleware/auth");
 const admin = require("../middleware/admin");
@@ -31,6 +33,12 @@ router.patch("/:id/toggle-hidden", toggleReviewHidden);
 
 // @route   PATCH /api/v1/admin/reviews/:id/notes
 router.patch("/:id/notes", updateReviewNotes);
+
+// @route   PATCH /api/v1/admin/reviews/:id/reply
+router.patch("/:id/reply", replyToReview);
+
+// @route   DELETE /api/v1/admin/reviews/:id/reply
+router.delete("/:id/reply", deleteReply);
 
 // @route   DELETE /api/v1/admin/reviews/:id
 router.delete("/:id", deleteReview);

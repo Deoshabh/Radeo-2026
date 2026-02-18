@@ -3,12 +3,15 @@
  * Helper functions to generate consistent SEO metadata
  */
 
-const SITE_NAME = "Radeo";
-const SITE_URL = "https://radeo.in";
+import {
+  SITE_URL,
+  SITE_NAME,
+  TWITTER_HANDLE,
+} from '@/lib/constants';
+
 const SITE_DESCRIPTION =
   "Discover exquisite handcrafted shoes made with premium materials and timeless craftsmanship. Shop the finest collection of luxury footwear at Radeo.";
 const SITE_IMAGE = `${SITE_URL}/og-image.jpg`;
-const TWITTER_HANDLE = "@radeo_in";
 
 /**
  * Generate base metadata for all pages
@@ -153,21 +156,22 @@ export const generateCategoryMetadata = (category) => {
 /**
  * Generate JSON-LD structured data for product
  */
-export const generateProductJsonLd = (product) => {
+export const generateProductJsonLd = (product, url) => {
+  const productUrl = url || `${SITE_URL}/products/${product.slug}`;
   return {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
     description: product.description,
-    image: product.images || [],
-    sku: product.sku,
+    image: product.images?.map((img) => img.url || img) || [],
+    sku: product.sku || product._id,
     brand: {
       "@type": "Brand",
       name: product.brand || SITE_NAME,
     },
     offers: {
       "@type": "Offer",
-      url: `${SITE_URL}/products/${product.slug}`,
+      url: productUrl,
       priceCurrency: "INR",
       price: product.price,
       priceValidUntil: new Date(
@@ -193,28 +197,55 @@ export const generateProductJsonLd = (product) => {
 };
 
 /**
- * Generate JSON-LD structured data for organization
+ * Generate JSON-LD structured data for organization.
+ * Accepts optional siteSettings to use dynamic branding/contact values
+ * from the admin panel instead of env vars.
+ *
+ * @param {Object} [siteSettings] - Site settings from admin panel
  */
-export const generateOrganizationJsonLd = () => {
+export const generateOrganizationJsonLd = (siteSettings) => {
+  const branding = siteSettings?.branding || {};
+  const contact = siteSettings?.contact || {};
+  const social = siteSettings?.social || {};
+
+  const orgName = branding.siteName || SITE_NAME;
+  const logoUrl = branding.logoUrl || `${SITE_URL}/logo.png`;
+  const phone = contact.phone || process.env.NEXT_PUBLIC_CONTACT_PHONE || '';
+
+  const contactPoint = phone
+    ? {
+        "@type": "ContactPoint",
+        telephone: phone,
+        contactType: "customer service",
+        areaServed: "IN",
+        availableLanguage: ["en", "hi"],
+      }
+    : undefined;
+
+  const address = contact.address
+    ? {
+        "@type": "PostalAddress",
+        streetAddress: contact.address,
+        addressLocality: contact.city || "Agra",
+        addressRegion: contact.state || "Uttar Pradesh",
+        addressCountry: "IN",
+      }
+    : undefined;
+
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: SITE_NAME,
+    name: orgName,
     url: SITE_URL,
-    logo: `${SITE_URL}/logo.png`,
+    logo: logoUrl,
     description: SITE_DESCRIPTION,
-    contactPoint: {
-      "@type": "ContactPoint",
-      telephone: "+91-XXX-XXX-XXXX",
-      contactType: "customer service",
-      areaServed: "IN",
-      availableLanguage: ["en", "hi"],
-    },
+    ...(contactPoint && { contactPoint }),
+    ...(address && { address }),
     sameAs: [
-      "https://www.facebook.com/radeo",
-      "https://www.instagram.com/radeo",
-      "https://twitter.com/radeo_in",
-    ],
+      social.instagram || process.env.NEXT_PUBLIC_INSTAGRAM_URL,
+      social.facebook || process.env.NEXT_PUBLIC_FACEBOOK_URL,
+      social.twitter || process.env.NEXT_PUBLIC_TWITTER_URL,
+    ].filter(Boolean),
   };
 };
 

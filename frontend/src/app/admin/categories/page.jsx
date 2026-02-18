@@ -1,20 +1,25 @@
 'use client';
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { adminAPI, categoryAPI } from '@/utils/api';
+import { adminAPI } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
-import AdminLayout from '@/components/AdminLayout';
+import { useAdminCategories, useCreateCategory, useUpdateCategory, useDeleteCategory, useToggleCategoryStatus } from '@/hooks/useAdmin';
 import toast from 'react-hot-toast';
-import { FiEdit2, FiTrash2, FiPlus, FiX, FiCheck, FiUpload, FiImage } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiPlus, FiX, FiImage } from 'react-icons/fi';
 
 export default function CategoriesPage() {
   const router = useRouter();
   const { user } = useAuth();
   
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data: categoriesData, isLoading: loading } = useAdminCategories();
+  const categories = categoriesData?.categories || [];
+  const createCategoryMut = useCreateCategory();
+  const updateCategoryMut = useUpdateCategory();
+  const deleteCategoryMut = useDeleteCategory();
+  const toggleStatusMut = useToggleCategoryStatus();
+  
   const [showModal, setShowModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -31,28 +36,6 @@ export default function CategoriesPage() {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
-
-  const fetchCategories = async () => {
-    try {
-      setLoading(true);
-      const response = await adminAPI.getAllCategories();
-      // Backend returns {categories: [...]}
-      setCategories(response.data.categories || []);
-    } catch (error) {
-      console.error('Failed to fetch categories:', error);
-      toast.error('Failed to load categories');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!user || user.role !== 'admin') {
-      router.push('/');
-      return;
-    }
-    fetchCategories();
-  }, [user, router]);
 
   const handleOpenModal = (category = null) => {
     if (category) {
@@ -223,45 +206,25 @@ export default function CategoriesPage() {
       };
 
       if (editMode) {
-        await adminAPI.updateCategory(selectedCategory._id, submitData);
-        toast.success('Category updated successfully');
+        updateCategoryMut.mutate({ id: selectedCategory._id, data: submitData });
       } else {
-        await adminAPI.createCategory(submitData);
-        toast.success('Category created successfully');
+        createCategoryMut.mutate(submitData);
       }
       
       handleCloseModal();
-      fetchCategories();
     } catch (error) {
       console.error('Failed to save category:', error);
       toast.error(error.response?.data?.message || 'Failed to save category');
     }
   };
 
-  const handleDelete = async (id, name) => {
-    if (!confirm(`Are you sure you want to delete "${name}"?`)) {
-      return;
-    }
-    
-    try {
-      await adminAPI.deleteCategory(id);
-      toast.success('Category deleted successfully');
-      fetchCategories();
-    } catch (error) {
-      console.error('Failed to delete category:', error);
-      toast.error(error.response?.data?.message || 'Failed to delete category');
-    }
+  const handleDelete = (id, name) => {
+    if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
+    deleteCategoryMut.mutate(id);
   };
 
-  const handleToggleStatus = async (id, currentStatus) => {
-    try {
-      await adminAPI.toggleCategoryStatus(id);
-      toast.success('Category status updated');
-      fetchCategories();
-    } catch (error) {
-      console.error('Failed to update status:', error);
-      toast.error('Failed to update category status');
-    }
+  const handleToggleStatus = (id) => {
+    toggleStatusMut.mutate(id);
   };
 
   if (loading) {
@@ -273,7 +236,6 @@ export default function CategoriesPage() {
   }
 
   return (
-    <AdminLayout>
     <div className="min-h-screen bg-primary-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-7xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
@@ -565,6 +527,5 @@ export default function CategoriesPage() {
         </div>
       )}
     </div>
-    </AdminLayout>
   );
 }

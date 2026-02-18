@@ -42,4 +42,7 @@ const contactMessageSchema = new mongoose.Schema(
   },
 );
 
+contactMessageSchema.index({ status: 1, createdAt: -1 });
+contactMessageSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model('ContactMessage', contactMessageSchema);

@@ -217,10 +217,9 @@ export const setupRecaptcha = (containerId = "recaptcha-container") => {
     window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
       size: "normal", // 'invisible' or 'normal'
       callback: (response) => {
-        console.log("reCAPTCHA solved");
+        // reCAPTCHA solved
       },
       "expired-callback": () => {
-        console.log("reCAPTCHA expired");
         toast.error("reCAPTCHA expired. Please try again.");
       },
     });
@@ -435,9 +434,6 @@ export const loginWithGoogle = async () => {
     // This prevents Firebase from reusing a cached session when switching accounts
     const currentUser = auth.currentUser;
     if (currentUser) {
-      console.log(
-        `⚠️  Clearing existing Firebase session for: ${currentUser.email}`,
-      );
       await signOut(auth);
     }
 
@@ -463,9 +459,6 @@ export const loginWithGoogle = async () => {
 
     // Verify the signed-in user
     const signedInUser = result.user;
-    console.log(
-      `✅ Successfully signed in as: ${signedInUser.email} (UID: ${signedInUser.uid})`,
-    );
 
     // Get credential and token
     const credential = GoogleAuthProvider.credentialFromResult(result);
@@ -474,15 +467,7 @@ export const loginWithGoogle = async () => {
     // ✅ CRITICAL FIX #4: Verify email is expected (for critical applications)
     // Optional: Log the provider data for debugging
     if (result.additionalUserInfo?.provider === "google.com") {
-      console.log("📊 Google Sign-In Details:", {
-        email: signedInUser.email,
-        displayName: signedInUser.displayName,
-        uid: signedInUser.uid,
-        isNewUser:
-          result.user.metadata.creationTime ===
-          result.user.metadata.lastSignInTime,
-        provider: result.additionalUserInfo?.provider,
-      });
+      // Google sign-in verified
     }
 
     // Don't show success toast here — let the caller show it after backend sync

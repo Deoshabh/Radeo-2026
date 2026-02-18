@@ -1,37 +1,19 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { adminAPI } from '@/utils/api';
-import { FiSave, FiX, FiRefreshCw, FiSearch, FiAlertCircle } from 'react-icons/fi';
+import { useInventory } from '@/hooks/useAdmin';
+import { FiSave, FiRefreshCw, FiSearch, FiAlertCircle } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 
 export default function BulkProductEditor() {
-    const [products, setProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { data: inventoryData, isLoading: loading, refetch } = useInventory();
+    const allProducts = inventoryData?.products || inventoryData || [];
     const [saving, setSaving] = useState(false);
     const [modifiedRows, setModifiedRows] = useState(new Set());
     const [edits, setEdits] = useState({}); // { productId: { field: value } }
     const [search, setSearch] = useState('');
-
-    const fetchProducts = useCallback(async () => {
-        setLoading(true);
-        try {
-            const { data } = await adminAPI.getAllProducts({ limit: 100 });
-            setProducts(data.products || data || []);
-            setEdits({});
-            setModifiedRows(new Set());
-        } catch (error) {
-            console.error('Failed to fetch products', error);
-            toast.error('Failed to load products');
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchProducts();
-    }, [fetchProducts]);
 
     const handleChange = (id, field, value) => {
         setEdits(prev => ({
@@ -66,7 +48,9 @@ export default function BulkProductEditor() {
             await Promise.all(updates);
 
             toast.success('All changes saved!', { id: toastId });
-            fetchProducts(); // Refresh data
+            setEdits({});
+            setModifiedRows(new Set());
+            refetch();
         } catch (error) {
             console.error('Bulk save error', error);
             toast.error('Failed to save some changes', { id: toastId });
@@ -77,7 +61,7 @@ export default function BulkProductEditor() {
 
     const hasUnsavedChanges = modifiedRows.size > 0;
 
-    const filteredProducts = products.filter(p =>
+    const filteredProducts = allProducts.filter(p =>
         p.name.toLowerCase().includes(search.toLowerCase()) ||
         p.category?.toLowerCase().includes(search.toLowerCase())
     );
@@ -111,7 +95,7 @@ export default function BulkProductEditor() {
                         </span>
                     )}
                     <button
-                        onClick={fetchProducts}
+                        onClick={() => refetch()}
                         className="p-2 text-gray-500 hover:bg-gray-200 rounded-full transition-colors"
                         title="Refresh"
                         disabled={saving}

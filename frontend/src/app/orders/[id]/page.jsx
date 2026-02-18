@@ -30,7 +30,6 @@ export default function OrderDetailPage() {
       setLoadingOrder(true);
       const response = await orderAPI.getById(params.id);
       // Backend returns {order: {...}}
-      console.log('📦 Order Details API response:', response.data);
       setOrder(response.data.order);
     } catch (error) {
       console.error('Failed to fetch order:', error);

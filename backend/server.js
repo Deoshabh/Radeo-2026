@@ -4,6 +4,10 @@
 const dotenv = require("dotenv");
 dotenv.config();
 
+// Validate all env vars before anything else
+const { validateEnv } = require("./config/env");
+validateEnv();
+
 // ===============================
 // Imports
 // ===============================
@@ -15,9 +19,11 @@ const rateLimit = require("express-rate-limit");
 const helmet = require("helmet");
 const compression = require("compression");
 const { initializeBucket } = require("./utils/minio");
-const { logger, log } = require("./utils/logger");
+const { logger, log, requestContext } = require("./utils/logger");
 const { errorHandler, notFoundHandler } = require("./middleware/errorHandler");
 const { preventCaching } = require("./middleware/security");
+const { requestId } = require("./middleware/requestId");
+const { metricsRouter, metricsMiddleware } = require("./routes/metricsRoutes");
 const {
   startShiprocketReconciliationWorker,
 } = require("./services/shiprocketReconciliationService");
@@ -143,7 +149,7 @@ const corsOptions = {
     }
 
     // Log blocked origin for debugging
-    console.log('Blocked by CORS:', origin);
+    log.warn('Blocked by CORS', { origin });
     return callback(new Error("CORS not allowed"), false);
   },
   credentials: true,
@@ -170,9 +176,13 @@ app.use(
   }),
 );
 app.use(compression()); // Compress all responses
+app.use(requestId); // Attach unique request ID
+app.use(requestContext); // Store in AsyncLocalStorage for log.*
+app.use(metricsMiddleware); // Prometheus request metrics
 app.use(logger); // HTTP request logging
 app.use(
   express.json({
+    limit: "10kb", // Default: reject payloads > 10KB
     verify: (req, _res, buf) => {
       if (req.originalUrl.startsWith("/api/webhooks/")) {
         req.rawBody = buf.toString("utf8");
@@ -180,6 +190,7 @@ app.use(
     },
   }),
 );
+app.use(express.urlencoded({ extended: false, limit: "10kb" }));
 app.use(cookieParser());
 app.use(mongoSanitize); // NoSQL injection protection (after body parser)
 
@@ -191,6 +202,15 @@ app.use(
     legacyHeaders: false,
   }),
 );
+
+// Strict rate limiter for auth endpoints (20 requests / 15 min)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many auth attempts, please try again later" },
+});
 
 // ===============================
 // Routes
@@ -205,7 +225,8 @@ app.use((req, res, next) => {
 });
 
 app.use("/api/health", require("./routes/healthRoutes")); // Health checks
-app.use("/api/v1/auth", require("./routes/authRoutes"));
+app.use("/api/metrics", require("./middleware/authenticate"), require("./middleware/admin"), metricsRouter); // Prometheus metrics (admin only)
+app.use("/api/v1/auth", authLimiter, require("./routes/authRoutes"));
 app.use("/api/v1/products", require("./routes/productRoutes"));
 app.use("/api/v1/settings", preventCaching, require("./routes/settingsRoutes"));
 app.use("/api/v1/cart", require("./routes/cartRoutes"));
@@ -236,9 +257,11 @@ app.use("/api/v1/admin/shiprocket", require("./routes/shiprocketRoutes"));
 app.use("/api/v1/admin/reviews", require("./routes/adminReviewRoutes"));
 app.use("/api/v1/admin/settings", require("./routes/adminSettingsRoutes"));
 app.use("/api/v1/admin/seo", require("./routes/adminSeoRoutes"));
+app.use("/api/v1/admin/analytics", require("./routes/adminAnalyticsRoutes"));
 app.use('/api/v1/admin/cms', adminCMSRouter);
 app.use('/api/v1/cms', preventCaching, publicCMSRouter);
 
+app.use("/api/v1/analytics", require("./routes/analyticsRoutes"));
 app.use("/api/v1/seo", preventCaching, require("./routes/adminSeoRoutes"));
 
 app.use("/api/v1/coupons", require("./routes/couponRoutes"));
@@ -301,6 +324,14 @@ async function startServer() {
       log.info("CORS allowed origins", { origins: allowedOrigins });
       startShiprocketReconciliationWorker();
       startPublishWorkflowWorker();
+
+      // Register scheduled cleanup jobs (orphaned media, etc.)
+      try {
+        const { registerCleanupJobs } = require("./jobs/cleanupJobs");
+        registerCleanupJobs();
+      } catch (e) {
+        log.warn("Cleanup jobs registration failed (node-cron may not be installed)", e.message);
+      }
     });
   } catch (err) {
     log.error("Fatal startup error", err);

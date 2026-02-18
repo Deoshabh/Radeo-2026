@@ -3,8 +3,12 @@ const Order = require("../models/Order");
 const { invalidateCache } = require("../utils/cache");
 const Cart = require("../models/Cart");
 const Product = require("../models/Product");
+const StockMovement = require("../models/StockMovement");
+const Wishlist = require("../models/Wishlist");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
+const { log } = require("../utils/logger");
+const { cacheClient } = require("../config/redis");
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -56,34 +60,71 @@ exports.createOrder = async (req, res) => {
     }
 
     // Validate product availability and per-size stock
+    // Re-fetch products fresh from DB (cart.populate snapshot may be stale)
+    const productIds = cart.items.map((item) => item.product._id);
+    const freshProducts = await Product.find({ _id: { $in: productIds } });
+    const productMap = new Map(freshProducts.map((p) => [p._id.toString(), p]));
+
+    const outOfStockItems = [];
     for (const item of cart.items) {
-      if (!item.product) {
+      const product = productMap.get(item.product._id.toString());
+      if (!product) {
         return res.status(400).json({
           message:
             "A product in your cart no longer exists. Please update your cart.",
         });
       }
-      if (!item.product.isActive) {
-        return res.status(400).json({
-          message: `"${item.product.name}" is no longer available. Please remove it from your cart.`,
-        });
+      if (!product.isActive) {
+        outOfStockItems.push({ name: product.name, reason: "unavailable" });
+        continue;
       }
-      if (item.product.isOutOfStock) {
-        return res.status(400).json({
-          message: `"${item.product.name}" is currently out of stock.`,
-        });
+      if (product.isOutOfStock) {
+        outOfStockItems.push({ name: product.name, reason: "out_of_stock" });
+        continue;
       }
 
-      // Check per-size stock
-      const sizeEntry = item.product.sizes?.find(
-        (s) => s.size === item.size,
-      );
-      const availableStock = sizeEntry ? sizeEntry.stock : item.product.stock;
-      if (availableStock !== undefined && availableStock < item.quantity) {
-        return res.status(400).json({
-          message: `Insufficient stock for "${item.product.name}" (size ${item.size}). Only ${availableStock} available.`,
+      // Check per-size stock minus active reservations
+      const sizeEntry = product.sizes?.find((s) => s.size === item.size);
+      const dbStock = sizeEntry ? sizeEntry.stock : product.stock;
+
+      // Check Valkey for existing reservations on this item
+      const reservationKey = `reserve:${product._id}:${item.size || "default"}`;
+      let reserved = 0;
+      try {
+        const val = await cacheClient.get(reservationKey);
+        if (val) reserved = parseInt(val, 10) || 0;
+      } catch { /* Valkey down â€” skip reservation check */ }
+
+      const availableStock = (dbStock || 0) - reserved;
+      if (availableStock < item.quantity) {
+        outOfStockItems.push({
+          name: product.name,
+          size: item.size,
+          reason: "insufficient_stock",
+          available: Math.max(0, availableStock),
+          requested: item.quantity,
         });
       }
+    }
+
+    if (outOfStockItems.length > 0) {
+      return res.status(409).json({
+        message: `Stock unavailable for: ${outOfStockItems.map((i) => i.name).join(", ")}`,
+        outOfStockItems,
+      });
+    }
+
+    // Reserve stock in Valkey (15-minute TTL)
+    const reservationKeys = [];
+    try {
+      for (const item of cart.items) {
+        const key = `reserve:${item.product._id}:${item.size || "default"}`;
+        await cacheClient.incrby(key, item.quantity);
+        await cacheClient.expire(key, 900); // 15 minutes
+        reservationKeys.push({ key, quantity: item.quantity });
+      }
+    } catch {
+      // Valkey down â€” proceed without reservation (transaction will still guard)
     }
 
     // Calculate subtotal and create items snapshot
@@ -241,13 +282,45 @@ exports.createOrder = async (req, res) => {
       session.endSession();
     }
 
+    // Release Valkey stock reservations (stock already decremented in DB)
+    for (const { key, quantity } of reservationKeys) {
+      try { await cacheClient.decrby(key, quantity); } catch { /* Valkey down â€” ignore */ }
+    }
+
     // Invalidate product cache
     await invalidateCache("products:*");
 
     // Emit Real-time Event to Admin Dashboard
     const { emitAdminOrderCreated } = require("../utils/soketi");
     // Fire and forget - don't await/block response
-    emitAdminOrderCreated(order).catch(err => console.error("Socket emit failed", err));
+    emitAdminOrderCreated(order).catch(err => log.error("Socket emit failed", err));
+
+    // Log stock movements (fire-and-forget)
+    setImmediate(() => {
+      const movements = order.items.map((item) => ({
+        product: item.product,
+        type: "sale",
+        quantity: -item.quantity,
+        size: item.size || null,
+        orderId: order._id,
+        orderCode: order.orderId,
+        performedBy: req.user.id,
+      }));
+      StockMovement.insertMany(movements).catch((err) =>
+        log.error("Failed to log stock movements (sale)", err),
+      );
+    });
+
+    // Remove purchased products from wishlist (fire-and-forget)
+    setImmediate(() => {
+      const purchasedProductIds = order.items.map((item) => item.product);
+      Wishlist.updateOne(
+        { user: req.user.id },
+        { $pull: { products: { $in: purchasedProductIds } } },
+      ).catch((err) =>
+        log.error("Failed to clean wishlist after purchase", err),
+      );
+    });
 
     // Return created order
     res.status(201).json({
@@ -255,7 +328,14 @@ exports.createOrder = async (req, res) => {
       order,
     });
   } catch (error) {
-    console.error("Create order error:", error);
+    log.error("Create order error:", error);
+
+    // Release Valkey reservations on failure
+    if (typeof reservationKeys !== 'undefined') {
+      for (const { key, quantity } of reservationKeys) {
+        try { await cacheClient.decrby(key, quantity); } catch { /* ignore */ }
+      }
+    }
 
     // Stock-related errors from transaction
     if (error.message && error.message.includes("Insufficient stock")) {
@@ -299,7 +379,7 @@ exports.getUserOrders = async (req, res) => {
       orders: ordersWithSummary,
     });
   } catch (error) {
-    console.error("Get user orders error:", error);
+    log.error("Get user orders error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -326,7 +406,7 @@ exports.getOrderById = async (req, res) => {
       order,
     });
   } catch (error) {
-    console.error("Get order by ID error:", error);
+    log.error("Get order by ID error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -336,7 +416,7 @@ exports.createRazorpayOrder = async (req, res) => {
   try {
     // Validate Razorpay credentials first
     if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-      console.error("❌ Razorpay credentials missing in environment variables");
+      log.error("âŒ Razorpay credentials missing in environment variables");
       return res.status(500).json({
         message: "Payment system not configured. Please contact support.",
         error: "RAZORPAY_CREDENTIALS_MISSING",
@@ -364,15 +444,15 @@ exports.createRazorpayOrder = async (req, res) => {
       return res.status(400).json({ message: "Order already paid" });
     }
 
-    // CRITICAL: Razorpay requires amount in paise (₹1 = 100 paise)
+    // CRITICAL: Razorpay requires amount in paise (â‚¹1 = 100 paise)
     // This is the ONLY place where we convert INR to paise
     // Use total (after discount) instead of subtotal
     const CurrencyUtils = require('../utils/currencyUtils');
     const payAmount = order.total || order.subtotal;
     const amountInPaise = CurrencyUtils.toPaise(payAmount);
 
-    console.log(
-      `Creating Razorpay order for ₹${order.total || order.subtotal} (${amountInPaise} paise)`,
+    log.info(
+      `Creating Razorpay order for â‚¹${order.total || order.subtotal} (${amountInPaise} paise)`,
     );
 
     const razorpayOrder = await razorpay.orders.create({
@@ -391,7 +471,7 @@ exports.createRazorpayOrder = async (req, res) => {
       key: process.env.RAZORPAY_KEY_ID,
     });
   } catch (error) {
-    console.error("Create Razorpay order error:", error);
+    log.error("Create Razorpay order error:", error);
 
     // Provide more specific error messages
     if (error.error && error.error.description) {
@@ -446,7 +526,7 @@ exports.verifyRazorpayPayment = async (req, res) => {
 
     res.json({ success: true, message: "Payment verified successfully" });
   } catch (error) {
-    console.error("Verify Razorpay payment error:", error);
+    log.error("Verify Razorpay payment error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -503,11 +583,35 @@ exports.cancelOrder = async (req, res) => {
 
         // 2. Update order status to cancelled
         order.status = "cancelled";
+        order.cancellation = {
+          reason: req.body.reason || "Customer requested cancellation",
+          cancelledAt: new Date(),
+          cancelledBy: "customer",
+        };
         await order.save({ session });
       });
     } finally {
       session.endSession();
     }
+
+    // Log stock movements (fire-and-forget)
+    setImmediate(() => {
+      const movements = order.items
+        .filter((item) => item.product && item.size)
+        .map((item) => ({
+          product: item.product,
+          type: "cancellation",
+          quantity: item.quantity,
+          size: item.size || null,
+          orderId: order._id,
+          orderCode: order.orderId,
+          performedBy: req.user.id,
+          note: "Customer cancellation",
+        }));
+      StockMovement.insertMany(movements).catch((err) =>
+        log.error("Failed to log stock movements (cancellation)", err),
+      );
+    });
 
     // Invalidate product cache
     await invalidateCache("products:*");
@@ -518,7 +622,7 @@ exports.cancelOrder = async (req, res) => {
       order,
     });
   } catch (error) {
-    console.error("Cancel order error:", error);
+    log.error("Cancel order error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

@@ -1,7 +1,8 @@
+import { SITE_URL, API_BASE_URL } from '@/lib/constants';
+
 export default async function sitemap() {
-  const API_URL =
-    process.env.NEXT_PUBLIC_API_URL || "https://api.radeo.in/api/v1";
-  const BASE_URL = "https://radeo.in";
+  const API_URL = API_BASE_URL;
+  const BASE_URL = SITE_URL;
 
   // Static pages that always exist
   const staticPages = [
@@ -97,12 +98,15 @@ export default async function sitemap() {
     if (categoriesRes.ok) {
       const categories = await categoriesRes.json();
       if (Array.isArray(categories)) {
-        categoryUrls = categories.map((cat) => ({
-          url: `${BASE_URL}/category/${encodeURIComponent(cat)}`,
-          lastModified: new Date().toISOString(),
-          changeFrequency: "weekly",
-          priority: 0.7,
-        }));
+        categoryUrls = categories.map((cat) => {
+          const slug = typeof cat === 'string' ? cat : cat.slug || cat.name;
+          return {
+            url: `${BASE_URL}/categories?category=${encodeURIComponent(slug)}`,
+            lastModified: new Date().toISOString(),
+            changeFrequency: "weekly",
+            priority: 0.7,
+          };
+        });
       }
     }
 

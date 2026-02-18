@@ -1,12 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { adminAPI } from '@/utils/api';
-import AdminLayout from '@/components/AdminLayout';
+import { useAdminStats, useDepsHealth } from '@/hooks/useAdmin';
 import { formatCurrency, formatDate } from '@/utils/helpers';
-import toast from 'react-hot-toast';
 import {
   FiShoppingBag,
   FiDollarSign,
@@ -25,41 +23,10 @@ import {
 export default function AdminStatsPage() {
   const router = useRouter();
   const { user, isAuthenticated, loading } = useAuth();
-  const [stats, setStats] = useState(null);
-  const [depsHealth, setDepsHealth] = useState(null);
-  const [loadingStats, setLoadingStats] = useState(true);
+  const { data: stats, isLoading: loadingStats } = useAdminStats();
+  const { data: depsHealth } = useDepsHealth();
   const [viewMode, setViewMode] = useState('daily'); // 'daily' or 'monthly'
   const [showAllOrders, setShowAllOrders] = useState(false);
-
-  useEffect(() => {
-    if (!loading && (!isAuthenticated || user?.role !== 'admin')) {
-      router.push('/');
-    }
-  }, [user, isAuthenticated, loading, router]);
-
-  useEffect(() => {
-    if (isAuthenticated && user?.role === 'admin') {
-      fetchStats();
-    }
-  }, [isAuthenticated, user]);
-
-  const fetchStats = async () => {
-    try {
-      setLoadingStats(true);
-      const [statsResponse, depsResponse] = await Promise.all([
-        adminAPI.getAdminStats(),
-        adminAPI.getDependenciesHealth(),
-      ]);
-
-      setStats(statsResponse.data);
-      setDepsHealth(depsResponse.data);
-    } catch (error) {
-      toast.error('Failed to fetch statistics');
-      console.error('Failed to fetch statistics:', error);
-    } finally {
-      setLoadingStats(false);
-    }
-  };
 
   const getStatusColor = (status) => {
     const colors = {
@@ -74,29 +41,24 @@ export default function AdminStatsPage() {
 
   if (loading || loadingStats) {
     return (
-      <AdminLayout>
         <div className="min-h-screen flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
         </div>
-      </AdminLayout>
     );
   }
 
   if (!stats) {
     return (
-      <AdminLayout>
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <FiAlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600">No statistics available</p>
           </div>
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className="min-h-screen bg-gray-50">
         <div className="container mx-auto px-4 py-8 max-w-7xl">
           {/* Header */}
@@ -687,6 +649,5 @@ export default function AdminStatsPage() {
           </div>
         </div>
       </div>
-    </AdminLayout>
   );
 }

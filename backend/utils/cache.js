@@ -1,4 +1,5 @@
 const redis = require('../config/redis');
+const { log } = require('./logger');
 
 /**
  * Get data from cache or execute callback and set cache
@@ -11,11 +12,11 @@ exports.getOrSetCache = async (key, callback, ttl = 3600) => {
     try {
         const cachedData = await redis.get(key);
         if (cachedData) {
-            console.log(`⚡ Cache HIT: ${key}`);
+            log.debug(`Cache HIT: ${key}`);
             return JSON.parse(cachedData);
         }
 
-        console.log(`MISS: ${key}`);
+        log.debug(`Cache MISS: ${key}`);
         const freshData = await callback();
 
         if (freshData !== undefined && freshData !== null) {
@@ -24,7 +25,7 @@ exports.getOrSetCache = async (key, callback, ttl = 3600) => {
 
         return freshData;
     } catch (error) {
-        console.error(`Cache Error [${key}]:`, error);
+        log.error(`Cache Error [${key}]:`, error);
         // Fallback to fetch without cache on error
         return callback();
     }
@@ -52,7 +53,7 @@ exports.invalidateCache = (pattern) => {
                         });
                         await pipeline.exec();
                     } catch (err) {
-                        console.error('Cache pipeline error:', err);
+                        log.error('Cache pipeline error:', err);
                     }
                     stream.resume();
                 }
@@ -63,11 +64,11 @@ exports.invalidateCache = (pattern) => {
             });
 
             stream.on('error', (err) => {
-                console.error('Cache Invalidation Error:', err);
-                resolve(); // Don't reject — cache errors shouldn't crash callers
+                log.error('Cache Invalidation Error:', err);
+                resolve(); // Don't reject â€” cache errors shouldn't crash callers
             });
         } catch (error) {
-            console.error('Cache Invalidation Error:', error);
+            log.error('Cache Invalidation Error:', error);
             resolve();
         }
     });

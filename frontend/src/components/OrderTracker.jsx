@@ -50,12 +50,10 @@ export default function OrderTracker({ orderId, order, showTimeline = true }) {
 
     // Connection state handlers
     pusher.connection.bind("connected", () => {
-      console.log("✅ Soketi connected");
       setIsConnected(true);
     });
 
     pusher.connection.bind("disconnected", () => {
-      console.log("⚠️ Soketi disconnected");
       setIsConnected(false);
     });
 
@@ -70,8 +68,6 @@ export default function OrderTracker({ orderId, order, showTimeline = true }) {
 
     // Listen for tracking updates
     channel.bind("tracking-update", (data) => {
-      console.log("📦 Tracking update received:", data);
-
       setTrackingData((prev) => ({
         ...prev,
         awb_code: data.awbCode || prev.awb_code,

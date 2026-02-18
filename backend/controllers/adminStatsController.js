@@ -5,62 +5,314 @@ const mongoose = require("mongoose");
 const redis = require("../config/redis");
 const shiprocketService = require("../utils/shiprocket");
 const { getStorageHealth } = require("../utils/minio");
+const { log } = require("../utils/logger");
+const { getOrSetCache } = require("../utils/cache");
 
 // @desc    Get admin statistics
 // @route   GET /api/v1/admin/stats
 // @access  Private/Admin
 exports.getAdminStats = async (req, res) => {
   try {
-    // Get order stats
-    const orders = await Order.find()
-      .populate("items.product", "name images")
-      .sort({ createdAt: -1 });
+    const stats = await getOrSetCache('admin:stats', async () => {
+    const now = new Date();
 
-    const totalOrders = orders.length;
-    const pendingOrders = orders.filter((o) => o.status === "pending").length;
-    const confirmedOrders = orders.filter(
-      (o) => o.status === "confirmed",
-    ).length;
-    const shippedOrders = orders.filter((o) => o.status === "shipped").length;
-    const deliveredOrders = orders.filter(
-      (o) => o.status === "delivered",
-    ).length;
-    const cancelledOrders = orders.filter(
-      (o) => o.status === "cancelled",
-    ).length;
+    // Current month boundaries
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
 
-    const totalRevenue = orders
-      .filter((o) => o.status === "delivered")
-      .reduce((sum, order) => sum + (order.total || order.subtotal || 0), 0);
+    // Run all aggregations and counts in parallel
+    const [
+      statusAgg,
+      revenueAgg,
+      paymentAgg,
+      topProductsAgg,
+      last7DaysAgg,
+      monthlyAgg,
+      categoryAgg,
+      recentOrders,
+      totalProducts,
+      activeProducts,
+      inactiveProducts,
+      outOfStockProducts,
+      totalUsers,
+      totalAdmins,
+    ] = await Promise.all([
+      // 1. Order counts by status
+      Order.aggregate([
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+      ]),
 
-    const pendingRevenue = orders
-      .filter((o) => ["pending", "confirmed", "shipped"].includes(o.status))
-      .reduce((sum, order) => sum + (order.total || order.subtotal || 0), 0);
+      // 2. Revenue aggregation (delivered + pending)
+      Order.aggregate([
+        {
+          $group: {
+            _id: null,
+            totalRevenue: {
+              $sum: {
+                $cond: [
+                  { $eq: ["$status", "delivered"] },
+                  { $ifNull: ["$total", { $ifNull: ["$subtotal", 0] }] },
+                  0,
+                ],
+              },
+            },
+            pendingRevenue: {
+              $sum: {
+                $cond: [
+                  { $in: ["$status", ["pending", "confirmed", "shipped"]] },
+                  { $ifNull: ["$total", { $ifNull: ["$subtotal", 0] }] },
+                  0,
+                ],
+              },
+            },
+          },
+        },
+      ]),
 
-    // Payment method stats
-    const codOrders = orders.filter((o) => o.payment?.method === "cod");
-    const onlineOrders = orders.filter((o) => o.payment?.method !== "cod");
+      // 3. Payment method split
+      Order.aggregate([
+        {
+          $group: {
+            _id: { $cond: [{ $eq: ["$payment.method", "cod"] }, "cod", "online"] },
+            count: { $sum: 1 },
+            revenue: {
+              $sum: {
+                $cond: [
+                  { $eq: ["$status", "delivered"] },
+                  { $ifNull: ["$total", 0] },
+                  0,
+                ],
+              },
+            },
+          },
+        },
+      ]),
 
-    const codRevenue = codOrders
-      .filter((o) => o.status === "delivered")
-      .reduce((sum, order) => sum + (order.total || 0), 0);
+      // 4. Top selling products (delivered orders)
+      Order.aggregate([
+        { $match: { status: "delivered" } },
+        { $unwind: "$items" },
+        {
+          $group: {
+            _id: "$items.product",
+            quantity: { $sum: { $ifNull: ["$items.quantity", 0] } },
+            revenue: {
+              $sum: {
+                $multiply: [
+                  { $ifNull: ["$items.price", 0] },
+                  { $ifNull: ["$items.quantity", 0] },
+                ],
+              },
+            },
+          },
+        },
+        { $sort: { quantity: -1 } },
+        { $limit: 5 },
+        {
+          $lookup: {
+            from: "products",
+            localField: "_id",
+            foreignField: "_id",
+            as: "product",
+          },
+        },
+        { $unwind: { path: "$product", preserveNullAndEmptyArrays: true } },
+        {
+          $project: {
+            productId: "$_id",
+            name: { $ifNull: ["$product.name", "Unknown Product"] },
+            image: { $arrayElemAt: [{ $ifNull: ["$product.images", []] }, 0] },
+            quantity: 1,
+            revenue: 1,
+          },
+        },
+      ]),
 
-    const onlineRevenue = onlineOrders
-      .filter((o) => o.status === "delivered")
-      .reduce((sum, order) => sum + (order.total || 0), 0);
+      // 5. Sales trend (last 7 days)
+      Order.aggregate([
+        {
+          $match: {
+            createdAt: {
+              $gte: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6),
+            },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+            },
+            orders: { $sum: 1 },
+            revenue: {
+              $sum: {
+                $cond: [
+                  { $eq: ["$status", "delivered"] },
+                  { $ifNull: ["$total", 0] },
+                  0,
+                ],
+              },
+            },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]),
 
-    // Get product stats
-    const totalProducts = await Product.countDocuments();
-    const activeProducts = await Product.countDocuments({ isActive: true });
-    const inactiveProducts = await Product.countDocuments({ isActive: false });
-    const outOfStockProducts = await Product.countDocuments({ stock: 0 });
+      // 6. Monthly sales trend (last 12 months)
+      Order.aggregate([
+        { $match: { createdAt: { $gte: twelveMonthsAgo } } },
+        {
+          $group: {
+            _id: {
+              year: { $year: "$createdAt" },
+              month: { $month: "$createdAt" },
+            },
+            orders: { $sum: 1 },
+            revenue: {
+              $sum: {
+                $cond: [
+                  { $eq: ["$status", "delivered"] },
+                  { $ifNull: ["$total", 0] },
+                  0,
+                ],
+              },
+            },
+            delivered: {
+              $sum: { $cond: [{ $eq: ["$status", "delivered"] }, 1, 0] },
+            },
+            cancelled: {
+              $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] },
+            },
+          },
+        },
+        { $sort: { "_id.year": 1, "_id.month": 1 } },
+      ]),
 
-    // Get user stats
-    const totalUsers = await User.countDocuments({ role: "customer" });
-    const totalAdmins = await User.countDocuments({ role: "admin" });
+      // 7. Category-wise sales (delivered orders)
+      Order.aggregate([
+        { $match: { status: "delivered" } },
+        { $unwind: "$items" },
+        {
+          $lookup: {
+            from: "products",
+            localField: "items.product",
+            foreignField: "_id",
+            as: "productInfo",
+          },
+        },
+        { $unwind: { path: "$productInfo", preserveNullAndEmptyArrays: true } },
+        { $match: { "productInfo.category": { $exists: true } } },
+        {
+          $group: {
+            _id: "$productInfo.category",
+            quantity: { $sum: { $ifNull: ["$items.quantity", 0] } },
+            revenue: {
+              $sum: {
+                $multiply: [
+                  { $ifNull: ["$items.price", 0] },
+                  { $ifNull: ["$items.quantity", 0] },
+                ],
+              },
+            },
+          },
+        },
+        { $sort: { revenue: -1 } },
+        { $limit: 5 },
+        {
+          $project: {
+            category: "$_id",
+            quantity: 1,
+            revenue: 1,
+            _id: 0,
+          },
+        },
+      ]),
 
-    // Recent orders (last 10)
-    const recentOrders = orders.slice(0, 10).map((order) => ({
+      // 8. Recent orders (last 10)
+      Order.find()
+        .populate("user", "name")
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .select("orderId shippingAddress total status payment createdAt")
+        .lean(),
+
+      // 9-12. Product counts
+      Product.countDocuments(),
+      Product.countDocuments({ isActive: true }),
+      Product.countDocuments({ isActive: false }),
+      Product.countDocuments({ stock: 0 }),
+
+      // 13-14. User counts
+      User.countDocuments({ role: "customer" }),
+      User.countDocuments({ role: "admin" }),
+    ]);
+
+    // Process status aggregation into a lookup
+    const statusMap = {};
+    for (const s of statusAgg) statusMap[s._id] = s.count;
+    const totalOrders = Object.values(statusMap).reduce((a, b) => a + b, 0);
+
+    // Process revenue
+    const rev = revenueAgg[0] || { totalRevenue: 0, pendingRevenue: 0 };
+
+    // Process payment split
+    const payMap = {};
+    for (const p of paymentAgg) payMap[p._id] = p;
+    const cod = payMap.cod || { count: 0, revenue: 0 };
+    const online = payMap.online || { count: 0, revenue: 0 };
+
+    // Fill in last 7 days (some days may have no orders)
+    const dayMap = new Map(last7DaysAgg.map((d) => [d._id, d]));
+    const last7Days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().split("T")[0];
+      const entry = dayMap.get(key);
+      last7Days.push({
+        date: key,
+        orders: entry?.orders || 0,
+        revenue: entry?.revenue || 0,
+      });
+    }
+
+    // Fill in last 12 months
+    const monthMap = new Map(
+      monthlyAgg.map((m) => [`${m._id.year}-${m._id.month}`, m]),
+    );
+    const last12Months = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+      const entry = monthMap.get(key);
+      last12Months.push({
+        month: d.toLocaleString("en-US", { month: "short", year: "numeric" }),
+        year: d.getFullYear(),
+        monthIndex: d.getMonth(),
+        orders: entry?.orders || 0,
+        revenue: entry?.revenue || 0,
+        delivered: entry?.delivered || 0,
+        cancelled: entry?.cancelled || 0,
+      });
+    }
+
+    // Current month vs previous month (from monthly agg)
+    const curKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
+    const prevKey = `${previousMonthStart.getFullYear()}-${previousMonthStart.getMonth() + 1}`;
+    const curMonth = monthMap.get(curKey) || { orders: 0, revenue: 0, delivered: 0 };
+    const prevMonth = monthMap.get(prevKey) || { orders: 0, revenue: 0, delivered: 0 };
+
+    const revenueGrowth =
+      prevMonth.revenue > 0
+        ? ((curMonth.revenue - prevMonth.revenue) / prevMonth.revenue) * 100
+        : 0;
+    const ordersGrowth =
+      prevMonth.orders > 0
+        ? ((curMonth.orders - prevMonth.orders) / prevMonth.orders) * 100
+        : 0;
+
+    // Format recent orders
+    const formattedRecentOrders = recentOrders.map((order) => ({
       _id: order._id,
       orderId: order.orderId,
       customerName: order.user?.name || order.shippingAddress?.name,
@@ -70,235 +322,60 @@ exports.getAdminStats = async (req, res) => {
       createdAt: order.createdAt,
     }));
 
-    // Top selling products
-    const productSales = {};
-    orders.forEach((order) => {
-      if (order.status === "delivered" && order.items) {
-        order.items.forEach((item) => {
-          const productId = item.product?._id?.toString() || item.product;
-          if (productId) {
-            if (!productSales[productId]) {
-              productSales[productId] = {
-                productId,
-                name: item.product?.name || "Unknown Product",
-                image: item.product?.images?.[0] || null,
-                quantity: 0,
-                revenue: 0,
-              };
-            }
-            productSales[productId].quantity += item.quantity || 0;
-            productSales[productId].revenue +=
-              (item.price || 0) * (item.quantity || 0);
-          }
-        });
-      }
-    });
-
-    const topProducts = Object.values(productSales)
-      .sort((a, b) => b.quantity - a.quantity)
-      .slice(0, 5);
-
-    // Sales trend (last 7 days)
-    const last7Days = [];
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      date.setHours(0, 0, 0, 0);
-
-      const nextDate = new Date(date);
-      nextDate.setDate(nextDate.getDate() + 1);
-
-      const dayOrders = orders.filter((order) => {
-        const orderDate = new Date(order.createdAt);
-        return orderDate >= date && orderDate < nextDate;
-      });
-
-      const dayRevenue = dayOrders
-        .filter((o) => o.status === "delivered")
-        .reduce((sum, order) => sum + (order.total || 0), 0);
-
-      last7Days.push({
-        date: date.toISOString().split("T")[0],
-        orders: dayOrders.length,
-        revenue: dayRevenue,
-      });
-    }
-
-    // Sales trend (last 12 months)
-    const last12Months = [];
-    for (let i = 11; i >= 0; i--) {
-      const date = new Date();
-      date.setMonth(date.getMonth() - i);
-      date.setDate(1);
-      date.setHours(0, 0, 0, 0);
-
-      const nextMonth = new Date(date);
-      nextMonth.setMonth(nextMonth.getMonth() + 1);
-
-      const monthOrders = orders.filter((order) => {
-        const orderDate = new Date(order.createdAt);
-        return orderDate >= date && orderDate < nextMonth;
-      });
-
-      const monthRevenue = monthOrders
-        .filter((o) => o.status === "delivered")
-        .reduce((sum, order) => sum + (order.total || 0), 0);
-
-      last12Months.push({
-        month: date.toLocaleString("en-US", {
-          month: "short",
-          year: "numeric",
-        }),
-        year: date.getFullYear(),
-        monthIndex: date.getMonth(),
-        orders: monthOrders.length,
-        revenue: monthRevenue,
-        delivered: monthOrders.filter((o) => o.status === "delivered").length,
-        cancelled: monthOrders.filter((o) => o.status === "cancelled").length,
-      });
-    }
-
-    // Current month stats
-    const currentMonthStart = new Date();
-    currentMonthStart.setDate(1);
-    currentMonthStart.setHours(0, 0, 0, 0);
-
-    const currentMonthOrders = orders.filter((order) => {
-      const orderDate = new Date(order.createdAt);
-      return orderDate >= currentMonthStart;
-    });
-
-    const currentMonthRevenue = currentMonthOrders
-      .filter((o) => o.status === "delivered")
-      .reduce((sum, order) => sum + (order.total || 0), 0);
-
-    // Previous month stats for comparison
-    const previousMonthStart = new Date();
-    previousMonthStart.setMonth(previousMonthStart.getMonth() - 1);
-    previousMonthStart.setDate(1);
-    previousMonthStart.setHours(0, 0, 0, 0);
-
-    const previousMonthEnd = new Date(currentMonthStart);
-
-    const previousMonthOrders = orders.filter((order) => {
-      const orderDate = new Date(order.createdAt);
-      return orderDate >= previousMonthStart && orderDate < previousMonthEnd;
-    });
-
-    const previousMonthRevenue = previousMonthOrders
-      .filter((o) => o.status === "delivered")
-      .reduce((sum, order) => sum + (order.total || 0), 0);
-
-    // Calculate growth
-    const revenueGrowth =
-      previousMonthRevenue > 0
-        ? ((currentMonthRevenue - previousMonthRevenue) /
-            previousMonthRevenue) *
-          100
-        : 0;
-
-    const ordersGrowth =
-      previousMonthOrders.length > 0
-        ? ((currentMonthOrders.length - previousMonthOrders.length) /
-            previousMonthOrders.length) *
-          100
-        : 0;
-
-    // Category-wise sales
-    const categorySales = {};
-    orders.forEach((order) => {
-      if (order.status === "delivered" && order.items) {
-        order.items.forEach((item) => {
-          if (item.product?.category) {
-            const category = item.product.category;
-            if (!categorySales[category]) {
-              categorySales[category] = {
-                category,
-                quantity: 0,
-                revenue: 0,
-              };
-            }
-            categorySales[category].quantity += item.quantity || 0;
-            categorySales[category].revenue +=
-              (item.price || 0) * (item.quantity || 0);
-          }
-        });
-      }
-    });
-
-    const topCategories = Object.values(categorySales)
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 5);
-
-    res.json({
-      // Order stats
+    return {
       orders: {
         total: totalOrders,
-        pending: pendingOrders,
-        confirmed: confirmedOrders,
-        shipped: shippedOrders,
-        delivered: deliveredOrders,
-        cancelled: cancelledOrders,
+        pending: statusMap.pending || 0,
+        confirmed: statusMap.confirmed || 0,
+        shipped: statusMap.shipped || 0,
+        delivered: statusMap.delivered || 0,
+        cancelled: statusMap.cancelled || 0,
       },
-      // Revenue stats
       revenue: {
-        total: totalRevenue,
-        pending: pendingRevenue,
-        cod: codRevenue,
-        online: onlineRevenue,
+        total: rev.totalRevenue,
+        pending: rev.pendingRevenue,
+        cod: cod.revenue,
+        online: online.revenue,
       },
-      // Payment split
       paymentSplit: {
-        cod: {
-          count: codOrders.length,
-          revenue: codRevenue,
-        },
-        online: {
-          count: onlineOrders.length,
-          revenue: onlineRevenue,
-        },
+        cod: { count: cod.count, revenue: cod.revenue },
+        online: { count: online.count, revenue: online.revenue },
       },
-      // Product stats
       products: {
         total: totalProducts,
         active: activeProducts,
         inactive: inactiveProducts,
         outOfStock: outOfStockProducts,
       },
-      // User stats
       users: {
         customers: totalUsers,
         admins: totalAdmins,
       },
-      // Recent orders
-      recentOrders,
-      // Top products
-      topProducts,
-      // Sales trend
+      recentOrders: formattedRecentOrders,
+      topProducts: topProductsAgg,
       salesTrend: last7Days,
       monthlySalesTrend: last12Months,
-      // Category sales
-      topCategories,
-      // Current month comparison
+      topCategories: categoryAgg,
       currentMonth: {
-        orders: currentMonthOrders.length,
-        revenue: currentMonthRevenue,
-        delivered: currentMonthOrders.filter((o) => o.status === "delivered")
-          .length,
+        orders: curMonth.orders,
+        revenue: curMonth.revenue,
+        delivered: curMonth.delivered,
       },
       previousMonth: {
-        orders: previousMonthOrders.length,
-        revenue: previousMonthRevenue,
-        delivered: previousMonthOrders.filter((o) => o.status === "delivered")
-          .length,
+        orders: prevMonth.orders,
+        revenue: prevMonth.revenue,
+        delivered: prevMonth.delivered,
       },
       growth: {
         revenue: revenueGrowth.toFixed(2),
         orders: ordersGrowth.toFixed(2),
       },
-    });
+    };
+    }, 120);
+
+    res.json(stats);
   } catch (error) {
-    console.error("Get admin stats error:", error);
+    log.error("Get admin stats error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

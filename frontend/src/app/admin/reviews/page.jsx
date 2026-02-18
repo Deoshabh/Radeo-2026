@@ -1,23 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
-import { FiStar, FiEye, FiEyeOff, FiTrash2, FiSearch, FiFilter, FiCheck, FiX } from 'react-icons/fi';
+import { useState, useMemo } from 'react';
+import { FiStar, FiEye, FiEyeOff, FiTrash2, FiSearch, FiCheck, FiMessageSquare, FiSend, FiCornerDownRight } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import { adminAPI } from '@/utils/api';
+import { useReviews, useToggleReviewHidden, useDeleteReview, useBulkHideReviews, useBulkDeleteReviews, useReplyToReview, useDeleteReviewReply } from '@/hooks/useAdmin';
 import { formatDate } from '@/utils/helpers';
-import AdminLayout from '@/components/AdminLayout';
 
 export default function AdminReviewsPage() {
-  const { isAuthenticated, user } = useAuth();
-  const router = useRouter();
-
-  const [reviews, setReviews] = useState([]);
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({
     rating: '',
@@ -27,153 +17,55 @@ export default function AdminReviewsPage() {
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('desc');
   const [selectedReviews, setSelectedReviews] = useState([]);
-  const searchRef = useRef(search);
-  const filtersRef = useRef(filters);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [replyText, setReplyText] = useState('');
+  const [replyLoading, setReplyLoading] = useState(false);
 
-  useEffect(() => {
-    searchRef.current = search;
-  }, [search]);
+  // Build query params for React Query
+  const queryParams = useMemo(() => {
+    const params = { page, limit: 20, sort: sortBy, order: sortOrder };
+    if (search) params.search = search;
+    if (filters.rating) params.rating = filters.rating;
+    if (filters.isHidden) params.isHidden = filters.isHidden;
+    if (filters.verifiedPurchase) params.verifiedPurchase = filters.verifiedPurchase;
+    return params;
+  }, [page, sortBy, sortOrder, search, filters]);
 
-  useEffect(() => {
-    filtersRef.current = filters;
-  }, [filters]);
+  const { data: reviewsData, isLoading: loading } = useReviews(queryParams);
+  const reviews = reviewsData?.reviews || [];
+  const stats = reviewsData?.stats || null;
+  const totalPages = reviewsData?.pagination?.totalPages || 1;
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/auth/login');
-      return;
-    }
-    if (user?.role !== 'admin') {
-      router.push('/');
-      toast.error('Unauthorized access');
-      return;
-    }
-  }, [isAuthenticated, user, router]);
-
-  const fetchReviews = useCallback(async (overrides = {}) => {
-    const pageToLoad = overrides.page ?? page;
-    const searchToLoad = overrides.search ?? searchRef.current;
-    const filtersToLoad = overrides.filters ?? filtersRef.current;
-    const sortByToLoad = overrides.sortBy ?? sortBy;
-    const sortOrderToLoad = overrides.sortOrder ?? sortOrder;
-
-    try {
-      setLoading(true);
-
-      const params = {
-        page: pageToLoad,
-        limit: 20,
-        sort: sortByToLoad,
-        order: sortOrderToLoad,
-      };
-
-      if (searchToLoad) params.search = searchToLoad;
-      if (filtersToLoad.rating) params.rating = filtersToLoad.rating;
-      if (filtersToLoad.isHidden) params.isHidden = filtersToLoad.isHidden;
-      if (filtersToLoad.verifiedPurchase) params.verifiedPurchase = filtersToLoad.verifiedPurchase;
-
-      const response = await adminAPI.getAllReviews(params);
-      const data = response.data;
-
-      setReviews(data.reviews);
-      setStats(data.stats);
-      setTotalPages(data.pagination.totalPages);
-    } catch (error) {
-      console.error('Fetch reviews error:', error);
-      toast.error(error.message || 'Failed to load reviews');
-    } finally {
-      setLoading(false);
-    }
-  }, [page, sortBy, sortOrder]);
-
-  useEffect(() => {
-    if (isAuthenticated && user?.role === 'admin') {
-      fetchReviews();
-    }
-  }, [isAuthenticated, user, fetchReviews]);
+  // Mutation hooks
+  const toggleHiddenMut = useToggleReviewHidden();
+  const deleteReviewMut = useDeleteReview();
+  const bulkHideMut = useBulkHideReviews();
+  const bulkDeleteMut = useBulkDeleteReviews();
+  const replyMut = useReplyToReview();
+  const deleteReplyMut = useDeleteReviewReply();
 
   const handleSearch = (e) => {
     e.preventDefault();
-
-    if (page !== 1) {
-      setPage(1);
-      return;
-    }
-
-    fetchReviews({ page: 1, search, filters });
+    if (page !== 1) setPage(1);
+    // query re-runs automatically via queryParams change
   };
 
-  const handleToggleHidden = async (reviewId, currentHiddenState) => {
-    try {
-      const response = await adminAPI.toggleReviewHidden(reviewId);
+  const handleToggleHidden = (reviewId) => toggleHiddenMut.mutate(reviewId);
 
-      toast.success(response.data.message || 'Review visibility updated');
-      fetchReviews();
-    } catch (error) {
-      console.error('Toggle hidden error:', error);
-      toast.error(error.message || 'Failed to toggle review visibility');
-    }
+  const handleDeleteReview = (reviewId) => {
+    if (!confirm('Are you sure you want to delete this review? This action cannot be undone.')) return;
+    deleteReviewMut.mutate(reviewId);
   };
 
-  const handleDeleteReview = async (reviewId) => {
-    if (!confirm('Are you sure you want to delete this review? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      const response = await adminAPI.deleteReview(reviewId);
-
-      toast.success('Review deleted successfully');
-      fetchReviews();
-    } catch (error) {
-      console.error('Delete review error:', error);
-      toast.error(error.message || 'Failed to delete review');
-    }
+  const handleBulkHide = (hide) => {
+    if (selectedReviews.length === 0) { toast.error('Please select reviews first'); return; }
+    bulkHideMut.mutate({ reviewIds: selectedReviews, hide }, { onSuccess: () => setSelectedReviews([]) });
   };
 
-  const handleBulkHide = async (hide) => {
-    if (selectedReviews.length === 0) {
-      toast.error('Please select reviews first');
-      return;
-    }
-
-    try {
-      const response = await adminAPI.bulkHideReviews({
-        reviewIds: selectedReviews,
-        hide,
-      });
-
-      toast.success(response.data.message || 'Reviews updated');
-      setSelectedReviews([]);
-      fetchReviews();
-    } catch (error) {
-      console.error('Bulk hide error:', error);
-      toast.error(error.message || 'Failed to update reviews');
-    }
-  };
-
-  const handleBulkDelete = async () => {
-    if (selectedReviews.length === 0) {
-      toast.error('Please select reviews first');
-      return;
-    }
-
-    if (!confirm(`Are you sure you want to delete ${selectedReviews.length} review(s)? This action cannot be undone.`)) {
-      return;
-    }
-
-    try {
-      const response = await adminAPI.bulkDeleteReviews({
-        reviewIds: selectedReviews,
-      });
-
-      toast.success(response.data.message || 'Reviews deleted');
-      setSelectedReviews([]);
-      fetchReviews();
-    } catch (error) {
-      console.error('Bulk delete error:', error);
-      toast.error(error.message || 'Failed to delete reviews');
-    }
+  const handleBulkDelete = () => {
+    if (selectedReviews.length === 0) { toast.error('Please select reviews first'); return; }
+    if (!confirm(`Are you sure you want to delete ${selectedReviews.length} review(s)? This action cannot be undone.`)) return;
+    bulkDeleteMut.mutate(selectedReviews, { onSuccess: () => setSelectedReviews([]) });
   };
 
   const toggleSelectReview = (reviewId) => {
@@ -192,12 +84,7 @@ export default function AdminReviewsPage() {
     }
   };
 
-  if (!isAuthenticated || user?.role !== 'admin') {
-    return null;
-  }
-
   return (
-    <AdminLayout>
       <div className="min-h-screen bg-primary-50 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
@@ -301,16 +188,9 @@ export default function AdminReviewsPage() {
               <button
                 type="button"
                 onClick={() => {
-                  const clearedFilters = { rating: '', isHidden: '', verifiedPurchase: '' };
                   setSearch('');
-                  setFilters(clearedFilters);
-
-                  if (page !== 1) {
-                    setPage(1);
-                    return;
-                  }
-
-                  fetchReviews({ page: 1, search: '', filters: clearedFilters });
+                  setFilters({ rating: '', isHidden: '', verifiedPurchase: '' });
+                  setPage(1);
                 }}
                 className="text-sm text-brand-brown hover:underline"
               >
@@ -436,6 +316,64 @@ export default function AdminReviewsPage() {
                             <div className="text-xs text-primary-500 mt-1">
                               👍 {review.helpfulVotes} helpful
                             </div>
+
+                            {/* Existing admin reply */}
+                            {review.adminReply?.text && replyingTo !== review._id && (
+                              <div className="mt-2 bg-blue-50 border border-blue-100 rounded-lg p-2.5">
+                                <div className="flex items-center gap-1 text-[10px] font-semibold text-blue-600 uppercase tracking-wider mb-1">
+                                  <FiCornerDownRight className="w-3 h-3" /> Admin Reply
+                                </div>
+                                <p className="text-xs text-blue-900">{review.adminReply.text}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-[10px] text-blue-500">{review.adminReply.repliedAt ? formatDate(review.adminReply.repliedAt) : ''}</span>
+                                  <button onClick={() => { setReplyingTo(review._id); setReplyText(review.adminReply.text); }}
+                                    className="text-[10px] text-blue-600 hover:text-blue-800 font-medium">Edit</button>
+                                  <button onClick={() => deleteReplyMut.mutate(review._id)}
+                                    className="text-[10px] text-red-500 hover:text-red-700 font-medium">Delete</button>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Reply composer */}
+                            {replyingTo === review._id ? (
+                              <div className="mt-2 space-y-2">
+                                <textarea
+                                  value={replyText}
+                                  onChange={(e) => setReplyText(e.target.value)}
+                                  placeholder="Write a reply visible to the customer..."
+                                  rows={3}
+                                  className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                                  autoFocus
+                                />
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => {
+                                      if (!replyText.trim()) return;
+                                      replyMut.mutate({ id: review._id, text: replyText.trim() }, {
+                                        onSuccess: () => { setReplyingTo(null); setReplyText(''); },
+                                      });
+                                    }}
+                                    disabled={replyMut.isPending || !replyText.trim()}
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                                  >
+                                    <FiSend className="w-3 h-3" /> {replyMut.isPending ? 'Sending...' : 'Post Reply'}
+                                  </button>
+                                  <button
+                                    onClick={() => { setReplyingTo(null); setReplyText(''); }}
+                                    className="px-3 py-1.5 text-gray-600 text-xs font-medium rounded-lg border border-gray-200 hover:bg-gray-50"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            ) : !review.adminReply?.text && (
+                              <button
+                                onClick={() => { setReplyingTo(review._id); setReplyText(''); }}
+                                className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                              >
+                                <FiMessageSquare className="w-3 h-3" /> Reply
+                              </button>
+                            )}
                           </td>
                           <td className="px-6 py-4 text-sm text-primary-600 whitespace-nowrap">
                             {formatDate(review.createdAt)}
@@ -510,6 +448,5 @@ export default function AdminReviewsPage() {
           </div>
         </div>
       </div>
-    </AdminLayout>
   );
 }

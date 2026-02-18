@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const { log } = require("../utils/logger");
 
 // GET /api/v1/user/profile
 exports.getProfile = async (req, res) => {
@@ -11,7 +12,7 @@ exports.getProfile = async (req, res) => {
 
     res.json(user);
   } catch (error) {
-    console.error("Get profile error:", error);
+    log.error("Get profile error:", error);
     res
       .status(500)
       .json({ message: "Failed to fetch profile", error: error.message });
@@ -53,7 +54,7 @@ exports.updateProfile = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Update profile error:", error);
+    log.error("Update profile error:", error);
     res
       .status(500)
       .json({ message: "Failed to update profile", error: error.message });
@@ -71,7 +72,7 @@ exports.getAddresses = async (req, res) => {
 
     res.json(user.addresses || []);
   } catch (error) {
-    console.error("Get addresses error:", error);
+    log.error("Get addresses error:", error);
     res
       .status(500)
       .json({ message: "Failed to fetch addresses", error: error.message });
@@ -119,7 +120,7 @@ exports.addAddress = async (req, res) => {
 
     res.status(201).json(user.addresses);
   } catch (error) {
-    console.error("Add address error:", error);
+    log.error("Add address error:", error);
     res
       .status(500)
       .json({ message: "Failed to add address", error: error.message });
@@ -149,7 +150,7 @@ exports.updateAddress = async (req, res) => {
 
     res.json(user.addresses);
   } catch (error) {
-    console.error("Update address error:", error);
+    log.error("Update address error:", error);
     res
       .status(500)
       .json({ message: "Failed to update address", error: error.message });
@@ -180,7 +181,7 @@ exports.deleteAddress = async (req, res) => {
 
     res.json(user.addresses);
   } catch (error) {
-    console.error("Delete address error:", error);
+    log.error("Delete address error:", error);
     res
       .status(500)
       .json({ message: "Failed to delete address", error: error.message });
@@ -207,7 +208,7 @@ exports.setDefaultAddress = async (req, res) => {
 
     res.json(user.addresses);
   } catch (error) {
-    console.error("Set default address error:", error);
+    log.error("Set default address error:", error);
     res
       .status(500)
       .json({ message: "Failed to set default address", error: error.message });

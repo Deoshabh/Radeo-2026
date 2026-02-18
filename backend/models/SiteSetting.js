@@ -35,6 +35,7 @@ const siteSettingSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    collection: 'site_settings_kv',
   },
 );
 

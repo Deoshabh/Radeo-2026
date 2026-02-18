@@ -10,6 +10,8 @@ const {
 } = require('../controllers/settingsController');
 const { authenticate } = require('../middleware/auth');
 const admin = require('../middleware/admin');
+const { validateRequest } = require('../middleware/validateRequest');
+const { updateSettingsSchema } = require('../validators/schemas');
 
 router.use(authenticate);
 router.use(admin);
@@ -18,7 +20,7 @@ router.use(admin);
 router.get('/', getAdminSettings);
 
 // @route   POST /api/v1/admin/settings/bulk
-router.post('/bulk', bulkUpdateSettings);
+router.post('/bulk', validateRequest(updateSettingsSchema), bulkUpdateSettings);
 
 // @route   GET /api/v1/admin/settings/:key
 router.get('/:key', getAdminSettingByKey);

@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { productAPI, categoryAPI } from '@/utils/api';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import {
   useProducts,
   useDeleteProduct,
@@ -12,10 +12,9 @@ import {
   useBulkUpdateProductStatus,
   useToggleFeatured
 } from '@/hooks/useProducts';
-import AdminLayout from '@/components/AdminLayout';
+import { useAdminCategories, useBrands } from '@/hooks/useAdmin';
 import ProductFilters from '@/components/admin/products/ProductFilters';
 import ProductTable from '@/components/admin/products/ProductTable';
-import toast from 'react-hot-toast';
 import { FiPlus, FiGrid } from 'react-icons/fi';
 
 export default function AdminProductsPage() {
@@ -24,6 +23,7 @@ export default function AdminProductsPage() {
 
   // Filter/Sort State
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebouncedValue(searchQuery, 300);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterBrand, setFilterBrand] = useState('all');
@@ -33,41 +33,17 @@ export default function AdminProductsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedProducts, setSelectedProducts] = useState([]);
 
-  // Filters Data
-  const [categories, setCategories] = useState([]);
-  const [brands, setBrands] = useState([]);
-
-  // Auth Redirect
-  useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== 'admin')) {
-      router.push('/');
-    }
-  }, [user, isAuthenticated, authLoading, router]);
-
-  // Initial Filter Fetch (Keep this as useEffect for now as these are static-ish)
-  useEffect(() => {
-    const fetchFilters = async () => {
-      if (isAuthenticated && user?.role === 'admin') {
-        try {
-          const [catRes, brandRes] = await Promise.all([
-            categoryAPI.getAllCategories(),
-            productAPI.getBrands()
-          ]);
-          setCategories(catRes.data.categories || []);
-          setBrands(brandRes.data || []);
-        } catch (error) {
-          console.error('Failed to fetch filters:', error);
-        }
-      }
-    };
-    fetchFilters();
-  }, [isAuthenticated, user]);
+  // Filters Data via React Query
+  const { data: catsData } = useAdminCategories();
+  const categories = catsData?.categories || [];
+  const { data: brandsData } = useBrands();
+  const brands = brandsData?.brands || brandsData || [];
 
   // TanStack Query for Products
   const { data: productData, isLoading: loadingProducts } = useProducts({
     page: currentPage,
     limit: 20,
-    search: searchQuery,
+    search: debouncedSearch,
     status: filterStatus,
     category: filterCategory,
     brand: filterBrand,
@@ -148,7 +124,6 @@ export default function AdminProductsPage() {
   );
 
   return (
-    <AdminLayout>
       <div className="min-h-screen bg-primary-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-7xl">
           {/* Header */}
@@ -255,6 +230,5 @@ export default function AdminProductsPage() {
 
         </div>
       </div>
-    </AdminLayout>
   );
 }

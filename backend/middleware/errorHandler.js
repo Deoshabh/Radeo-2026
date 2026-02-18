@@ -1,7 +1,10 @@
 /**
  * Global Error Handling Middleware
  * Catches all errors and returns consistent error responses
+ * Envelope: { success: false, message, errors?, timestamp }
  */
+
+const { log } = require("../utils/logger");
 
 // Not Found Handler - 404
 const notFoundHandler = (req, res, next) => {
@@ -49,7 +52,7 @@ const errorHandler = (err, req, res, next) => {
 
   // Log error for debugging, unless it's a known bot probe returning 404
   if (!isBotProbe || res.statusCode !== 404) {
-    console.error("❌ Error:", {
+    log.error("Request error", {
       message: err.message,
       stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
       path: req.path,
@@ -59,6 +62,8 @@ const errorHandler = (err, req, res, next) => {
 
   // Default status code
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+  const timestamp = new Date().toISOString();
+  const devStack = process.env.NODE_ENV === "development" ? err.stack : undefined;
 
   // Mongoose validation error
   if (err.name === "ValidationError") {
@@ -68,9 +73,11 @@ const errorHandler = (err, req, res, next) => {
     }));
 
     return res.status(400).json({
+      success: false,
       message: "Validation failed",
       errors,
-      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+      timestamp,
+      stack: devStack,
     });
   }
 
@@ -78,32 +85,40 @@ const errorHandler = (err, req, res, next) => {
   if (err.code === 11000) {
     const field = Object.keys(err.keyPattern)[0];
     return res.status(400).json({
+      success: false,
       message: `${field} already exists`,
-      field,
-      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+      errors: [{ field, message: `${field} already exists` }],
+      timestamp,
+      stack: devStack,
     });
   }
 
   // Mongoose cast error (invalid ObjectId)
   if (err.name === "CastError") {
     return res.status(400).json({
+      success: false,
       message: `Invalid ${err.path}: ${err.value}`,
-      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+      timestamp,
+      stack: devStack,
     });
   }
 
   // JWT errors
   if (err.name === "JsonWebTokenError") {
     return res.status(401).json({
+      success: false,
       message: "Invalid token",
-      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+      timestamp,
+      stack: devStack,
     });
   }
 
   if (err.name === "TokenExpiredError") {
     return res.status(401).json({
+      success: false,
       message: "Token expired",
-      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+      timestamp,
+      stack: devStack,
     });
   }
 
@@ -115,33 +130,40 @@ const errorHandler = (err, req, res, next) => {
     }));
 
     return res.status(400).json({
+      success: false,
       message: "Validation failed",
       errors,
-      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+      timestamp,
+      stack: devStack,
     });
   }
 
   // CORS errors
   if (err.message && err.message.includes("CORS")) {
     return res.status(403).json({
+      success: false,
       message: "CORS policy violation",
-      error: err.message,
-      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+      timestamp,
+      stack: devStack,
     });
   }
 
   // Rate limit errors
   if (err.message && err.message.includes("Too many requests")) {
     return res.status(429).json({
+      success: false,
       message: "Too many requests, please try again later",
-      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+      timestamp,
+      stack: devStack,
     });
   }
 
   // Default error response
   res.status(statusCode).json({
+    success: false,
     message: err.message || "Internal Server Error",
-    stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+    timestamp,
+    stack: devStack,
   });
 };
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import anime from 'animejs';
 import { useSiteSettings } from '@/context/SiteSettingsContext';
 import { SITE_SETTINGS_DEFAULTS } from '@/constants/siteSettingsDefaults';
@@ -32,11 +33,14 @@ function imgSrc(url) {
   return `${MINIO_BASE}/${url}`;
 }
 
-function RImg({ src, alt, className, width, height, loading, style }) {
+function RImg({ src, alt, className, width, height, loading, style, fill, sizes }) {
   const [s2, setS2] = useState(() => imgSrc(src));
   const onError = useCallback(() => setS2(FALLBACK), []);
   useEffect(() => { setS2(imgSrc(src)); }, [src]);
-  return <img src={s2} alt={alt || ''} className={className} width={width} height={height} loading={loading} style={style} onError={onError} />;
+  if (fill) {
+    return <Image src={s2} alt={alt || ''} fill sizes={sizes || '100vw'} className={className} style={style} onError={onError} />;
+  }
+  return <Image src={s2} alt={alt || ''} className={className} width={width || 800} height={height || 600} loading={loading} style={style} onError={onError} />;
 }
 
 /* ═══════════════════════════════════════════════════════════

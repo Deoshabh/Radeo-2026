@@ -1,7 +1,6 @@
 // Firebase Configuration and Initialization
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getAnalytics, isSupported } from "firebase/analytics";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -11,7 +10,6 @@ const firebaseConfig = {
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
 // Validate critical Firebase config (only on client — SSR will have undefined values
@@ -26,19 +24,11 @@ if (typeof window !== "undefined" && !firebaseConfig.apiKey) {
 // Initialize Firebase (singleton pattern — client-side only)
 let app;
 let auth;
-let analytics;
 
 if (typeof window !== "undefined") {
   app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
   auth = getAuth(app);
-
-  // Initialize Analytics only on client side and if supported
-  isSupported().then((supported) => {
-    if (supported) {
-      analytics = getAnalytics(app);
-    }
-  });
 }
 
-export { app, auth, analytics };
+export { app, auth };
 export default firebaseConfig;

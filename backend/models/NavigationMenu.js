@@ -60,9 +60,8 @@ const menuItemSchema = new mongoose.Schema(
     },
     
     // Hierarchy
-    parent: {
+    parentId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "MenuItem",
       default: null,
     },
     order: {

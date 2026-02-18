@@ -162,22 +162,15 @@ export const authAPI = {
 
 export const productAPI = {
   getAllProducts: (params) => api.get("/products", { params }),
-  getProductBySlug: (slug) => api.get(`/products/${slug}`),
-  getCategories: () => api.get("/products/categories"),
   getBrands: () => api.get("/products/brands"),
   getMaterials: () => api.get("/products/materials"),
   getPriceRange: () => api.get("/products/price-range"),
   getColors: () => api.get("/products/colors"),
   getSizes: () => api.get("/products/sizes"),
-  getTopRatedProducts: (params) => api.get("/products/top-rated", { params }),
-  searchProducts: (query) =>
-    api.get("/products/search", { params: { q: query } }),
 };
 
 export const settingsAPI = {
   getPublicSettings: () => api.get("/settings/public"),
-  getPublicCmsPage: (slug) => api.get(`/cms/pages/${slug}`),
-  getPublicSeoSettings: () => api.get("/seo/public"),
 };
 
 export const adminAPI = {
@@ -188,12 +181,21 @@ export const adminAPI = {
   getAdvancedSettings: () => api.get("/admin/settings"), // GET /api/v1/admin/settings (Key-Value List)
   updateSettings: (data) => api.put("/settings", data), // PUT /api/v1/settings
   getCmsPages: (params) => api.get('/admin/cms/pages', { params }),
-  resetFrontendDefaults: () => api.post('/settings/reset-defaults'),
   getCmsPage: (id) => api.get(`/admin/cms/pages/${id}`),
   createCmsPage: (data) => api.post('/admin/cms/pages', data),
   updateCmsPage: (id, data) => api.put(`/admin/cms/pages/${id}`, data),
   publishCmsPage: (id) => api.post(`/admin/cms/pages/${id}/publish`),
   deleteCmsPage: (id) => api.delete(`/admin/cms/pages/${id}`),
+  getCmsMedia: (params) => api.get('/admin/cms/media', { params }),
+  getCmsMenus: () => api.get('/admin/cms/menus'),
+  createCmsMenu: (data) => api.post('/admin/cms/menus', data),
+
+  // Filters
+  getAllFilters: () => api.get('/admin/filters'),
+  createFilter: (data) => api.post('/admin/filters', data),
+  updateFilter: (id, data) => api.patch(`/admin/filters/${id}`, data),
+  toggleFilterStatus: (id) => api.patch(`/admin/filters/${id}/toggle`),
+  deleteFilter: (id) => api.delete(`/admin/filters/${id}`),
 
   // Products, Orders, etc. (keep existing)
   getAllProducts: (params) => api.get("/admin/products", { params }),
@@ -206,14 +208,13 @@ export const adminAPI = {
     api.patch(`/admin/products/${id}/toggle-featured`),
   bulkDeleteProducts: (ids) => api.post("/admin/products/bulk-delete", { ids }),
   bulkUpdateProductStatus: (ids, isActive) => api.post("/admin/products/bulk-status", { ids, isActive }),
+  getStockMovements: (productId, params) => api.get(`/admin/products/stock-movements/${productId}`, { params }),
 
   // Orders
   getAllOrders: (params) => api.get("/admin/orders", { params }),
   getOrderById: (id) => api.get(`/admin/orders/${id}`),
   updateOrderStatus: (id, status) =>
     api.patch(`/admin/orders/${id}`, { status }),
-  updateShippingAddress: (id, data) =>
-    api.put(`/admin/orders/${id}/shipping-address`, data),
 
   // Bulk operations
   bulkUpdateStatus: (orderIds, status) =>
@@ -227,28 +228,23 @@ export const adminAPI = {
   getShippingRates: (data) => api.post("/admin/shiprocket/rates", data),
   createShipment: (orderId, data) =>
     api.post(`/admin/shiprocket/create-shipment/${orderId}`, data),
-  generateLabel: (orderId) => api.post(`/admin/shiprocket/label/${orderId}`),
   trackShipment: (orderId) => api.get(`/admin/shiprocket/track/${orderId}`),
-  cancelShipment: (orderId) => api.post(`/admin/shiprocket/cancel/${orderId}`),
-  schedulePickup: (orderId, data) =>
-    api.post(`/admin/shiprocket/schedule-pickup/${orderId}`, data),
-  generateManifest: (orderId) =>
-    api.post(`/admin/shiprocket/manifest/${orderId}`),
   generateInvoice: (orderId) =>
     api.post(`/admin/shiprocket/invoice/${orderId}`),
-  markAsShipped: (orderId) =>
-    api.post(`/admin/shiprocket/mark-shipped/${orderId}`),
   getShiprocketHealth: () => api.get('/admin/shiprocket/health'),
   triggerShiprocketReconciliation: () => api.post('/admin/shiprocket/reconcile'),
   getPickupAddresses: () => api.get("/admin/shiprocket/pickup-addresses"),
 
   // Users
   getAllUsers: (params) => api.get("/admin/users", { params }),
-  getUserById: (id) => api.get(`/admin/users/${id}`),
   getUserHistory: (id) => api.get(`/admin/users/${id}/history`),
   updateUserRole: (id, role) => api.patch(`/admin/users/${id}/role`, { role }),
   toggleUserBlock: (id) => api.patch(`/admin/users/${id}/toggle-block`),
   createAdmin: (data) => api.post("/admin/users/create-admin", data),
+  sendPasswordReset: (id) => api.post(`/admin/users/${id}/send-password-reset`),
+  forceLogout: (id) => api.post(`/admin/users/${id}/force-logout`),
+  getSecurityEvents: (params) => api.get("/admin/users/security-events", { params }),
+  impersonateUser: (id) => api.post(`/admin/users/${id}/impersonate`),
 
   // Categories
   getAllCategories: () => api.get("/admin/categories"),
@@ -263,54 +259,41 @@ export const adminAPI = {
   updateCoupon: (id, data) => api.patch(`/admin/coupons/${id}`, data),
   deleteCoupon: (id) => api.delete(`/admin/coupons/${id}`),
   toggleCouponStatus: (id) => api.patch(`/admin/coupons/${id}/toggle`),
+  getCouponStats: () => api.get("/admin/coupons/stats"),
 
   // Reviews
   getAllReviews: (params) => api.get("/admin/reviews", { params }),
-  getReviewById: (id) => api.get(`/admin/reviews/${id}`),
-  getReviewStats: () => api.get("/admin/reviews/stats"),
   toggleReviewHidden: (id) => api.patch(`/admin/reviews/${id}/toggle-hidden`),
-  updateReviewNotes: (id, data) =>
-    api.patch(`/admin/reviews/${id}/notes`, data),
   deleteReview: (id) => api.delete(`/admin/reviews/${id}`),
   bulkHideReviews: (data) => api.post("/admin/reviews/bulk-hide", data),
   bulkDeleteReviews: (data) => api.post("/admin/reviews/bulk-delete", data),
+  replyToReview: (id, text) => api.patch(`/admin/reviews/${id}/reply`, { text }),
+  deleteReviewReply: (id) => api.delete(`/admin/reviews/${id}/reply`),
 
   // Media
   getUploadUrl: (data) => api.post("/admin/media/upload-url", data),
-  deleteMedia: (key) => api.delete("/admin/media", { data: { key } }),
-  uploadFrames: (formData) =>
-    api.post("/admin/media/frames", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    }),
-  getFrameManifest: (slug) => api.get(`/admin/media/frames/${slug}/manifest`),
+  getOrphanedMedia: (params) => api.get("/admin/media/orphaned", { params }),
+  deleteOrphanedMedia: (ids) => api.delete("/admin/media/orphaned/bulk", { data: { ids } }),
 
   // Stats
   getAdminStats: () => api.get("/admin/stats"),
   getDependenciesHealth: () => api.get("/admin/health/deps"),
-
-  // Theme Builder
-  getThemeVersionHistory: () => api.get("/settings/history"),
-  restoreThemeVersion: (historyId) =>
-    api.post("/settings/history/restore", { historyId }),
-  runPublishWorkflowNow: () => api.post('/settings/publish/run'),
-  exportThemeJson: () => api.get("/settings/export"),
-  importThemeJson: (payload) => api.post("/settings/import", payload),
+  getAnalyticsSummary: (period) => api.get("/admin/analytics/summary", { params: { period } }),
+  getAnalyticsFunnel: (period) => api.get("/admin/analytics/funnel", { params: { period } }),
 
   // Site Settings
-  getSettingHistory: (key, limit) =>
-    api.get(`/admin/settings/${key}/history`, { params: { limit } }),
   updateSetting: (key, value) => api.put(`/admin/settings/${key}`, { value }),
-  resetSetting: (key) => api.post(`/admin/settings/${key}/reset`),
 
   // SEO
   getSeoSettings: () => api.get('/admin/seo'),
   updateSeoSettings: (seoSettings) => api.put('/admin/seo', { seoSettings }),
+  autoGenerateSeo: (type) => api.post('/admin/seo/auto-generate', { type }),
+  auditSeo: () => api.get('/admin/seo/audit'),
 };
 
 export const categoryAPI = {
   getAllCategories: () => api.get("/categories"),
   getNavbarCategories: () => api.get("/categories/navbar"),
-  getCategoryBySlug: (slug) => api.get(`/categories/${slug}`),
 };
 
 export const addressAPI = {
@@ -318,7 +301,6 @@ export const addressAPI = {
   create: (data) => api.post("/user/addresses", data),
   update: (id, data) => api.patch(`/user/addresses/${id}`, data),
   delete: (id) => api.delete(`/user/addresses/${id}`),
-  setDefault: (id) => api.patch(`/user/addresses/${id}/default`),
 };
 
 export const couponAPI = {
@@ -340,9 +322,7 @@ export const contactAPI = {
 };
 
 export const userAPI = {
-  getProfile: () => api.get("/user/profile"),
   updateProfile: (data) => api.patch("/user/profile", data),
-  changePassword: (data) => api.post("/auth/change-password", data),
 };
 
 export const cartAPI = {

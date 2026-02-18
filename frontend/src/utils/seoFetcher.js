@@ -4,7 +4,9 @@
  * Used in layout.jsx / page.jsx files via generateMetadata or export const metadata.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.radeo.in/api/v1';
+import { API_BASE_URL } from '@/lib/constants';
+
+const API_URL = API_BASE_URL;
 
 let cachedSeo = null;
 let cacheTimestamp = 0;

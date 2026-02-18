@@ -1,23 +1,31 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { adminAPI } from '@/utils/api';
 import { formatDate, formatPrice } from '@/utils/helpers';
 import { useAuth } from '@/context/AuthContext';
-import AdminLayout from '@/components/AdminLayout';
+import { useCoupons, useCouponStats, useCreateCoupon, useUpdateCoupon, useDeleteCoupon, useToggleCouponStatus } from '@/hooks/useAdmin';
 import toast from 'react-hot-toast';
-import { FiEdit2, FiTrash2, FiPlus, FiX, FiTag, FiPercent, FiCalendar } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiPlus, FiX, FiTag, FiCalendar, FiBarChart2, FiGrid } from 'react-icons/fi';
 
 export default function CouponsPage() {
   const router = useRouter();
   const { user } = useAuth();
 
-  const [coupons, setCoupons] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data: couponsRaw, isLoading: loading } = useCoupons();
+  const coupons = Array.isArray(couponsRaw) ? couponsRaw : (couponsRaw?.coupons || []);
+  const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'performance'
+  const { data: statsRaw, isLoading: statsLoading } = useCouponStats(viewMode === 'performance');
+  const stats = Array.isArray(statsRaw) ? statsRaw : [];
+  const createCouponMut = useCreateCoupon();
+  const updateCouponMut = useUpdateCoupon();
+  const deleteCouponMut = useDeleteCoupon();
+  const toggleStatusMut = useToggleCouponStatus();
   const [showModal, setShowModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedCoupon, setSelectedCoupon] = useState(null);
+  const [sortField, setSortField] = useState('totalRevenue');
+  const [sortDir, setSortDir] = useState('desc');
 
   const [formData, setFormData] = useState({
     code: '',
@@ -31,28 +39,27 @@ export default function CouponsPage() {
     isActive: true,
   });
 
-  const fetchCoupons = async () => {
-    try {
-      setLoading(true);
-      const response = await adminAPI.getAllCoupons();
-      // Backend returns array directly, not wrapped
-      const couponsData = Array.isArray(response.data) ? response.data : (response.data.coupons || []);
-      setCoupons(couponsData);
-    } catch (error) {
-      console.error('Failed to fetch coupons:', error);
-      toast.error('Failed to load coupons');
-    } finally {
-      setLoading(false);
+  const sortedStats = [...stats].sort((a, b) => {
+    const valA = a[sortField] ?? 0;
+    const valB = b[sortField] ?? 0;
+    if (typeof valA === 'string') return sortDir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+    return sortDir === 'asc' ? valA - valB : valB - valA;
+  });
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDir('desc');
     }
   };
 
-  useEffect(() => {
-    if (!user || user.role !== 'admin') {
-      router.push('/');
-      return;
-    }
-    fetchCoupons();
-  }, [user, router]);
+  const SortIcon = ({ field }) => (
+    <span className="ml-1 text-xs opacity-50">
+      {sortField === field ? (sortDir === 'asc' ? '▲' : '▼') : '⇅'}
+    </span>
+  );
 
   const handleOpenModal = (coupon = null) => {
     if (coupon) {
@@ -116,45 +123,25 @@ export default function CouponsPage() {
       };
 
       if (editMode) {
-        await adminAPI.updateCoupon(selectedCoupon._id, data);
-        toast.success('Coupon updated successfully');
+        updateCouponMut.mutate({ id: selectedCoupon._id, data });
       } else {
-        await adminAPI.createCoupon(data);
-        toast.success('Coupon created successfully');
+        createCouponMut.mutate(data);
       }
 
       handleCloseModal();
-      fetchCoupons();
     } catch (error) {
       console.error('Failed to save coupon:', error);
       toast.error(error.response?.data?.message || 'Failed to save coupon');
     }
   };
 
-  const handleDelete = async (id, code) => {
-    if (!confirm(`Are you sure you want to delete coupon "${code}"?`)) {
-      return;
-    }
-
-    try {
-      await adminAPI.deleteCoupon(id);
-      toast.success('Coupon deleted successfully');
-      fetchCoupons();
-    } catch (error) {
-      console.error('Failed to delete coupon:', error);
-      toast.error('Failed to delete coupon');
-    }
+  const handleDelete = (id, code) => {
+    if (!confirm(`Are you sure you want to delete coupon "${code}"?`)) return;
+    deleteCouponMut.mutate(id);
   };
 
-  const handleToggleStatus = async (id, currentStatus) => {
-    try {
-      await adminAPI.toggleCouponStatus(id);
-      toast.success('Coupon status updated');
-      fetchCoupons();
-    } catch (error) {
-      console.error('Failed to update status:', error);
-      toast.error('Failed to update coupon status');
-    }
+  const handleToggleStatus = (id) => {
+    toggleStatusMut.mutate(id);
   };
 
   const isExpired = (validUntil) => {
@@ -171,7 +158,6 @@ export default function CouponsPage() {
   }
 
   return (
-    <AdminLayout>
       <div className="min-h-screen bg-primary-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-7xl">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
@@ -179,17 +165,133 @@ export default function CouponsPage() {
               <h1 className="text-2xl sm:text-3xl font-bold text-primary-900">Coupons</h1>
               <p className="text-sm sm:text-base text-primary-600 mt-1">Manage discount coupons</p>
             </div>
-            <button
-              onClick={() => handleOpenModal()}
-              className="btn btn-primary flex items-center gap-2 justify-center w-full sm:w-auto touch-manipulation"
-            >
-              <FiPlus />
-              Add Coupon
-            </button>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="flex bg-white border border-primary-200 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setViewMode('cards')}
+                  className={`p-2 transition-colors ${viewMode === 'cards' ? 'bg-primary-900 text-white' : 'text-primary-600 hover:bg-primary-50'}`}
+                  title="Card view"
+                >
+                  <FiGrid className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => setViewMode('performance')}
+                  className={`p-2 transition-colors ${viewMode === 'performance' ? 'bg-primary-900 text-white' : 'text-primary-600 hover:bg-primary-50'}`}
+                  title="Performance view"
+                >
+                  <FiBarChart2 className="w-5 h-5" />
+                </button>
+              </div>
+              <button
+                onClick={() => handleOpenModal()}
+                className="btn btn-primary flex items-center gap-2 justify-center flex-1 sm:flex-none touch-manipulation"
+              >
+                <FiPlus />
+                Add Coupon
+              </button>
+            </div>
           </div>
 
+          {/* Performance Table */}
+          {viewMode === 'performance' && (
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              {statsLoading ? (
+                <div className="flex justify-center items-center py-16">
+                  <div className="spinner"></div>
+                </div>
+              ) : stats.length === 0 ? (
+                <div className="text-center py-12 text-primary-500">
+                  No coupon usage data yet.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-primary-50 border-b border-primary-200 text-left">
+                        <th className="px-4 py-3 font-semibold text-primary-700">Code</th>
+                        <th className="px-4 py-3 font-semibold text-primary-700">Discount</th>
+                        <th className="px-4 py-3 font-semibold text-primary-700 cursor-pointer select-none" onClick={() => handleSort('usedCount')}>
+                          Usage<SortIcon field="usedCount" />
+                        </th>
+                        <th className="px-4 py-3 font-semibold text-primary-700 cursor-pointer select-none" onClick={() => handleSort('totalOrders')}>
+                          Orders<SortIcon field="totalOrders" />
+                        </th>
+                        <th className="px-4 py-3 font-semibold text-primary-700 cursor-pointer select-none" onClick={() => handleSort('totalRevenue')}>
+                          Revenue<SortIcon field="totalRevenue" />
+                        </th>
+                        <th className="px-4 py-3 font-semibold text-primary-700 cursor-pointer select-none" onClick={() => handleSort('totalDiscount')}>
+                          Discount Given<SortIcon field="totalDiscount" />
+                        </th>
+                        <th className="px-4 py-3 font-semibold text-primary-700 cursor-pointer select-none" onClick={() => handleSort('uniqueUsers')}>
+                          Users<SortIcon field="uniqueUsers" />
+                        </th>
+                        <th className="px-4 py-3 font-semibold text-primary-700 cursor-pointer select-none" onClick={() => handleSort('avgOrderValue')}>
+                          Avg Order<SortIcon field="avgOrderValue" />
+                        </th>
+                        <th className="px-4 py-3 font-semibold text-primary-700">Last Used</th>
+                        <th className="px-4 py-3 font-semibold text-primary-700">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-primary-100">
+                      {sortedStats.map((s) => {
+                        const expired = s.expiry && new Date(s.expiry) < new Date();
+                        const usageRatio = s.usageLimit ? s.usedCount / s.usageLimit : null;
+                        return (
+                          <tr key={s._id} className="hover:bg-primary-50 transition-colors">
+                            <td className="px-4 py-3">
+                              <span className="font-mono font-semibold text-primary-900">{s.code}</span>
+                              {s.description && <p className="text-xs text-primary-400 mt-0.5 truncate max-w-[160px]">{s.description}</p>}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-50 text-amber-700 font-medium text-xs">
+                                {s.type === 'percent' ? `${s.value}%` : formatPrice(s.value)}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                <span>{s.usedCount}</span>
+                                {s.usageLimit && (
+                                  <>
+                                    <span className="text-primary-400">/</span>
+                                    <span className="text-primary-400">{s.usageLimit}</span>
+                                    <div className="w-12 h-1.5 bg-primary-100 rounded-full overflow-hidden">
+                                      <div
+                                        className={`h-full rounded-full ${usageRatio >= 0.9 ? 'bg-red-500' : usageRatio >= 0.7 ? 'bg-amber-500' : 'bg-green-500'}`}
+                                        style={{ width: `${Math.min(usageRatio * 100, 100)}%` }}
+                                      />
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 font-medium">{s.totalOrders}</td>
+                            <td className="px-4 py-3 font-semibold text-green-700">{formatPrice(s.totalRevenue)}</td>
+                            <td className="px-4 py-3 text-red-600">{formatPrice(s.totalDiscount)}</td>
+                            <td className="px-4 py-3">{s.uniqueUsers}</td>
+                            <td className="px-4 py-3">{s.avgOrderValue ? formatPrice(s.avgOrderValue) : '—'}</td>
+                            <td className="px-4 py-3 text-primary-500 text-xs">
+                              {s.lastUsed ? formatDate(s.lastUsed) : '—'}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                                expired ? 'bg-gray-100 text-gray-600' :
+                                s.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                              }`}>
+                                {expired ? 'Expired' : s.isActive ? 'Active' : 'Inactive'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Coupons Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          {viewMode === 'cards' && <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {coupons.map((coupon) => (
               <div
                 key={coupon._id}
@@ -274,6 +376,7 @@ export default function CouponsPage() {
               <p className="text-primary-600">No coupons found. Create your first coupon!</p>
             </div>
           )}
+          }
         </div>
 
         {/* Modal */}
@@ -453,6 +556,5 @@ export default function CouponsPage() {
           </div>
         )}
       </div>
-    </AdminLayout>
   );
 }

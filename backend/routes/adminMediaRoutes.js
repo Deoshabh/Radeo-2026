@@ -11,6 +11,10 @@ const {
   deleteMedia,
   uploadFrames,
   getFrameManifest,
+  optimizeAndUpload,
+  getMetadata,
+  getOrphanedMedia,
+  deleteOrphanedMedia,
 } = require("../controllers/adminMediaController");
 const { authenticate } = require("../middleware/auth");
 const admin = require("../middleware/admin");
@@ -30,5 +34,17 @@ router.post("/frames", upload.array("frames", 72), uploadFrames);
 
 // GET /api/v1/admin/media/frames/:slug/manifest - Get cached frame manifest
 router.get("/frames/:slug/manifest", getFrameManifest);
+
+// POST /api/v1/admin/media/optimize - Optimize image + generate variants
+router.post("/optimize", upload.single("image"), optimizeAndUpload);
+
+// POST /api/v1/admin/media/metadata - Get image metadata
+router.post("/metadata", upload.single("image"), getMetadata);
+
+// GET /api/v1/admin/media/orphaned - Get orphaned media files
+router.get("/orphaned", getOrphanedMedia);
+
+// DELETE /api/v1/admin/media/orphaned/bulk - Bulk delete orphaned files
+router.delete("/orphaned/bulk", deleteOrphanedMedia);
 
 module.exports = router;

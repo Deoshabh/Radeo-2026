@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Image from 'next/image';
-import { adminAPI, categoryAPI, productAPI } from '@/utils/api';
+import { adminAPI } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
+import { useAdminCategories } from '@/hooks/useAdmin';
 
 import { useAdmin, AdminProvider } from '@/context/AdminContext';
-import AdminLayout from '@/components/AdminLayout';
 import ColorPicker from '@/components/ColorPicker';
 import ImageUploadWithEditor from '@/components/ImageUploadWithEditor';
 import Image360Upload from '@/components/Image360Upload';
@@ -23,7 +22,6 @@ function ProductFormContent() {
   const { user } = useAuth();
   const { setIsFormDirty } = useAdmin();
 
-  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [images, setImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
@@ -34,6 +32,10 @@ function ProductFormContent() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const isDirty = useRef(false);
+
+  // Categories via React Query
+  const { data: catsData } = useAdminCategories();
+  const categories = catsData?.categories || [];
 
   // Warn before leaving with unsaved changes
   useEffect(() => {
@@ -75,11 +77,6 @@ function ProductFormContent() {
   });
 
   useEffect(() => {
-    if (!user || user.role !== 'admin') {
-      router.push('/');
-      return;
-    }
-    fetchCategories();
     if (editProductId) {
       setIsEditMode(true);
       fetchProductData(editProductId);
@@ -156,17 +153,6 @@ function ProductFormContent() {
       toast.error('Failed to load product data');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchCategories = async () => {
-    try {
-      const response = await adminAPI.getAllCategories();
-      // Backend returns {categories: [...]}
-      setCategories(response.data.categories || []);
-    } catch (error) {
-      console.error('Failed to fetch categories:', error);
-      toast.error('Failed to load categories');
     }
   };
 
@@ -1033,7 +1019,6 @@ function ProductFormContent() {
 
 export default function NewProductPage() {
   return (
-    <AdminLayout>
       <Suspense fallback={
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
@@ -1046,6 +1031,5 @@ export default function NewProductPage() {
           <ProductFormContent />
         </AdminProvider>
       </Suspense>
-    </AdminLayout>
   );
 }

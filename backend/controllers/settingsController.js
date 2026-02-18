@@ -16,6 +16,7 @@ const {
   normalizeLayoutSchema,
   deriveHomeSectionsFromLayout,
 } = require('../utils/layoutSchema');
+const { getOrSetCache, invalidateCache } = require('../utils/cache');
 
 const forwardError = (res, next, err) => {
   if (err?.statusCode && res.statusCode === 200) {
@@ -181,10 +182,59 @@ exports.updateSettings = async (req, res, next) => {
     });
     
     await settings.save();
+    await invalidateCache('settings:*');
     
     res.json({
       message: 'Settings updated successfully',
       settings,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Compare two version snapshots and return differences.
+ * POST /api/v1/settings/history/diff
+ * Body: { versionA: historyId, versionB: historyId | 'current' }
+ */
+exports.diffVersions = async (req, res, next) => {
+  try {
+    const { versionA, versionB } = req.body || {};
+    if (!versionA || !versionB) {
+      return res.status(400).json({ message: 'versionA and versionB are required' });
+    }
+
+    const settings = await SiteSettings.getSettings();
+    const history = settings.versionHistory || [];
+
+    const getSnapshot = (id) => {
+      if (id === 'current') return createSnapshotPayload(settings);
+      const item = history.find((h) => String(h._id) === String(id));
+      return item?.snapshot || null;
+    };
+
+    const snapA = getSnapshot(versionA);
+    const snapB = getSnapshot(versionB);
+
+    if (!snapA) return res.status(404).json({ message: `Version ${versionA} not found` });
+    if (!snapB) return res.status(404).json({ message: `Version ${versionB} not found` });
+
+    // Shallow diff of top-level keys
+    const allKeys = new Set([...Object.keys(snapA), ...Object.keys(snapB)]);
+    const changes = {};
+    for (const key of allKeys) {
+      const a = JSON.stringify(snapA[key]);
+      const b = JSON.stringify(snapB[key]);
+      if (a !== b) {
+        changes[key] = { before: snapA[key], after: snapB[key] };
+      }
+    }
+
+    res.json({
+      success: true,
+      changedKeys: Object.keys(changes),
+      changes,
     });
   } catch (err) {
     next(err);
@@ -261,6 +311,7 @@ exports.restoreThemeVersion = async (req, res, next) => {
     });
 
     await settings.save();
+    await invalidateCache('settings:*');
 
     res.json({
       message: 'Theme version restored successfully',
@@ -323,6 +374,7 @@ exports.importThemeJson = async (req, res, next) => {
     });
 
     await settings.save();
+    await invalidateCache('settings:*');
 
     res.json({
       message: 'Theme JSON imported successfully',
@@ -383,6 +435,7 @@ exports.updateSetting = async (req, res, next) => {
       },
     });
 
+    await invalidateCache('settings:*');
     res.json(saved);
   } catch (err) {
     forwardError(res, next, err);
@@ -415,6 +468,7 @@ exports.bulkUpdateSettings = async (req, res, next) => {
       },
     });
 
+    await invalidateCache('settings:*');
     res.json({ message: 'Settings updated successfully', settings: results });
   } catch (err) {
     forwardError(res, next, err);
@@ -429,6 +483,7 @@ exports.resetSetting = async (req, res, next) => {
       updatedBy: req.user?.id || null,
     });
 
+    await invalidateCache('settings:*');
     res.json(saved);
   } catch (err) {
     forwardError(res, next, err);
@@ -455,64 +510,79 @@ exports.getSettingHistory = async (req, res, next) => {
 ===================== */
 exports.getPublicSettings = async (req, res, next) => {
   try {
-    const settings = await getSettingsByKeys(PUBLIC_SETTING_KEYS);
-    const publicSettings = settings.reduce((acc, item) => {
-      acc[item.key] = getPublicSettingValue(item.key, item.value);
-      return acc;
-    }, {});
+    const publicSettings = await getOrSetCache('settings:public', async () => {
+      const settings = await getSettingsByKeys(PUBLIC_SETTING_KEYS);
+      const result = settings.reduce((acc, item) => {
+        acc[item.key] = getPublicSettingValue(item.key, item.value);
+        return acc;
+      }, {});
 
-    const singletonSettings = await SiteSettings.getSettings();
-    const publishedSnapshot = getPublishedSnapshot(singletonSettings);
+      const singletonSettings = await SiteSettings.getSettings();
+      const publishedSnapshot = getPublishedSnapshot(singletonSettings);
 
-    if (publishedSnapshot?.announcementBar) {
-      publicSettings.announcementBar = publishedSnapshot.announcementBar;
-    }
+      if (publishedSnapshot?.announcementBar) {
+        result.announcementBar = publishedSnapshot.announcementBar;
+      }
 
-    if (publishedSnapshot?.banners) {
-      publicSettings.banners = publishedSnapshot.banners;
-      publicSettings.bannerSystem = {
-        ...(publicSettings.bannerSystem || {}),
-        banners: publishedSnapshot.banners,
+      if (publishedSnapshot?.banners) {
+        result.banners = publishedSnapshot.banners;
+        result.bannerSystem = {
+          ...(result.bannerSystem || {}),
+          banners: publishedSnapshot.banners,
+        };
+      }
+
+      if (publishedSnapshot?.homeSections) {
+        result.homeSections = {
+          ...(result.homeSections || {}),
+          ...publishedSnapshot.homeSections,
+        };
+        result.heroSection = result.homeSections.heroSection || result.heroSection;
+        result.featuredProducts = result.homeSections.featuredProducts || result.featuredProducts;
+      }
+
+      // Include homePage data (from CMS admin) for the storefront
+      if (publishedSnapshot?.homePage) {
+        result.homePage = publishedSnapshot.homePage;
+      } else if (singletonSettings.homePage) {
+        result.homePage = singletonSettings.homePage;
+      }
+
+      if (publishedSnapshot?.layout) {
+        result.layout = normalizeLayoutSchema(publishedSnapshot.layout);
+        result.layoutSchemaVersion =
+          Number(publishedSnapshot.layoutSchemaVersion) ||
+          Number(singletonSettings.layoutSchemaVersion) ||
+          CURRENT_LAYOUT_SCHEMA_VERSION;
+      }
+
+      if (publishedSnapshot?.theme) {
+        // Key-value store theme should override snapshot (snapshot can be stale)
+        const kvTheme = result.theme || {};
+        result.theme = { ...publishedSnapshot.theme, ...kvTheme };
+      }
+
+      result.publishWorkflow = {
+        status: singletonSettings.publishWorkflow?.status || 'live',
+        scheduledAt: singletonSettings.publishWorkflow?.scheduledAt || null,
+        publishedAt: singletonSettings.publishWorkflow?.publishedAt || null,
+        updatedAt: singletonSettings.publishWorkflow?.updatedAt || null,
       };
+
+      return result;
+    }, 300);
+
+    // Generate ETag from content hash
+    const crypto = require('crypto');
+    const etag = `"${crypto.createHash('md5').update(JSON.stringify(publicSettings)).digest('hex')}"`;
+
+    // Check If-None-Match header
+    if (req.headers['if-none-match'] === etag) {
+      return res.status(304).end();
     }
 
-    if (publishedSnapshot?.homeSections) {
-      publicSettings.homeSections = {
-        ...(publicSettings.homeSections || {}),
-        ...publishedSnapshot.homeSections,
-      };
-      publicSettings.heroSection = publicSettings.homeSections.heroSection || publicSettings.heroSection;
-      publicSettings.featuredProducts = publicSettings.homeSections.featuredProducts || publicSettings.featuredProducts;
-    }
-
-    // Include homePage data (from CMS admin) for the storefront
-    if (publishedSnapshot?.homePage) {
-      publicSettings.homePage = publishedSnapshot.homePage;
-    } else if (singletonSettings.homePage) {
-      publicSettings.homePage = singletonSettings.homePage;
-    }
-
-    if (publishedSnapshot?.layout) {
-      publicSettings.layout = normalizeLayoutSchema(publishedSnapshot.layout);
-      publicSettings.layoutSchemaVersion =
-        Number(publishedSnapshot.layoutSchemaVersion) ||
-        Number(singletonSettings.layoutSchemaVersion) ||
-        CURRENT_LAYOUT_SCHEMA_VERSION;
-    }
-
-    if (publishedSnapshot?.theme) {
-      // Key-value store theme should override snapshot (snapshot can be stale)
-      const kvTheme = publicSettings.theme || {};
-      publicSettings.theme = { ...publishedSnapshot.theme, ...kvTheme };
-    }
-
-    publicSettings.publishWorkflow = {
-      status: singletonSettings.publishWorkflow?.status || 'live',
-      scheduledAt: singletonSettings.publishWorkflow?.scheduledAt || null,
-      publishedAt: singletonSettings.publishWorkflow?.publishedAt || null,
-      updatedAt: singletonSettings.publishWorkflow?.updatedAt || null,
-    };
-
+    res.set('ETag', etag);
+    res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     res.json({ settings: publicSettings });
   } catch (err) {
     forwardError(res, next, err);
@@ -546,6 +616,7 @@ exports.runPublishWorkflowNow = async (req, res, next) => {
       });
     }
 
+    await invalidateCache('settings:*');
     res.json({
       message: result?.promoted
         ? 'Scheduled publish promoted to live'
@@ -646,6 +717,7 @@ exports.resetStorefrontDefaults = async (req, res, next) => {
       },
     });
 
+    await invalidateCache('settings:*');
     res.json({
       message: 'Storefront reset to default settings successfully',
       settings,

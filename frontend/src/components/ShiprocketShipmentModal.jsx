@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { adminAPI } from '@/utils/api';
 import toast from 'react-hot-toast';
-import { FiX, FiTruck, FiPackage, FiMapPin, FiDollarSign } from 'react-icons/fi';
+import { FiX, FiTruck, FiPackage, FiMapPin } from 'react-icons/fi';
 import { formatPrice } from '@/utils/helpers';
 
 export default function ShiprocketShipmentModal({ order, isOpen, onClose, onSuccess }) {

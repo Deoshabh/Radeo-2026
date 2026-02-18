@@ -19,6 +19,10 @@ const couponSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
+    maxDiscount: {
+      type: Number,
+      default: null, // Cap for percent-type coupons (e.g., 20% off up to ₹500)
+    },
     minOrder: {
       type: Number,
       required: true,
@@ -41,9 +45,27 @@ const couponSchema = new mongoose.Schema(
       type: Number,
       default: null, // null means unlimited
     },
+    perUserLimit: {
+      type: Number,
+      default: null, // null means unlimited per user
+    },
     usedCount: {
       type: Number,
       default: 0,
+    },
+    firstOrderOnly: {
+      type: Boolean,
+      default: false,
+    },
+    applicableCategories: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Category",
+      },
+    ],
+    description: {
+      type: String,
+      default: "",
     },
   },
   { timestamps: true }

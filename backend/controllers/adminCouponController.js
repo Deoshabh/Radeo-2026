@@ -1,15 +1,27 @@
-const Coupon = require("../models/Coupon");
+﻿const Coupon = require("../models/Coupon");
+const Order = require("../models/Order");
 const CurrencyUtils = require("../utils/currencyUtils");
+const crypto = require("crypto");
+const { log } = require("../utils/logger");
+const { cacheClient } = require("../config/redis");
+const { recordSecurityEvent } = require("../utils/securityEvents");
 
 // @desc    Get all coupons
 // @route   GET /api/v1/admin/coupons
 // @access  Private/Admin
 exports.getAllCoupons = async (req, res) => {
   try {
-    const coupons = await Coupon.find({}).sort({ createdAt: -1 });
-    res.json(coupons);
+    const page = parseInt(req.query.page) || 1;
+    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+    const skip = (page - 1) * limit;
+
+    const [coupons, total] = await Promise.all([
+      Coupon.find({}).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Coupon.countDocuments({})
+    ]);
+    res.json({ success: true, data: { coupons, total, page, pages: Math.ceil(total / limit) } });
   } catch (error) {
-    console.error("Get all coupons error:", error);
+    log.error("Get all coupons error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -64,15 +76,20 @@ exports.createCoupon = async (req, res) => {
       code: code.toUpperCase(),
       type,
       value,
+      maxDiscount: req.body.maxDiscount || null,
       minOrder: minOrder || 0,
       expiry: expiryDate,
       validFrom: req.body.validFrom ? new Date(req.body.validFrom) : Date.now(),
       usageLimit: req.body.usageLimit || null,
+      perUserLimit: req.body.perUserLimit || null,
+      firstOrderOnly: req.body.firstOrderOnly || false,
+      applicableCategories: req.body.applicableCategories || [],
+      description: req.body.description || "",
     });
 
     res.status(201).json(coupon);
   } catch (error) {
-    console.error("Create coupon error:", error);
+    log.error("Create coupon error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -94,7 +111,7 @@ exports.toggleCouponStatus = async (req, res) => {
 
     res.json(coupon);
   } catch (error) {
-    console.error("Toggle coupon status error:", error);
+    log.error("Toggle coupon status error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -165,11 +182,16 @@ exports.updateCoupon = async (req, res) => {
     if (minOrder !== undefined) coupon.minOrder = minOrder;
     if (isActive !== undefined) coupon.isActive = isActive;
     if (req.body.usageLimit !== undefined) coupon.usageLimit = req.body.usageLimit;
+    if (req.body.perUserLimit !== undefined) coupon.perUserLimit = req.body.perUserLimit;
+    if (req.body.maxDiscount !== undefined) coupon.maxDiscount = req.body.maxDiscount;
+    if (req.body.firstOrderOnly !== undefined) coupon.firstOrderOnly = req.body.firstOrderOnly;
+    if (req.body.applicableCategories !== undefined) coupon.applicableCategories = req.body.applicableCategories;
+    if (req.body.description !== undefined) coupon.description = req.body.description;
 
     await coupon.save();
     res.json(coupon);
   } catch (error) {
-    console.error("Update coupon error:", error);
+    log.error("Update coupon error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -189,7 +211,7 @@ exports.deleteCoupon = async (req, res) => {
     await coupon.deleteOne();
     res.json({ message: "Coupon deleted successfully" });
   } catch (error) {
-    console.error("Delete coupon error:", error);
+    log.error("Delete coupon error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -200,20 +222,87 @@ exports.deleteCoupon = async (req, res) => {
 exports.validateCoupon = async (req, res) => {
   try {
     const { code, cartTotal } = req.body;
+    const clientIp = req.ip || "unknown";
 
     if (!code) {
       return res.status(400).json({ message: "Coupon code is required" });
     }
 
-    // Find coupon (case-insensitive)
-    const coupon = await Coupon.findOne({ code: code.toUpperCase() });
+    // ── Rate limiting via Valkey: 10 attempts per IP per hour ──
+    const rateLimitKey = `coupon:ratelimit:${clientIp}`;
+    const cooldownKey = `coupon:cooldown:${clientIp}`;
+    try {
+      // Check cooldown (30s lockout after 5 consecutive failures)
+      const cooldown = await cacheClient.get(cooldownKey);
+      if (cooldown) {
+        return res.status(429).json({
+          message: "Too many failed attempts. Please wait 30 seconds.",
+        });
+      }
 
-    if (!coupon) {
+      const attempts = await cacheClient.incr(rateLimitKey);
+      if (attempts === 1) await cacheClient.expire(rateLimitKey, 3600); // 1 hour window
+      if (attempts > 10) {
+        return res.status(429).json({
+          message: "Too many coupon attempts. Please try again later.",
+        });
+      }
+    } catch {
+      // Valkey down — proceed without rate limiting
+    }
+
+    const inputCode = code.toUpperCase().trim();
+
+    // Find coupon candidates by first 3 characters (prefix query)
+    const prefix = inputCode.slice(0, 3);
+    const candidates = await Coupon.find({
+      code: { $regex: `^${prefix}`, $options: "i" },
+    }).lean();
+
+    // Timing-safe comparison against all candidates
+    let matchedCoupon = null;
+    for (const candidate of candidates) {
+      const storedBuf = Buffer.from(candidate.code, "utf8");
+      const inputBuf = Buffer.from(inputCode, "utf8");
+      // Buffers must be same length for timingSafeEqual
+      if (storedBuf.length === inputBuf.length) {
+        if (crypto.timingSafeEqual(storedBuf, inputBuf)) {
+          matchedCoupon = candidate;
+          // Don't break — process all candidates to ensure constant-time
+        }
+      }
+    }
+
+    if (!matchedCoupon) {
+      // Track failed attempt for cooldown
+      try {
+        const failKey = `coupon:fails:${clientIp}`;
+        const fails = await cacheClient.incr(failKey);
+        if (fails === 1) await cacheClient.expire(failKey, 300); // 5-min window
+        if (fails >= 5) {
+          await cacheClient.set(cooldownKey, "1", "EX", 30); // 30s cooldown
+          await cacheClient.del(failKey);
+        }
+      } catch { /* Valkey down */ }
+
+      // Log security event for probing
+      recordSecurityEvent({
+        eventType: "coupon_probe",
+        ip: clientIp,
+        userAgent: req.headers["user-agent"] || null,
+        metadata: { attemptedCode: inputCode },
+      }).catch(() => {});
+
       return res.status(404).json({ message: "Invalid coupon code" });
     }
 
-    // Check if coupon is active
-    if (!coupon.isActive) {
+    // Reset fail counter on success
+    try {
+      await cacheClient.del(`coupon:fails:${clientIp}`);
+    } catch { /* ignore */ }
+
+    // ── Standard validation checks ──
+    if (!matchedCoupon.isActive) {
       return res
         .status(400)
         .json({ message: "This coupon is no longer active" });
@@ -221,42 +310,121 @@ exports.validateCoupon = async (req, res) => {
 
     const now = new Date();
 
-    // Check if coupon start date is valid
-    if (coupon.validFrom && new Date(coupon.validFrom) > now) {
+    if (matchedCoupon.validFrom && new Date(matchedCoupon.validFrom) > now) {
       return res.status(400).json({ message: "This coupon is not yet valid" });
     }
 
-    // Check if coupon is expired
-    if (new Date(coupon.expiry) < now) {
+    if (new Date(matchedCoupon.expiry) < now) {
       return res.status(400).json({ message: "This coupon has expired" });
     }
 
-    // Check minimum order value
-    if (cartTotal < coupon.minOrder) {
+    if (cartTotal < matchedCoupon.minOrder) {
       return res.status(400).json({
-        message: `Minimum order value of ${CurrencyUtils.format(coupon.minOrder)} required to use this coupon`,
+        message: `Minimum order value of ${CurrencyUtils.format(matchedCoupon.minOrder)} required to use this coupon`,
       });
+    }
+
+    if (matchedCoupon.usageLimit != null && matchedCoupon.usedCount >= matchedCoupon.usageLimit) {
+      return res.status(400).json({ message: "This coupon has reached its usage limit" });
     }
 
     // Calculate discount
     let discount = 0;
-    if (coupon.type === "flat") {
-      discount = coupon.value;
-    } else if (coupon.type === "percent") {
-      discount = (cartTotal * coupon.value) / 100;
+    if (matchedCoupon.type === "flat") {
+      discount = matchedCoupon.value;
+    } else if (matchedCoupon.type === "percent") {
+      discount = (cartTotal * matchedCoupon.value) / 100;
+      if (matchedCoupon.maxDiscount && discount > matchedCoupon.maxDiscount) {
+        discount = matchedCoupon.maxDiscount;
+      }
+    }
+
+    if (discount > cartTotal) {
+      discount = cartTotal;
     }
 
     res.json({
       success: true,
       coupon: {
-        code: coupon.code,
-        type: coupon.type,
-        value: coupon.value,
+        code: matchedCoupon.code,
+        type: matchedCoupon.type,
+        value: matchedCoupon.value,
+        maxDiscount: matchedCoupon.maxDiscount,
         discount: Math.round(discount),
       },
     });
   } catch (error) {
-    console.error("Validate coupon error:", error);
+    log.error("Validate coupon error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// @desc    Get coupon performance stats (aggregated from orders)
+// @route   GET /api/v1/admin/coupons/stats
+// @access  Private/Admin
+exports.getCouponStats = async (req, res) => {
+  try {
+    // Aggregate order data grouped by coupon code
+    const orderStats = await Order.aggregate([
+      { $match: { "coupon.code": { $exists: true, $ne: null } } },
+      {
+        $group: {
+          _id: { $toUpper: "$coupon.code" },
+          totalOrders: { $sum: 1 },
+          totalRevenue: { $sum: "$total" },
+          totalDiscount: { $sum: "$discount" },
+          uniqueUsers: { $addToSet: "$user" },
+          avgOrderValue: { $avg: "$total" },
+          lastUsed: { $max: "$createdAt" },
+        },
+      },
+      {
+        $project: {
+          code: "$_id",
+          totalOrders: 1,
+          totalRevenue: 1,
+          totalDiscount: 1,
+          uniqueUsers: { $size: "$uniqueUsers" },
+          avgOrderValue: { $round: ["$avgOrderValue", 0] },
+          lastUsed: 1,
+          _id: 0,
+        },
+      },
+    ]);
+
+    // Get all coupons and merge with stats
+    const coupons = await Coupon.find({}).lean();
+    const statsMap = {};
+    orderStats.forEach((s) => { statsMap[s.code] = s; });
+
+    const result = coupons.map((c) => {
+      const s = statsMap[c.code.toUpperCase()] || {};
+      return {
+        _id: c._id,
+        code: c.code,
+        type: c.type,
+        value: c.value,
+        maxDiscount: c.maxDiscount,
+        minOrder: c.minOrder,
+        expiry: c.expiry,
+        validFrom: c.validFrom,
+        isActive: c.isActive,
+        usageLimit: c.usageLimit,
+        usedCount: c.usedCount || 0,
+        description: c.description,
+        // Performance metrics
+        totalOrders: s.totalOrders || 0,
+        totalRevenue: s.totalRevenue || 0,
+        totalDiscount: s.totalDiscount || 0,
+        uniqueUsers: s.uniqueUsers || 0,
+        avgOrderValue: s.avgOrderValue || 0,
+        lastUsed: s.lastUsed || null,
+      };
+    });
+
+    res.json(result);
+  } catch (error) {
+    log.error("Get coupon stats error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

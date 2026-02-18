@@ -1,51 +1,53 @@
 /**
- * Firebase Admin SDK Configuration
- * For verifying Firebase ID tokens on the backend
+ * Firebase Admin — Minimized footprint
+ * Only initializes Auth (no Firestore, Storage, Analytics)
+ * Import only { getAuth } from firebase-admin/auth
  */
+const { initializeApp, cert, getApps } = require("firebase-admin/app");
+const { getAuth } = require("firebase-admin/auth");
+const { log } = require("../utils/logger");
 
-const admin = require("firebase-admin");
-const path = require("path");
+let firebaseAuth = null;
 
-// Initialize Firebase Admin SDK
-if (!admin.apps.length) {
+if (!getApps().length) {
   try {
-    // Option 1: Use service account JSON file (recommended for production)
-    const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
-
-    if (serviceAccountPath) {
-      const serviceAccount = require(path.resolve(serviceAccountPath));
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        projectId: serviceAccount.project_id,
-      });
-      console.log("✅ Firebase Admin initialized with service account file");
-    }
-    // Option 2: Use individual environment variables
-    else if (
+    if (
       process.env.FIREBASE_PRIVATE_KEY &&
       process.env.FIREBASE_CLIENT_EMAIL
     ) {
-      admin.initializeApp({
-        credential: admin.credential.cert({
+      initializeApp({
+        credential: cert({
           projectId: process.env.FIREBASE_PROJECT_ID || "radeo-2026",
           clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
           privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
         }),
       });
-      console.log("✅ Firebase Admin initialized with environment variables");
-    }
-    // Option 3: Fallback for development (limited functionality)
-    else {
-      admin.initializeApp({
+      log.success("Firebase Admin initialized with environment variables");
+    } else {
+      initializeApp({
         projectId: process.env.FIREBASE_PROJECT_ID || "radeo-2026",
       });
-      console.log(
-        "⚠️  Firebase Admin initialized without credentials (limited functionality)",
+      log.warn(
+        "Firebase Admin initialized without credentials (limited functionality)",
       );
     }
+
+    firebaseAuth = getAuth();
   } catch (error) {
-    console.error("❌ Firebase Admin initialization error:", error);
+    log.error("Firebase Admin initialization error", error);
   }
 }
 
-module.exports = admin;
+// Export auth instance + backward-compat admin-shaped object
+// Callers using admin.auth() still work via the proxy
+module.exports = new Proxy(
+  { firebaseAuth },
+  {
+    get(target, prop) {
+      if (prop === "firebaseAuth") return target.firebaseAuth;
+      // Backward compat: admin.auth() returns the same auth instance
+      if (prop === "auth") return () => target.firebaseAuth;
+      return undefined;
+    },
+  },
+);

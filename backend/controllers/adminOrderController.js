@@ -3,6 +3,7 @@ const User = require("../models/User");
 const Product = require("../models/Product");
 const { analyzeOrderRisks } = require("../utils/riskDetection");
 const { invalidateCache } = require("../utils/cache");
+const { log } = require("../utils/logger");
 
 const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -87,7 +88,7 @@ exports.getAllOrders = async (req, res) => {
       orders: enhancedOrders,
     });
   } catch (error) {
-    console.error("Get all orders error:", error);
+    log.error("Get all orders error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -107,7 +108,7 @@ exports.getOrderById = async (req, res) => {
       order,
     });
   } catch (error) {
-    console.error("Get order by ID error:", error);
+    log.error("Get order by ID error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -183,7 +184,7 @@ exports.updateOrderStatus = async (req, res) => {
       order,
     });
   } catch (error) {
-    console.error("Update order status error:", error);
+    log.error("Update order status error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -215,7 +216,7 @@ exports.getUserOrders = async (req, res) => {
       orders,
     });
   } catch (error) {
-    console.error("Get user orders error:", error);
+    log.error("Get user orders error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -250,7 +251,7 @@ exports.updateShippingInfo = async (req, res) => {
       order,
     });
   } catch (error) {
-    console.error("Update shipping info error:", error);
+    log.error("Update shipping info error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -268,7 +269,7 @@ exports.updateShippingAddress = async (req, res) => {
         "Address editing has been disabled for admins. Address is view-only.",
     });
   } catch (error) {
-    console.error("Update shipping address error:", error);
+    log.error("Update shipping address error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -314,9 +315,13 @@ exports.bulkUpdateStatus = async (req, res) => {
       failed: [],
     };
 
+    // Batch-load all orders in one query instead of N+1
+    const orders = await Order.find({ _id: { $in: orderIds } });
+    const orderMap = new Map(orders.map((o) => [o._id.toString(), o]));
+
     for (const orderId of orderIds) {
       try {
-        const order = await Order.findById(orderId);
+        const order = orderMap.get(orderId.toString());
 
         if (!order) {
           results.failed.push({
@@ -374,7 +379,7 @@ exports.bulkUpdateStatus = async (req, res) => {
       results,
     });
   } catch (error) {
-    console.error("Bulk update status error:", error);
+    log.error("Bulk update status error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -397,9 +402,13 @@ exports.bulkCreateShipments = async (req, res) => {
       skipped: [],
     };
 
+    // Batch-load all orders in one query instead of N+1
+    const orders = await Order.find({ _id: { $in: orderIds } });
+    const orderMap = new Map(orders.map((o) => [o._id.toString(), o]));
+
     for (const orderId of orderIds) {
       try {
-        const order = await Order.findById(orderId);
+        const order = orderMap.get(orderId.toString());
 
         if (!order) {
           results.failed.push({
@@ -457,7 +466,7 @@ exports.bulkCreateShipments = async (req, res) => {
       results,
     });
   } catch (error) {
-    console.error("Bulk create shipments error:", error);
+    log.error("Bulk create shipments error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -477,9 +486,13 @@ exports.bulkPrintLabels = async (req, res) => {
     const labelUrls = [];
     const failed = [];
 
+    // Batch-load all orders in one query instead of N+1
+    const orders = await Order.find({ _id: { $in: orderIds } });
+    const orderMap = new Map(orders.map((o) => [o._id.toString(), o]));
+
     for (const orderId of orderIds) {
       try {
-        const order = await Order.findById(orderId);
+        const order = orderMap.get(orderId.toString());
 
         if (!order) {
           failed.push({ orderId, reason: "Order not found" });
@@ -512,7 +525,7 @@ exports.bulkPrintLabels = async (req, res) => {
       failed,
     });
   } catch (error) {
-    console.error("Bulk print labels error:", error);
+    log.error("Bulk print labels error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

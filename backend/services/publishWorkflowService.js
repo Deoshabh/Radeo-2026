@@ -1,5 +1,7 @@
 const SiteSettings = require('../models/SiteSettings');
 const SettingAuditLog = require('../models/SettingAuditLog');
+const { log } = require('../utils/logger');
+const { tokenClient } = require('../config/redis');
 
 const DEFAULT_INTERVAL_MS = Number(process.env.PUBLISH_WORKFLOW_INTERVAL_MS || 60000);
 const WORKER_LEASE_MS = Number(process.env.PUBLISH_WORKFLOW_LEASE_MS || 45000);
@@ -16,7 +18,24 @@ const createSnapshotPayload = (settings) => ({
   theme: settings.theme,
 });
 
+const LOCK_KEY = 'lock:publish-workflow';
+const LOCK_TTL = 55; // seconds (interval is 60s)
+
 const runScheduledPublishCheck = async () => {
+  // Acquire Valkey distributed lock (prevents multi-instance races)
+  let lockAcquired = false;
+  try {
+    const result = await tokenClient.set(LOCK_KEY, WORKER_ID, 'EX', LOCK_TTL, 'NX');
+    lockAcquired = result === 'OK';
+  } catch {
+    // Valkey down — fall through to MongoDB-level lock
+    lockAcquired = true;
+  }
+
+  if (!lockAcquired) {
+    return { promoted: false, reason: 'valkey-lock-held' };
+  }
+
   try {
     const now = new Date();
     const leaseUntil = new Date(Date.now() + WORKER_LEASE_MS);
@@ -100,19 +119,22 @@ const runScheduledPublishCheck = async () => {
       },
     });
 
-    console.log('[publish-workflow] Scheduled publish promoted to live.');
+    log.info('[publish-workflow] Scheduled publish promoted to live.');
     return {
       promoted: true,
       reason: 'scheduled-promoted',
       publishedAt: settings.publishWorkflow.publishedAt,
     };
   } catch (error) {
-    console.error('[publish-workflow] Failed scheduled publish check:', error.message);
+    log.error('[publish-workflow] Failed scheduled publish check:', error.message);
     return {
       promoted: false,
       reason: 'error',
       error: error.message,
     };
+  } finally {
+    // Release Valkey lock
+    try { await tokenClient.del(LOCK_KEY); } catch { /* ignore */ }
   }
 };
 

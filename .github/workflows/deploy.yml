@@ -1,0 +1,196 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: "Skip test step"
+        required: false
+        default: "false"
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  # ─────────────────────────────────────────────
+  # Stage 1: Lint + Test (Backend)
+  # ─────────────────────────────────────────────
+  test-backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.skip_tests != 'true' }}
+
+    services:
+      mongodb:
+        image: mongo:7
+        ports: [27017:27017]
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping:1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      valkey:
+        image: valkey/valkey:8-alpine
+        ports: [6379:6379]
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - run: npm ci
+
+      - name: Run tests
+        env:
+          NODE_ENV: test
+          MONGO_URI: mongodb://localhost:27017/radeo-test
+          JWT_SECRET: ci-test-secret-must-be-at-least-32-characters-long
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          MINIO_ENDPOINT: localhost
+          MINIO_PORT: 9000
+          MINIO_ACCESS_KEY: minioadmin
+          MINIO_SECRET_KEY: minioadmin
+          MINIO_BUCKET: radeo-test
+          RAZORPAY_KEY_ID: rzp_test_dummy
+          RAZORPAY_KEY_SECRET: dummy_secret
+          SHIPROCKET_EMAIL: test@test.com
+          SHIPROCKET_PASSWORD: testpass
+        run: npm test -- --forceExit --detectOpenHandles
+
+  # ─────────────────────────────────────────────
+  # Stage 2: Build check (Frontend)
+  # ─────────────────────────────────────────────
+  build-frontend:
+    name: Frontend Build Check
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.skip_tests != 'true' }}
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - name: Build Next.js
+        env:
+          NEXT_PUBLIC_API_URL: https://api.radeo.in
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: placeholder
+        run: npm run build
+
+  # ─────────────────────────────────────────────
+  # Stage 3: Deploy via Dokploy webhooks
+  # ─────────────────────────────────────────────
+  deploy:
+    name: Deploy to Dokploy
+    runs-on: ubuntu-latest
+    needs: [test-backend, build-frontend]
+    if: always() && !failure() && !cancelled()
+
+    steps:
+      - name: Trigger Backend Deploy
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST "${{ secrets.DOKPLOY_WEBHOOK_BACKEND }}" \
+            -H "Content-Type: application/json")
+          echo "Backend deploy webhook returned: $response"
+          if [ "$response" -lt 200 ] || [ "$response" -ge 300 ]; then
+            echo "::error::Backend deploy webhook failed with status $response"
+            exit 1
+          fi
+
+      - name: Trigger Frontend Deploy
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST "${{ secrets.DOKPLOY_WEBHOOK_FRONTEND }}" \
+            -H "Content-Type: application/json")
+          echo "Frontend deploy webhook returned: $response"
+          if [ "$response" -lt 200 ] || [ "$response" -ge 300 ]; then
+            echo "::error::Frontend deploy webhook failed with status $response"
+            exit 1
+          fi
+
+      - name: Wait for deployment
+        run: sleep 30
+
+      - name: Health check — Backend
+        run: |
+          for i in {1..10}; do
+            status=$(curl -s -o /dev/null -w "%{http_code}" \
+              "https://api.radeo.in/api/health/live" \
+              --connect-timeout 5 --max-time 10) || true
+            echo "Attempt $i: HTTP $status"
+            if [ "$status" = "200" ]; then
+              echo "✅ Backend is healthy"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::warning::Backend health check did not return 200 after 10 attempts"
+          exit 1
+
+      - name: Health check — Frontend
+        run: |
+          for i in {1..10}; do
+            status=$(curl -s -o /dev/null -w "%{http_code}" \
+              "https://radeo.in" \
+              --connect-timeout 5 --max-time 10) || true
+            echo "Attempt $i: HTTP $status"
+            if [ "$status" = "200" ]; then
+              echo "✅ Frontend is healthy"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::warning::Frontend health check did not return 200 after 10 attempts"
+          exit 1
+
+  # ─────────────────────────────────────────────
+  # Notification
+  # ─────────────────────────────────────────────
+  notify:
+    name: Notify
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    if: always()
+
+    steps:
+      - name: Summary
+        run: |
+          if [ "${{ needs.deploy.result }}" = "success" ]; then
+            echo "## ✅ Deployment Successful" >> $GITHUB_STEP_SUMMARY
+            echo "Commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "Branch: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
+            echo "Check the deploy job logs for details." >> $GITHUB_STEP_SUMMARY
+          fi

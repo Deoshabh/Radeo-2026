@@ -1,4 +1,6 @@
 const Category = require("../models/Category");
+const { invalidateCache } = require("../utils/cache");
+const { log } = require("../utils/logger");
 
 // @desc    Get all categories
 // @route   GET /api/v1/admin/categories
@@ -11,7 +13,7 @@ exports.getAllCategories = async (req, res) => {
     });
     res.json({ categories });
   } catch (error) {
-    console.error("Get categories error:", error);
+    log.error("Get categories error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -28,26 +30,39 @@ exports.createCategory = async (req, res) => {
       return res.status(400).json({ message: "Name and slug are required" });
     }
 
-    const existingCategory = await Category.findOne({
-      $or: [{ name }, { slug }],
-    });
-    if (existingCategory) {
+    // Check for duplicate name
+    const existingByName = await Category.findOne({ name });
+    if (existingByName) {
       return res
         .status(400)
-        .json({ message: "Category name or slug already exists" });
+        .json({ message: "Category with this name already exists" });
+    }
+
+    // Auto-resolve slug collision with -2, -3, etc.
+    let finalSlug = slug;
+    let slugConflict = await Category.findOne({ slug: finalSlug });
+    if (slugConflict) {
+      let suffix = 2;
+      while (slugConflict) {
+        finalSlug = `${slug}-${suffix}`;
+        slugConflict = await Category.findOne({ slug: finalSlug });
+        suffix++;
+        if (suffix > 50) break;
+      }
     }
 
     const category = await Category.create({
       name,
-      slug,
+      slug: finalSlug,
       description: description || "",
       showInNavbar: showInNavbar !== undefined ? showInNavbar : true,
       displayOrder: displayOrder || 0,
       image: image || null,
     });
+    await invalidateCache("categories:*");
     res.status(201).json({ category });
   } catch (error) {
-    console.error("Create category error:", error);
+    log.error("Create category error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -65,10 +80,11 @@ exports.toggleCategoryStatus = async (req, res) => {
 
     category.isActive = !category.isActive;
     await category.save();
+    await invalidateCache("categories:*");
 
     res.json({ category });
   } catch (error) {
-    console.error("Toggle category error:", error);
+    log.error("Toggle category error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -116,9 +132,10 @@ exports.updateCategory = async (req, res) => {
     if (image !== undefined) category.image = image;
 
     await category.save();
+    await invalidateCache("categories:*");
     res.json({ category });
   } catch (error) {
-    console.error("Update category error:", error);
+    log.error("Update category error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -135,9 +152,10 @@ exports.deleteCategory = async (req, res) => {
     }
 
     await category.deleteOne();
+    await invalidateCache("categories:*");
     res.json({ message: "Category deleted successfully" });
   } catch (error) {
-    console.error("Delete category error:", error);
+    log.error("Delete category error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

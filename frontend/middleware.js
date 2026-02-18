@@ -1,27 +1,46 @@
 import { NextResponse } from "next/server";
+import { jwtVerify } from "jose";
 
 /**
- * Next.js Middleware - Server-side route protection
+ * Next.js Middleware — Server-side route protection
  * Prevents unauthorized access to /admin/* routes before page renders.
- * This stops the "flash of admin UI" for non-authenticated users.
+ * Fully verifies JWT signature — never falls back to unverified decode.
+ * If JWT_SECRET is missing, all admin access is blocked (fail-closed).
  */
-export function middleware(request) {
+export async function middleware(request) {
   const { pathname } = request.nextUrl;
 
   // Only protect admin routes
   if (pathname.startsWith("/admin")) {
-    // Check for auth token in cookies
     const accessToken = request.cookies.get("accessToken")?.value;
 
     if (!accessToken) {
-      // No token — redirect to login
-      const loginUrl = new URL("/login", request.url);
+      const loginUrl = new URL("/auth/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);
     }
 
-    // Token exists — allow through (role check happens client-side since
-    // JWT verification requires the secret which isn't available in Edge Runtime)
+    // Fail closed — if JWT_SECRET is not configured, block all admin access
+    if (!process.env.JWT_SECRET) {
+      console.error(
+        "CRITICAL: JWT_SECRET not set — blocking all admin access",
+      );
+      return NextResponse.redirect(new URL("/auth/login", request.url));
+    }
+
+    try {
+      const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+      const { payload } = await jwtVerify(accessToken, secret);
+
+      if (payload.role !== "admin") {
+        return NextResponse.redirect(new URL("/", request.url));
+      }
+    } catch {
+      // Token invalid, expired, or tampered — always redirect
+      const loginUrl = new URL("/auth/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
   }
 
   return NextResponse.next();

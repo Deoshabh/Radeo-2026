@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "checkJs": true,
+    "strict": false,
+    "noEmit": true,
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "baseUrl": ".",
+    "paths": {
+      "@models/*": ["models/*"],
+      "@utils/*": ["utils/*"],
+      "@controllers/*": ["controllers/*"],
+      "@services/*": ["services/*"],
+      "@middleware/*": ["middleware/*"]
+    }
+  },
+  "include": ["**/*.js"],
+  "exclude": ["node_modules", "coverage", "__tests__"]
+}

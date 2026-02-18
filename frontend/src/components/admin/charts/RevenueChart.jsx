@@ -12,20 +12,16 @@ import {
 import { formatPrice } from '@/utils/helpers';
 
 export default function RevenueChart({ data }) {
-    // Use passed data or fallback to empty array (but don't show mock data if real data is expected)
-    const chartData = data && data.length > 0 ? data : [];
-
-    if (!data) {
+    if (!data || data.length === 0) {
         return (
-            <div className="h-[300px] w-full bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex items-center justify-center">
-                <p className="text-gray-400">Loading chart data...</p>
+            <div className="h-[280px] w-full flex items-center justify-center">
+                <p className="text-sm text-gray-400">No revenue data available</p>
             </div>
         );
     }
 
     return (
-        <div className="h-[300px] w-full bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <h3 className="text-lg font-bold text-gray-800 mb-4">Revenue Overview</h3>
+        <div className="h-[280px] w-full p-4">
             <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                     data={data}

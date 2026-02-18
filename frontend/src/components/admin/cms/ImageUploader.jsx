@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { FiUploadCloud, FiX, FiImage } from 'react-icons/fi';
+import { FiUploadCloud, FiX } from 'react-icons/fi';
 import { adminAPI } from '@/utils/api';
 import toast from 'react-hot-toast';
 import axios from 'axios';

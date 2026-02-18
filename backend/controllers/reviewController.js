@@ -1,66 +1,32 @@
-const Review = require('../models/Review');
+﻿const Review = require('../models/Review');
 const Product = require('../models/Product');
-// const { Queue } = require('bullmq'); // Removed in favor of simple redis list
-const Minio = require('minio');
+const sharp = require('sharp');
 const crypto = require('crypto');
-const path = require('path');
+const { log } = require('../utils/logger');
+const { minioClient, getPublicUrl, BUCKETS } = require('../utils/minio');
+const { moderateReview } = require('../services/reviewModerationService');
 
-// Initialize MinIO Client
-const useSSL = String(process.env.MINIO_USE_SSL).toLowerCase() === 'true';
-const minioClient = new Minio.Client({
-  endPoint: process.env.MINIO_ENDPOINT || 'minio',
-  port: parseInt(process.env.MINIO_PORT || '9000'),
-  useSSL: useSSL,
-  accessKey: process.env.MINIO_ACCESS_KEY,
-  secretKey: process.env.MINIO_SECRET_KEY
-});
-
-const BUCKET_NAME = process.env.MINIO_BUCKET_NAME || 'radeo-reviews';
-
-// Ensure bucket exists
-(async () => {
-  try {
-    const exists = await minioClient.bucketExists(BUCKET_NAME);
-    if (!exists) {
-      await minioClient.makeBucket(BUCKET_NAME, 'us-east-1');
-      console.log(`Bucket ${BUCKET_NAME} created.`);
-      
-      // Set public policy for read access
-      const policy = {
-        Version: '2012-10-17',
-        Statement: [
-          {
-            Effect: 'Allow',
-            Principal: { AWS: ['*'] },
-            Action: ['s3:GetObject'],
-            Resource: [`arn:aws:s3:::${BUCKET_NAME}/*`]
-          }
-        ]
-      };
-      await minioClient.setBucketPolicy(BUCKET_NAME, JSON.stringify(policy));
-    }
-  } catch (err) {
-    console.error('MinIO Bucket Error:', err);
-  }
-})();
+const BUCKET_NAME = BUCKETS.REVIEWS;
 
 // Initialize Redis Client for Queue
 const redisClient = require('../config/redis');
 
-// redisClient.on('error', ...) is already handled in config/redis.js
-
-// Helper: Upload to MinIO
+// Helper: Convert to WebP via Sharp, then upload to MinIO
 const uploadToMinio = async (file) => {
-  const fileExt = path.extname(file.originalname);
-  const fileName = `${crypto.randomUUID()}${fileExt}`;
-  
-  await minioClient.putObject(BUCKET_NAME, fileName, file.buffer, file.size, {
-    'Content-Type': file.mimetype
+  const fileName = `${crypto.randomUUID()}.webp`;
+
+  // Convert to WebP (quality 82, strip metadata)
+  const webpBuffer = await sharp(file.buffer)
+    .webp({ quality: 82 })
+    .toBuffer();
+
+  await minioClient.putObject(BUCKET_NAME, fileName, webpBuffer, webpBuffer.length, {
+    'Content-Type': 'image/webp',
   });
 
   return {
-    url: `/api/v1/storage/${BUCKET_NAME}/${fileName}`,
-    publicId: fileName
+    url: getPublicUrl(fileName, BUCKET_NAME),
+    publicId: fileName,
   };
 };
 
@@ -80,7 +46,16 @@ exports.createReview = async (req, res) => {
       return res.status(400).json({ message: 'You have already reviewed this product' });
     }
 
-    // 2. Handle Image Uploads
+    // 2. Text moderation
+    const moderation = moderateReview(title, comment);
+    if (moderation.action === 'reject') {
+      return res.status(400).json({
+        message: 'Review contains prohibited content and cannot be submitted',
+        flags: moderation.flags,
+      });
+    }
+
+    // 3. Handle Image Uploads
     const images = [];
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
@@ -89,7 +64,7 @@ exports.createReview = async (req, res) => {
       }
     }
 
-    // 3. Create Review
+    // 4. Create Review
     const review = await Review.create({
       user: userId,
       product: productId,
@@ -97,10 +72,15 @@ exports.createReview = async (req, res) => {
       title,
       comment,
       images,
-      status: 'pending'
+      status: moderation.action === 'flag' ? 'pending' : 'pending',
+      ai_tags: {
+        moderation_score: moderation.score,
+        moderation_flags: moderation.flags,
+        moderation_action: moderation.action,
+      },
     });
 
-    // 4. Dispatch Moderation Jobs if images exist
+    // 5. Dispatch Moderation Jobs if images exist
     if (images.length > 0) {
       for (const image of images) {
         // Push to simple Redis list queue
@@ -120,7 +100,7 @@ exports.createReview = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Create Review Error:', error);
+    log.error('Create Review Error:', error);
     res.status(500).json({ message: 'Failed to submit review', error: error.message });
   }
 };
@@ -157,7 +137,7 @@ exports.getProductReviews = async (req, res) => {
       totalReviews: count
     });
   } catch (error) {
-    console.error('Get Product Reviews Error:', error);
+    log.error('Get Product Reviews Error:', error);
     res.status(500).json({ message: 'Failed to fetch reviews', error: error.message });
   }
 };
@@ -171,7 +151,7 @@ exports.getMyReviews = async (req, res) => {
 
     res.json(reviews);
   } catch (error) {
-    console.error('Get My Reviews Error:', error);
+    log.error('Get My Reviews Error:', error);
     res.status(500).json({ message: 'Failed to fetch your reviews', error: error.message });
   }
 };
@@ -214,7 +194,7 @@ exports.updateReview = async (req, res) => {
 
     res.json({ message: 'Review updated successfully', review });
   } catch (error) {
-    console.error('Update Review Error:', error);
+    log.error('Update Review Error:', error);
     res.status(500).json({ message: 'Failed to update review', error: error.message });
   }
 };
@@ -239,7 +219,7 @@ exports.deleteReview = async (req, res) => {
 
     res.json({ message: 'Review deleted successfully' });
   } catch (error) {
-    console.error('Delete Review Error:', error);
+    log.error('Delete Review Error:', error);
     res.status(500).json({ message: 'Failed to delete review', error: error.message });
   }
 };
@@ -260,7 +240,7 @@ exports.markReviewHelpful = async (req, res) => {
 
     res.json({ message: 'Marked as helpful', helpfulVotes: review.helpfulVotes });
   } catch (error) {
-    console.error('Mark Helpful Error:', error);
+    log.error('Mark Helpful Error:', error);
     res.status(500).json({ message: 'Failed to mark review as helpful', error: error.message });
   }
 };
@@ -284,7 +264,7 @@ exports.uploadReviewPhotos = async (req, res) => {
       images: uploadedImages 
     });
   } catch (error) {
-    console.error('Upload Photos Error:', error);
+    log.error('Upload Photos Error:', error);
     res.status(500).json({ message: 'Failed to upload photos', error: error.message });
   }
 };

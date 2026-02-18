@@ -1,14 +1,17 @@
 const Minio = require("minio");
+const { log } = require("./logger");
 
 /**
  * ===============================
  * S3-Compatible Object Storage Configuration
  * ===============================
- * Supports: RustFS, MinIO, AWS S3, or any S3-compatible storage
- * Uses ONLY environment variables
- * No silent fallbacks in production
+ * Supports: RustFS, MinIO, AWS S3, Cloudflare R2, or any S3-compatible storage
  *
- * Note: Despite using "MINIO_*" env var names, this works with ANY S3-compatible storage
+ * Bucket structure:
+ *   radeo-products  — product images (public read, versioned)
+ *   radeo-media     — CMS media uploads (public read, versioned)
+ *   radeo-reviews   — customer review photos (private)
+ *   radeo-temp      — pre-signed upload staging (auto-deleted after 24h)
  */
 const {
   MINIO_ENDPOINT,
@@ -19,6 +22,7 @@ const {
   MINIO_BUCKET,
   MINIO_REGION,
   MINIO_PUBLIC_URL,
+  MINIO_CDN_URL,
 } = process.env;
 
 if (
@@ -32,6 +36,19 @@ if (
     "❌ Missing required S3 storage environment variables (MINIO_*)",
   );
 }
+
+/** Bucket name constants */
+const BUCKETS = {
+  PRODUCTS: process.env.MINIO_BUCKET_PRODUCTS || "radeo-products",
+  MEDIA: process.env.MINIO_BUCKET_MEDIA || "radeo-media",
+  REVIEWS: process.env.MINIO_BUCKET_REVIEWS || "radeo-reviews",
+  TEMP: process.env.MINIO_BUCKET_TEMP || "radeo-temp",
+  /** Legacy default bucket — for backward compatibility */
+  DEFAULT: MINIO_BUCKET,
+};
+
+/** CDN base URL — serves images via Cloudflare edge cache (e.g. https://cdn.radeo.in) */
+const CDN_BASE_URL = (MINIO_CDN_URL || MINIO_PUBLIC_URL || "").replace(/\/$/, "");
 
 const REGION = MINIO_REGION || "us-east-1";
 
@@ -48,16 +65,11 @@ async function initializeBucket() {
   if (isInitialized) return;
 
   try {
-    console.log("🪣 Initializing S3-compatible storage client...");
-    console.log("📡 Endpoint:", MINIO_ENDPOINT);
-    console.log("🔐 Port:", MINIO_PORT);
-    console.log("🔐 SSL:", MINIO_USE_SSL);
-    console.log(
-      "🔑 Access Key:",
-      MINIO_ACCESS_KEY ? "***" + MINIO_ACCESS_KEY.slice(-4) : "NOT SET",
-    );
-
-
+    log.info("Initializing S3-compatible storage client...", {
+      endpoint: MINIO_ENDPOINT,
+      port: MINIO_PORT,
+      ssl: MINIO_USE_SSL,
+    });
 
     const useSSL = String(MINIO_USE_SSL).toLowerCase() === "true";
 
@@ -69,43 +81,46 @@ async function initializeBucket() {
       secretKey: MINIO_SECRET_KEY,
     });
 
-    console.log(
-      `🔍 Testing connection to ${useSSL ? "https" : "http"}://${MINIO_ENDPOINT}:${MINIO_PORT}`,
+    log.info(
+      `Testing connection to ${useSSL ? "https" : "http"}://${MINIO_ENDPOINT}:${MINIO_PORT}`,
     );
 
-    // Check bucket
-    const exists = await minioClient.bucketExists(MINIO_BUCKET);
-    if (!exists) {
-      console.log(`📦 Bucket '${MINIO_BUCKET}' does not exist, creating...`);
-      await minioClient.makeBucket(MINIO_BUCKET, REGION);
-      console.log(`✅ Bucket created: ${MINIO_BUCKET}`);
-    } else {
-      console.log(`✅ Bucket exists: ${MINIO_BUCKET}`);
+    // Ensure all buckets exist with appropriate policies
+    for (const [label, bucketName] of Object.entries(BUCKETS)) {
+      const exists = await minioClient.bucketExists(bucketName);
+      if (!exists) {
+        log.info(`Bucket '${bucketName}' does not exist, creating...`);
+        await minioClient.makeBucket(bucketName, REGION);
+        log.success(`Bucket created: ${bucketName}`);
+      } else {
+        log.info(`Bucket exists: ${bucketName}`);
+      }
+
+      // Public read policy for PRODUCTS, MEDIA, DEFAULT; private for REVIEWS, TEMP
+      if (label === "PRODUCTS" || label === "MEDIA" || label === "DEFAULT") {
+        const policy = {
+          Version: "2012-10-17",
+          Statement: [
+            {
+              Effect: "Allow",
+              Principal: { AWS: ["*"] },
+              Action: ["s3:GetObject"],
+              Resource: [`arn:aws:s3:::${bucketName}/*`],
+            },
+          ],
+        };
+        await minioClient.setBucketPolicy(bucketName, JSON.stringify(policy));
+      }
     }
 
-    // Public read policy
-    const policy = {
-      Version: "2012-10-17",
-      Statement: [
-        {
-          Effect: "Allow",
-          Principal: { AWS: ["*"] },
-          Action: ["s3:GetObject"],
-          Resource: [`arn:aws:s3:::${MINIO_BUCKET}/*`],
-        },
-      ],
-    };
-
-    await minioClient.setBucketPolicy(MINIO_BUCKET, JSON.stringify(policy));
-
-    console.log("✅ Storage bucket policy set (public read)");
+    log.success("Storage bucket initialization complete");
     isInitialized = true;
   } catch (error) {
-    console.error("❌ S3 storage initialization failed:");
-    console.error("  Error Code:", error.code);
-    console.error("  Error Message:", error.message);
-    console.error("  Status Code:", error.statusCode);
-    console.error("  Full Error:", JSON.stringify(error, null, 2));
+    log.error("S3 storage initialization failed", {
+      code: error.code,
+      message: error.message,
+      statusCode: error.statusCode,
+    });
     throw error;
   }
 }
@@ -163,18 +178,19 @@ async function deleteObjects(keys) {
 
 /**
  * Public URL
- * Uses MINIO_PUBLIC_URL if set (recommended for Docker/internal networking)
- * Falls back to constructing URL from MINIO_ENDPOINT
+ * Prefers MINIO_CDN_URL (Cloudflare-fronted), then MINIO_PUBLIC_URL, then direct
  */
-function getPublicUrl(key) {
+function getPublicUrl(key, bucket = MINIO_BUCKET) {
+  if (CDN_BASE_URL) {
+    return `${CDN_BASE_URL}/${bucket}/${key}`;
+  }
   if (MINIO_PUBLIC_URL) {
-    // Remove trailing slash if present
     const baseUrl = MINIO_PUBLIC_URL.replace(/\/$/, "");
-    return `${baseUrl}/${MINIO_BUCKET}/${key}`;
+    return `${baseUrl}/${bucket}/${key}`;
   }
   const useSSL = String(MINIO_USE_SSL).toLowerCase() === "true";
   const protocol = useSSL ? "https" : "http";
-  return `${protocol}://${MINIO_ENDPOINT}/${MINIO_BUCKET}/${key}`;
+  return `${protocol}://${MINIO_ENDPOINT}/${bucket}/${key}`;
 }
 
 /**
@@ -264,4 +280,5 @@ module.exports = {
   getPublicUrl,
   uploadBuffer,
   getStorageHealth,
+  BUCKETS,
 };

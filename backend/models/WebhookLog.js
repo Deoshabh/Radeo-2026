@@ -48,6 +48,17 @@ const webhookLogSchema = new mongoose.Schema(
     result: String,
     error: String,
 
+    // Retry tracking
+    retryCount: {
+      type: Number,
+      default: 0,
+    },
+    maxRetries: {
+      type: Number,
+      default: 5,
+    },
+    nextRetryAt: Date,
+
     // Request metadata
     requestIP: String,
     requestHeaders: Object,

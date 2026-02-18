@@ -2,6 +2,7 @@
 // Address Validation & Serviceability Service
 // ===============================
 const shiprocketService = require("./shiprocket");
+const { log } = require("./logger");
 
 /**
  * Normalize address text (Amazon/Flipkart style)
@@ -143,7 +144,7 @@ const checkServiceability = async (pincode, pickupPincode = "201301") => {
       courierCount: couriers.length,
     };
   } catch (error) {
-    console.error("Serviceability check error:", error);
+    log.error("Serviceability check error:", error);
     return {
       serviceable: false,
       codAvailable: false,

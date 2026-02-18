@@ -2,7 +2,9 @@ const express = require("express");
 const mongoose = require("mongoose");
 const router = express.Router();
 const redis = require("../config/redis");
+const { checkRedisHealth } = require("../config/redis");
 const { initializeBucket, getPublicUrl } = require("../utils/minio");
+const { getEnvStatus } = require("../config/env");
 
 // Helper to check MinIO
 async function checkMinIO() {
@@ -77,6 +79,9 @@ router.get("/", async (req, res) => {
       healthCheck.status = "DEGRADED";
     }
 
+    // 4. Redis Detailed Health
+    healthCheck.services.redisDetails = await checkRedisHealth();
+
     const statusCode = healthCheck.status === "OK" ? 200 : 503;
     res.status(statusCode).json(healthCheck);
 
@@ -126,6 +131,19 @@ router.get("/live", (req, res) => {
     status: "ALIVE",
     message: "Service is running",
     timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * @route   GET /api/health/config
+ * @desc    Shows which env vars are set (true/false, no values exposed)
+ * @access  Admin only — protect with auth middleware in production
+ */
+router.get("/config", (req, res) => {
+  res.json({
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || "development",
+    variables: getEnvStatus(),
   });
 });
 

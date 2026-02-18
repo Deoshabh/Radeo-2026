@@ -1,0 +1,97 @@
+name: Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: "Service to rollback"
+        required: true
+        type: choice
+        options:
+          - backend
+          - frontend
+          - both
+      commit_sha:
+        description: "Commit SHA to rollback to (leave empty for previous commit)"
+        required: false
+        default: ""
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    name: Rollback ${{ github.event.inputs.service }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Determine rollback target
+        id: target
+        run: |
+          if [ -n "${{ github.event.inputs.commit_sha }}" ]; then
+            echo "sha=${{ github.event.inputs.commit_sha }}" >> $GITHUB_OUTPUT
+          else
+            echo "sha=$(git rev-parse HEAD~1)" >> $GITHUB_OUTPUT
+          fi
+          echo "Rolling back to: $(cat $GITHUB_OUTPUT | grep sha | cut -d= -f2)"
+
+      - name: Trigger Backend Rollback
+        if: ${{ github.event.inputs.service == 'backend' || github.event.inputs.service == 'both' }}
+        run: |
+          curl -sf -X POST "${{ secrets.DOKPLOY_WEBHOOK_BACKEND }}" \
+            -H "Content-Type: application/json" \
+            -d '{"ref": "${{ steps.target.outputs.sha }}"}'
+          echo "Backend rollback triggered"
+
+      - name: Trigger Frontend Rollback
+        if: ${{ github.event.inputs.service == 'frontend' || github.event.inputs.service == 'both' }}
+        run: |
+          curl -sf -X POST "${{ secrets.DOKPLOY_WEBHOOK_FRONTEND }}" \
+            -H "Content-Type: application/json" \
+            -d '{"ref": "${{ steps.target.outputs.sha }}"}'
+          echo "Frontend rollback triggered"
+
+      - name: Wait for rollback
+        run: sleep 30
+
+      - name: Verify health
+        run: |
+          for i in {1..10}; do
+            backend_ok=true
+            frontend_ok=true
+
+            if [ "${{ github.event.inputs.service }}" != "frontend" ]; then
+              status=$(curl -s -o /dev/null -w "%{http_code}" \
+                "https://api.radeo.in/api/health/live" --connect-timeout 5 --max-time 10) || true
+              [ "$status" != "200" ] && backend_ok=false
+            fi
+
+            if [ "${{ github.event.inputs.service }}" != "backend" ]; then
+              status=$(curl -s -o /dev/null -w "%{http_code}" \
+                "https://radeo.in" --connect-timeout 5 --max-time 10) || true
+              [ "$status" != "200" ] && frontend_ok=false
+            fi
+
+            if $backend_ok && $frontend_ok; then
+              echo "✅ Rollback verified — services healthy"
+              exit 0
+            fi
+
+            echo "Attempt $i: waiting..."
+            sleep 10
+          done
+          echo "::warning::Health check inconclusive after rollback"
+          exit 1
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## 🔄 Rollback Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Service**: ${{ github.event.inputs.service }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target SHA**: ${{ steps.target.outputs.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY

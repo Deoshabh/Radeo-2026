@@ -5,6 +5,9 @@ const bcrypt = require("bcrypt");
 const mongoose = require("mongoose");
 const { log } = require("../utils/logger");
 const { recordSecurityEvent } = require("../utils/securityEvents");
+const admin = require("../config/firebase");
+const { cacheClient } = require("../config/redis");
+const crypto = require("crypto");
 
 // @desc    Get all users
 // @route   GET /api/v1/admin/users
@@ -13,17 +16,15 @@ exports.getAllUsers = async (req, res) => {
   try {
     const Order = require("../models/Order");
 
-    const page = parseInt(req.query.page) || 0; // 0 = return all (backward compatible)
-    const limit = parseInt(req.query.limit) || 0;
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+    const skip = (page - 1) * limit;
 
     let usersQuery = User.find()
       .select("-passwordHash -resetPasswordToken -resetPasswordExpires")
-      .sort({ createdAt: -1 });
-
-    if (page > 0 && limit > 0) {
-      const skip = (page - 1) * limit;
-      usersQuery = usersQuery.skip(skip).limit(limit);
-    }
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
     const users = await usersQuery;
     const userIds = users.map((u) => u._id);
@@ -104,7 +105,7 @@ exports.getAllUsers = async (req, res) => {
 
     res.json({ users: usersWithStatus });
   } catch (error) {
-    console.error("Get all users error:", error);
+    log.error("Get all users error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -176,7 +177,7 @@ exports.getUserById = async (req, res) => {
 
     res.json({ user: { ...userObj, addresses: allAddresses, activeSessions } });
   } catch (error) {
-    console.error("Get user by ID error:", error);
+    log.error("Get user by ID error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -253,7 +254,7 @@ exports.updateUserRole = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Update user role error:", error);
+    log.error("Update user role error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -263,7 +264,7 @@ exports.updateUserRole = async (req, res) => {
 // @access  Private/Admin
 exports.toggleUserBlock = async (req, res) => {
   try {
-    console.log("Toggle block request:", {
+    log.info("Toggle block request:", {
       userId: req.params.id,
       requesterId: req.user?.id || req.user?._id,
       requesterRole: req.user?.role,
@@ -276,7 +277,7 @@ exports.toggleUserBlock = async (req, res) => {
     const user = await User.findById(req.params.id);
 
     if (!user) {
-      console.log("User not found:", req.params.id);
+      log.info("User not found:", req.params.id);
       return res.status(404).json({ message: "User not found" });
     }
 
@@ -285,7 +286,7 @@ exports.toggleUserBlock = async (req, res) => {
 
     // Prevent admin from blocking themselves
     if (user._id.toString() === requesterId) {
-      console.log("Admin attempted to block themselves");
+      log.info("Admin attempted to block themselves");
       return res.status(400).json({ message: "Cannot block yourself" });
     }
 
@@ -322,7 +323,7 @@ exports.toggleUserBlock = async (req, res) => {
       },
     });
 
-    console.log("User block status toggled:", {
+    log.info("User block status toggled:", {
       userId: user._id,
       isBlocked: user.isBlocked,
     });
@@ -340,10 +341,10 @@ exports.toggleUserBlock = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Toggle user block error:", error);
-    console.error("Error stack:", error.stack);
-    console.error("Request params:", req.params);
-    console.error("Request user:", req.user?._id);
+    log.error("Toggle user block error:", error);
+    log.error("Error stack:", error.stack);
+    log.error("Request params:", req.params);
+    log.error("Request user:", req.user?._id);
     res.status(500).json({
       message: "Server error",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
@@ -356,37 +357,57 @@ exports.toggleUserBlock = async (req, res) => {
 // @access  Private/Admin
 exports.getSecurityEvents = async (req, res) => {
   try {
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
     const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 200);
-    const eventType = req.query.eventType;
-    const targetUserId = req.query.userId;
+    const skip = (page - 1) * limit;
+    const { eventType, userId, actorId, from, to } = req.query;
 
     const filter = {};
+
     if (eventType) {
       filter.eventType = eventType;
     }
 
-    if (targetUserId) {
-      if (!mongoose.Types.ObjectId.isValid(targetUserId)) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid user ID",
-        });
+    if (userId) {
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        return res.status(400).json({ success: false, message: "Invalid userId" });
       }
-      filter.targetUserId = targetUserId;
+      filter.targetUserId = userId;
     }
 
-    const events = await SecurityEvent.find(filter)
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .lean();
+    if (actorId) {
+      if (!mongoose.Types.ObjectId.isValid(actorId)) {
+        return res.status(400).json({ success: false, message: "Invalid actorId" });
+      }
+      filter.actorUserId = actorId;
+    }
+
+    // Date range filter
+    if (from || to) {
+      filter.createdAt = {};
+      if (from) filter.createdAt.$gte = new Date(from);
+      if (to) filter.createdAt.$lte = new Date(to);
+    }
+
+    const [events, total] = await Promise.all([
+      SecurityEvent.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      SecurityEvent.countDocuments(filter),
+    ]);
 
     return res.status(200).json({
       success: true,
       count: events.length,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
       events,
     });
   } catch (error) {
-    console.error("Get security events error:", error);
+    log.error("Get security events error:", error);
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -463,7 +484,7 @@ exports.createAdmin = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Create admin error:", error);
+    log.error("Create admin error:", error);
     res.status(500).json({
       success: false,
       message: "Server error",
@@ -613,11 +634,168 @@ exports.getUserHistory = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Get user history error:", error);
+    log.error("Get user history error:", error);
     res.status(500).json({
       success: false,
       message: "Server error",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
+  }
+};
+
+// @desc    Send password reset link to user via Firebase
+// @route   POST /api/v1/admin/users/:id/send-password-reset
+// @access  Private/Admin
+exports.sendPasswordReset = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select("email name");
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const auth = admin.auth();
+    if (!auth) {
+      return res.status(503).json({
+        success: false,
+        message: "Firebase Admin not configured",
+      });
+    }
+
+    const resetLink = await auth.generatePasswordResetLink(user.email);
+
+    recordSecurityEvent({
+      eventType: "admin_password_reset_sent",
+      userId: user._id,
+      performedBy: req.user._id,
+      ip: req.ip,
+      metadata: { targetEmail: user.email },
+    }).catch(() => {});
+
+    log.info(`Password reset link generated for ${user.email} by admin ${req.user._id}`);
+
+    res.json({
+      success: true,
+      message: `Password reset link sent to ${user.email}`,
+      resetLink: process.env.NODE_ENV === "development" ? resetLink : undefined,
+    });
+  } catch (error) {
+    log.error("Send password reset error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.code === "auth/user-not-found"
+        ? "User not found in Firebase"
+        : "Failed to generate password reset link",
+    });
+  }
+};
+
+// @desc    Force logout a user (revoke all sessions)
+// @route   POST /api/v1/admin/users/:id/force-logout
+// @access  Private/Admin
+exports.forceLogout = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select("email firebaseUid");
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Delete all refresh tokens from DB
+    const { deletedCount } = await RefreshToken.deleteMany({ userId: user._id });
+
+    // Revoke Firebase refresh tokens if user has Firebase UID
+    const auth = admin.auth();
+    if (auth && user.firebaseUid) {
+      try {
+        await auth.revokeRefreshTokens(user.firebaseUid);
+      } catch (err) {
+        log.warn(`Firebase token revocation failed for ${user.firebaseUid}:`, err.message);
+      }
+    }
+
+    recordSecurityEvent({
+      eventType: "admin_force_logout",
+      userId: user._id,
+      performedBy: req.user._id,
+      ip: req.ip,
+      metadata: { sessionsRevoked: deletedCount },
+    }).catch(() => {});
+
+    log.info(`Force logout: ${deletedCount} sessions revoked for user ${user._id} by admin ${req.user._id}`);
+
+    res.json({
+      success: true,
+      message: `User logged out from ${deletedCount} session(s)`,
+      sessionsRevoked: deletedCount,
+    });
+  } catch (error) {
+    log.error("Force logout error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// @desc    Generate a short-lived impersonation token (superadmin only)
+// @route   POST /api/v1/admin/users/:id/impersonate
+// @access  Private/Superadmin
+exports.impersonateUser = async (req, res) => {
+  try {
+    // Only superadmin can impersonate
+    if (req.user.role !== "superadmin") {
+      return res.status(403).json({
+        success: false,
+        message: "Only superadmin can impersonate users",
+      });
+    }
+
+    const targetUser = await User.findById(req.params.id).select("name email role");
+    if (!targetUser) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Prevent impersonating other superadmins
+    if (targetUser.role === "superadmin") {
+      return res.status(403).json({
+        success: false,
+        message: "Cannot impersonate another superadmin",
+      });
+    }
+
+    // Generate a short-lived token stored in Valkey (5-minute TTL)
+    const impersonationToken = crypto.randomBytes(32).toString("hex");
+    const tokenKey = `impersonate:${impersonationToken}`;
+    const tokenData = JSON.stringify({
+      targetUserId: targetUser._id.toString(),
+      adminUserId: req.user._id.toString(),
+      createdAt: new Date().toISOString(),
+    });
+
+    await cacheClient.set(tokenKey, tokenData, "EX", 300); // 5 minutes
+
+    recordSecurityEvent({
+      eventType: "admin_impersonation_started",
+      userId: targetUser._id,
+      performedBy: req.user._id,
+      ip: req.ip,
+      metadata: {
+        targetName: targetUser.name,
+        targetEmail: targetUser.email,
+        ttl: 300,
+      },
+    }).catch(() => {});
+
+    log.warn(`Impersonation: admin ${req.user._id} impersonating user ${targetUser._id} (${targetUser.email})`);
+
+    res.json({
+      success: true,
+      impersonationToken,
+      expiresIn: 300,
+      targetUser: {
+        _id: targetUser._id,
+        name: targetUser.name,
+        email: targetUser.email,
+      },
+    });
+  } catch (error) {
+    log.error("Impersonate user error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };

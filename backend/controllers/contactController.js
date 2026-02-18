@@ -1,4 +1,7 @@
 const ContactMessage = require('../models/ContactMessage');
+const { emitAdminContactMessage } = require('../utils/soketi');
+const { sendAdminContactNotification } = require('../utils/mailer');
+const { log } = require('../utils/logger');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -31,6 +34,14 @@ exports.submitContactMessage = async (req, res) => {
       source: 'website',
     });
 
+    // Notify admin dashboard in real-time (fire-and-forget)
+    emitAdminContactMessage(doc).catch(() => {});
+
+    // Send email notification to admin (non-blocking)
+    sendAdminContactNotification(doc).catch((err) =>
+      log.error({ event: 'contact_email_failed', error: err.message })
+    );
+
     return res.status(201).json({
       message: 'Message received successfully',
       id: doc._id,
@@ -43,7 +54,7 @@ exports.submitContactMessage = async (req, res) => {
       });
     }
 
-    console.error('Submit contact message error:', error);
+    log.error('Submit contact message error:', error);
     return res.status(500).json({
       message: 'Failed to submit contact form',
     });

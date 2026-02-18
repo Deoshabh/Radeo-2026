@@ -3,6 +3,7 @@ const {
 } = require("@google-cloud/recaptcha-enterprise");
 const fs = require("fs");
 const path = require("path");
+const { log } = require("../utils/logger");
 
 /**
  * Google reCAPTCHA Enterprise Middleware
@@ -28,8 +29,8 @@ function initializeRecaptchaClient() {
       !process.env.GOOGLE_CLOUD_PROJECT_ID ||
       !process.env.RECAPTCHA_SITE_KEY
     ) {
-      console.warn(
-        "⚠️  reCAPTCHA credentials not configured. Verification will be skipped.",
+      log.warn(
+        "reCAPTCHA credentials not configured. Verification will be skipped.",
       );
       return null;
     }
@@ -46,8 +47,8 @@ function initializeRecaptchaClient() {
     // reject outside our try/catch, causing an unhandled promise rejection
     // that crashes the Node process.
     if (!fs.existsSync(resolvedPath)) {
-      console.warn(
-        `⚠️  reCAPTCHA credentials file not found at ${resolvedPath}. Verification will be skipped.`,
+      log.warn(
+        `reCAPTCHA credentials file not found at ${resolvedPath}. Verification will be skipped.`,
       );
       return null;
     }
@@ -58,10 +59,10 @@ function initializeRecaptchaClient() {
       keyFilename: resolvedPath,
     });
 
-    console.log("✅ reCAPTCHA Enterprise client initialized");
+    log.info("âœ… reCAPTCHA Enterprise client initialized");
     return recaptchaClient;
   } catch (error) {
-    console.error("❌ Failed to initialize reCAPTCHA client:", error.message);
+    log.error("âŒ Failed to initialize reCAPTCHA client:", error.message);
     return null;
   }
 }
@@ -117,7 +118,7 @@ async function verifyRecaptchaToken(
 
   // If client is not initialized (credentials not configured), skip verification
   if (!client) {
-    console.warn("⚠️  reCAPTCHA verification skipped - client not initialized");
+    log.warn("reCAPTCHA verification skipped - client not initialized");
     return {
       success: true,
       skipped: true,
@@ -147,8 +148,8 @@ async function verifyRecaptchaToken(
     const builtUserInfo = buildUserInfo(userInfo);
     if (builtUserInfo) {
       event.userInfo = builtUserInfo;
-      console.log(
-        `ℹ️  reCAPTCHA assessment includes user info: accountId=${userInfo.accountId || "n/a"}, phoneNumber=${userInfo.phoneNumber ? "provided" : "n/a"}`,
+      log.info(
+        `â„¹ï¸  reCAPTCHA assessment includes user info: accountId=${userInfo.accountId || "n/a"}, phoneNumber=${userInfo.phoneNumber ? "provided" : "n/a"}`,
       );
     }
 
@@ -163,7 +164,7 @@ async function verifyRecaptchaToken(
 
     // Check if the token is valid
     if (!response.tokenProperties.valid) {
-      console.log(
+      log.info(
         `The CreateAssessment call failed because the token was: ${response.tokenProperties.invalidReason}`,
       );
       return {
@@ -176,7 +177,7 @@ async function verifyRecaptchaToken(
     // Check if the expected action was executed
     // The `action` property is set by user client in the grecaptcha.enterprise.execute() method
     if (response.tokenProperties.action !== expectedAction) {
-      console.log(
+      log.info(
         "The action attribute in your reCAPTCHA tag does not match the action you are expecting to score",
       );
       return {
@@ -191,9 +192,9 @@ async function verifyRecaptchaToken(
     // For more information on interpreting the assessment, see:
     // https://cloud.google.com/recaptcha/docs/interpret-assessment
     const score = response.riskAnalysis.score;
-    console.log(`The reCAPTCHA score is: ${score}`);
+    log.info(`The reCAPTCHA score is: ${score}`);
     response.riskAnalysis.reasons.forEach((reason) => {
-      console.log(`  - ${reason}`);
+      log.info(`  - ${reason}`);
     });
 
     // Check the score against minimum threshold
@@ -213,7 +214,7 @@ async function verifyRecaptchaToken(
       reasons: response.riskAnalysis.reasons,
     };
   } catch (error) {
-    console.error("reCAPTCHA verification error:", error);
+    log.error("reCAPTCHA verification error:", error);
     return {
       success: false,
       error: "Verification failed",
@@ -247,7 +248,7 @@ async function createAssessment({
   const client = initializeRecaptchaClient();
 
   if (!client) {
-    console.warn("⚠️  reCAPTCHA client not initialized");
+    log.warn("reCAPTCHA client not initialized");
     return null;
   }
 
@@ -276,7 +277,7 @@ async function createAssessment({
 
   // Check if the token is valid
   if (!response.tokenProperties.valid) {
-    console.log(
+    log.info(
       `The CreateAssessment call failed because the token was: ${response.tokenProperties.invalidReason}`,
     );
     return null;
@@ -288,14 +289,14 @@ async function createAssessment({
     // Get the risk score and the reason(s)
     // For more information on interpreting the assessment, see:
     // https://cloud.google.com/recaptcha/docs/interpret-assessment
-    console.log(`The reCAPTCHA score is: ${response.riskAnalysis.score}`);
+    log.info(`The reCAPTCHA score is: ${response.riskAnalysis.score}`);
     response.riskAnalysis.reasons.forEach((reason) => {
-      console.log(reason);
+      log.info(reason);
     });
 
     return response.riskAnalysis.score;
   } else {
-    console.log(
+    log.info(
       "The action attribute in your reCAPTCHA tag does not match the action you are expecting to score",
     );
     return null;
@@ -315,8 +316,8 @@ const verifyRecaptcha = (expectedAction, minScore = 0.5, optional = false) => {
 
       // If reCAPTCHA is optional and no token provided, continue
       if (optional && !token) {
-        console.log(
-          "ℹ️  Optional reCAPTCHA verification - no token provided, continuing",
+        log.info(
+          "â„¹ï¸  Optional reCAPTCHA verification - no token provided, continuing",
         );
         return next();
       }
@@ -341,18 +342,18 @@ const verifyRecaptcha = (expectedAction, minScore = 0.5, optional = false) => {
 
       // If verification was skipped (not configured), allow request to continue
       if (result.skipped) {
-        console.log(
-          `ℹ️  reCAPTCHA verification skipped for action: ${expectedAction}`,
+        log.info(
+          `â„¹ï¸  reCAPTCHA verification skipped for action: ${expectedAction}`,
         );
         return next();
       }
 
       if (!result.success) {
-        console.log(`❌ reCAPTCHA verification failed:`, result);
+        log.info(`âŒ reCAPTCHA verification failed:`, result);
 
         if (optional) {
-          console.warn(
-            `⚠️  Optional reCAPTCHA verification failed for action: ${expectedAction}. Continuing request.`,
+          log.warn(
+            `Optional reCAPTCHA verification failed for action: ${expectedAction}. Continuing request.`,
           );
           req.recaptchaResult = {
             ...result,
@@ -371,17 +372,17 @@ const verifyRecaptcha = (expectedAction, minScore = 0.5, optional = false) => {
       // Add reCAPTCHA result to request object for logging/analytics
       req.recaptchaResult = result;
 
-      console.log(
-        `✅ reCAPTCHA verified for action: ${expectedAction}, score: ${result.score}`,
+      log.info(
+        `âœ… reCAPTCHA verified for action: ${expectedAction}, score: ${result.score}`,
       );
       next();
     } catch (error) {
-      console.error("reCAPTCHA middleware error:", error);
+      log.error("reCAPTCHA middleware error:", error);
 
       // If reCAPTCHA is optional, always continue regardless of environment
       if (optional) {
-        console.warn(
-          `⚠️  Optional reCAPTCHA error for action: ${expectedAction}. Continuing request.`,
+        log.warn(
+          `Optional reCAPTCHA error for action: ${expectedAction}. Continuing request.`,
         );
         req.recaptchaResult = {
           success: false,
@@ -400,8 +401,8 @@ const verifyRecaptcha = (expectedAction, minScore = 0.5, optional = false) => {
         });
       }
 
-      console.warn(
-        "⚠️  reCAPTCHA error in development mode - allowing request to continue",
+      log.warn(
+        "reCAPTCHA error in development mode - allowing request to continue",
       );
       next();
     }

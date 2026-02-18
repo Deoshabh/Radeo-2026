@@ -71,6 +71,7 @@ yarn-debug.log*
 
 # Firebase Service Account credentials (NEVER commit)
 firebase-service-account.json
+firebase-service-account*.json
 *-firebase-adminsdk-*.json
 service-account*.json
 

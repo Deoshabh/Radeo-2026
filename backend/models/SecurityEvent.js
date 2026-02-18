@@ -44,5 +44,7 @@ const securityEventSchema = new mongoose.Schema(
 
 securityEventSchema.index({ eventType: 1, createdAt: -1 });
 securityEventSchema.index({ targetUserId: 1, createdAt: -1 });
+securityEventSchema.index({ actorUserId: 1, createdAt: -1 });
+securityEventSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model("SecurityEvent", securityEventSchema);

@@ -44,10 +44,9 @@ const productSchema = new mongoose.Schema(
       },
     ],
     category: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
       required: true,
-      lowercase: true,
-      trim: true,
+      ref: "Category",
     },
     price: {
       type: Number,
@@ -162,7 +161,12 @@ productSchema.index({ createdAt: -1 });
 productSchema.index({ category: 1, isActive: 1 });
 productSchema.index({ brand: 1, isActive: 1 });
 productSchema.index({ price: 1, isActive: 1 });
-productSchema.index({ status: 1, isActive: 1 });
+
+// MongoDB text index for full-text search (replaces $regex scans)
+productSchema.index(
+  { name: "text", description: "text", tags: "text", brand: "text" },
+  { weights: { name: 10, tags: 5, brand: 3, description: 1 } },
+);
 
 // Virtual field for inStock (calculated from stock quantity)
 productSchema.virtual("inStock").get(function () {
