@@ -19,9 +19,9 @@
   --r-shadow-md:  0 8px 40px rgba(60,35,10,0.12);
   --r-shadow-lg:  0 24px 80px rgba(60,35,10,0.16);
 
-  --r-ff-display: var(--font-playfair), 'Playfair Display', serif;
-  --r-ff-body:    var(--font-cormorant), 'Cormorant Garamond', serif;
-  --r-ff-ui:      var(--font-dm-mono), 'DM Mono', monospace;
+  --r-ff-display: var(--font-playfair), 'Lora', serif;
+  --r-ff-body:    var(--font-cormorant), 'Libre Baskerville', serif;
+  --r-ff-ui:      var(--font-dm-mono), 'Space Mono', monospace;
 
   --r-ease-expo:  cubic-bezier(0.16, 1, 0.3, 1);
   --r-ease-out:   cubic-bezier(0.33, 1, 0.68, 1);

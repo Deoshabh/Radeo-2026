@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -64,11 +64,11 @@ export default function AllCategoriesPage() {
       <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <p className="text-[11px] text-[color:var(--color-accent)] mb-3 uppercase tracking-[0.3em] font-medium" style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>Browse</p>
-          <h1 className="text-4xl lg:text-5xl font-bold text-[color:var(--color-heading)] mb-4" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>
+          <p className="text-[11px] text-[color:var(--color-accent)] mb-3 uppercase tracking-[0.3em] font-medium" style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>Browse</p>
+          <h1 className="text-4xl lg:text-5xl font-bold text-[color:var(--color-heading)] mb-4" style={{ fontFamily: "var(--font-playfair, 'Lora', serif)" }}>
             Our Categories
           </h1>
-          <p className="text-lg text-[color:var(--color-body)] max-w-2xl mx-auto" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>
+          <p className="text-lg text-[color:var(--color-body)] max-w-2xl mx-auto" style={{ fontFamily: "var(--font-cormorant, 'Libre Baskerville', serif)" }}>
             Explore our complete collection of handcrafted shoes organized by category
           </p>
         </div>
@@ -94,7 +94,7 @@ export default function AllCategoriesPage() {
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <div className="w-20 h-20 rounded-full bg-white/80 flex items-center justify-center backdrop-blur-sm">
-                      <span className="text-3xl font-bold text-[color:var(--color-accent)]" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>{category.name.charAt(0)}</span>
+                      <span className="text-3xl font-bold text-[color:var(--color-accent)]" style={{ fontFamily: "var(--font-playfair, 'Lora', serif)" }}>{category.name.charAt(0)}</span>
                     </div>
                   </div>
                 )}
@@ -104,11 +104,11 @@ export default function AllCategoriesPage() {
 
               {/* Category Info */}
               <div className="p-6">
-                <h3 className="text-xl font-bold text-[color:var(--color-heading)] mb-2 group-hover:text-[color:var(--color-accent-hover)] transition-colors" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>
+                <h3 className="text-xl font-bold text-[color:var(--color-heading)] mb-2 group-hover:text-[color:var(--color-accent-hover)] transition-colors" style={{ fontFamily: "var(--font-playfair, 'Lora', serif)" }}>
                   {category.name}
                 </h3>
                 {category.description && (
-                    <p className="text-sm text-[color:var(--color-body)] mb-3 line-clamp-2" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>
+                    <p className="text-sm text-[color:var(--color-body)] mb-3 line-clamp-2" style={{ fontFamily: "var(--font-cormorant, 'Libre Baskerville', serif)" }}>
                     {category.description}
                   </p>
                 )}

@@ -96,8 +96,8 @@ export default function Footer() {
       <div className="container-custom py-12">
         <div className={contentContainerClass}>
           <div>
-            <h3 className="text-2xl font-bold mb-4" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>{footerContent.brand?.name || 'Radeo'}</h3>
-            <p className="opacity-80 mb-4" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)", fontSize: '1.1rem' }}>
+            <h3 className="text-2xl font-bold mb-4" style={{ fontFamily: "var(--font-playfair, 'Lora', serif)" }}>{footerContent.brand?.name || 'Radeo'}</h3>
+            <p className="opacity-80 mb-4" style={{ fontFamily: "var(--font-cormorant, 'Libre Baskerville', serif)", fontSize: '1.1rem' }}>
               {footerContent.brand?.description ||
                 'Premium handcrafted shoes made with timeless craftsmanship and finest materials.'}
             </p>
@@ -124,7 +124,7 @@ export default function Footer() {
 
           {!isMinimalLayout && columns.map((column) => (
             <div key={column.id || column.title}>
-              <h4 className="text-sm font-semibold mb-4 uppercase tracking-[0.15em]" style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>{column.title}</h4>
+              <h4 className="text-sm font-semibold mb-4 uppercase tracking-[0.15em]" style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>{column.title}</h4>
               <ul className="space-y-2">
                 {(column.links || [])
                   .filter((link) => link.enabled)
@@ -146,7 +146,7 @@ export default function Footer() {
 
           {shouldShowContact && (
           <div>
-            <h4 className="text-sm font-semibold mb-4 uppercase tracking-[0.15em]" style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>Contact Us</h4>
+            <h4 className="text-sm font-semibold mb-4 uppercase tracking-[0.15em]" style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>Contact Us</h4>
             <ul className="space-y-3">
               {contact.showAddress && contact.address && (
                 <li className="flex items-start gap-2 opacity-80">
@@ -181,8 +181,8 @@ export default function Footer() {
         {footerTheme.showNewsletter !== false && (
           <div className="border-t mt-8 pt-8" style={{ borderColor: `${textColor}33` }}>
             <div className="max-w-md mx-auto text-center">
-              <h4 className="text-sm font-semibold mb-2 uppercase tracking-[0.15em]" style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>{footerContent.newsletter?.title || 'Subscribe to Our Newsletter'}</h4>
-              <p className="opacity-80 mb-4" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>{footerContent.newsletter?.description || 'Get updates on new products and exclusive offers'}</p>
+              <h4 className="text-sm font-semibold mb-2 uppercase tracking-[0.15em]" style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>{footerContent.newsletter?.title || 'Subscribe to Our Newsletter'}</h4>
+              <p className="opacity-80 mb-4" style={{ fontFamily: "var(--font-cormorant, 'Libre Baskerville', serif)" }}>{footerContent.newsletter?.description || 'Get updates on new products and exclusive offers'}</p>
               <form onSubmit={handleNewsletterSubmit} className="flex gap-2">
                 <input
                   type="email"

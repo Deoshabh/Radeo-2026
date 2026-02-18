@@ -1,4 +1,4 @@
-import { Inter, Playfair_Display, Cormorant_Garamond, DM_Mono } from 'next/font/google';
+import { Plus_Jakarta_Sans, Lora, Libre_Baskerville, Space_Mono } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from '@/context/AuthContext';
@@ -12,28 +12,28 @@ import AnnouncementBar from '@/components/AnnouncementBar';
 import MaintenanceModeGate from '@/components/MaintenanceModeGate';
 import { generateMetadata as generateSEOMetadata } from '@/utils/seo';
 
-const inter = Inter({
+const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   variable: '--font-inter',
   display: 'swap',
 });
 
-const playfair = Playfair_Display({
+const lora = Lora({
   subsets: ['latin'],
   variable: '--font-playfair',
   display: 'swap',
 });
 
-const cormorant = Cormorant_Garamond({
+const baskerville = Libre_Baskerville({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['400', '700'],
   variable: '--font-cormorant',
   display: 'swap',
 });
 
-const dmMono = DM_Mono({
+const spaceMono = Space_Mono({
   subsets: ['latin'],
-  weight: ['300', '400', '500'],
+  weight: ['400', '700'],
   variable: '--font-dm-mono',
   display: 'swap',
 });
@@ -57,7 +57,7 @@ import QueryProvider from '@/providers/QueryProvider';
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${inter.variable} ${playfair.variable} ${cormorant.variable} ${dmMono.variable}`}>
+    <html lang="en" className={`${jakarta.variable} ${lora.variable} ${baskerville.variable} ${spaceMono.variable}`}>
       <head>
         <link rel="preconnect" href="https://api.radeo.in" />
         <script src={`https://www.google.com/recaptcha/enterprise.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`} async defer></script>

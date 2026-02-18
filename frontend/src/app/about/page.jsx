@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import Image from 'next/image';
@@ -35,11 +35,11 @@ export default function AboutPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-[color:var(--color-heading)]/80 via-[color:var(--color-heading)]/40 to-transparent" />
         <div className="absolute inset-0 flex items-end">
           <div className="max-w-[1200px] mx-auto px-6 lg:px-10 pb-12 w-full">
-            <p className="text-[11px] text-[color:var(--color-accent)] mb-3 uppercase tracking-[0.3em] font-medium" style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>Our Story</p>
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>
+            <p className="text-[11px] text-[color:var(--color-accent)] mb-3 uppercase tracking-[0.3em] font-medium" style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>Our Story</p>
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4" style={{ fontFamily: "var(--font-playfair, 'Lora', serif)" }}>
               {about.title || 'About Radeo'}
             </h1>
-            <p className="text-xl text-[color:var(--color-border-light)] max-w-3xl" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>
+            <p className="text-xl text-[color:var(--color-border-light)] max-w-3xl" style={{ fontFamily: "var(--font-cormorant, 'Libre Baskerville', serif)" }}>
               {about.subtitle}
             </p>
           </div>
@@ -59,10 +59,10 @@ export default function AboutPage() {
               />
             </div>
             <div className="bg-white/80 backdrop-blur-sm border border-[color:var(--color-border-light)] p-8 md:p-10">
-              <h2 className="text-3xl font-bold text-[color:var(--color-heading)] mb-6" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>
+              <h2 className="text-3xl font-bold text-[color:var(--color-heading)] mb-6" style={{ fontFamily: "var(--font-playfair, 'Lora', serif)" }}>
                 {about.storyTitle || 'Our Story'}
               </h2>
-              <div className="prose prose-lg max-w-none text-[color:var(--color-muted)] space-y-4" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>
+              <div className="prose prose-lg max-w-none text-[color:var(--color-muted)] space-y-4" style={{ fontFamily: "var(--font-cormorant, 'Libre Baskerville', serif)" }}>
                 {(about.storyParagraphs || []).map((paragraph, index) => (
                   <p key={`${paragraph.slice(0, 20)}-${index}`}>{paragraph}</p>
                 ))}
@@ -80,8 +80,8 @@ export default function AboutPage() {
                   <div className="w-12 h-12 bg-[color:var(--color-subtle-bg)] flex items-center justify-center mb-4">
                     <Icon className="w-6 h-6 text-[color:var(--color-accent)]" />
                   </div>
-                  <h3 className="text-xl font-bold text-[color:var(--color-heading)] mb-3" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>{value.title}</h3>
-                  <p className="text-[color:var(--color-body)]" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>{value.description}</p>
+                  <h3 className="text-xl font-bold text-[color:var(--color-heading)] mb-3" style={{ fontFamily: "var(--font-playfair, 'Lora', serif)" }}>{value.title}</h3>
+                  <p className="text-[color:var(--color-body)]" style={{ fontFamily: "var(--font-cormorant, 'Libre Baskerville', serif)" }}>{value.description}</p>
                 </div>
               );
             })}
@@ -89,7 +89,7 @@ export default function AboutPage() {
         )}
 
         <div className="bg-[color:var(--color-heading)] p-8 md:p-12 text-[color:var(--color-subtle-bg)] mb-16">
-          <h2 className="text-3xl font-bold mb-8 text-center" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>
+          <h2 className="text-3xl font-bold mb-8 text-center" style={{ fontFamily: "var(--font-playfair, 'Lora', serif)" }}>
             {about.differentiatorsTitle || 'What Sets Us Apart'}
           </h2>
           <div className="grid md:grid-cols-2 gap-6">
@@ -110,10 +110,10 @@ export default function AboutPage() {
         </div>
 
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-[color:var(--color-heading)] mb-4" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>
+          <h2 className="text-3xl font-bold text-[color:var(--color-heading)] mb-4" style={{ fontFamily: "var(--font-playfair, 'Lora', serif)" }}>
             {about.cta?.title}
           </h2>
-          <p className="text-xl text-[color:var(--color-body)] mb-8" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>
+          <p className="text-xl text-[color:var(--color-body)] mb-8" style={{ fontFamily: "var(--font-cormorant, 'Libre Baskerville', serif)" }}>
             {about.cta?.description}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

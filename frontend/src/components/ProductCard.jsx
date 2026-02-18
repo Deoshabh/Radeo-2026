@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import Image from 'next/image';
@@ -98,7 +98,7 @@ export default function ProductCard({ product, priority = false }) {
           {/* Discount badge â€” top left */}
           {hasDiscount && product.inStock && (
             <div className="absolute top-3 left-3 px-2.5 py-1 bg-[color:var(--color-accent)] text-white text-[10px] font-bold tracking-wider uppercase"
-              style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>
+              style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>
               {discountPercent}% OFF
             </div>
           )}
@@ -106,7 +106,7 @@ export default function ProductCard({ product, priority = false }) {
           {/* Out of stock badge */}
           {!product.inStock && (
             <div className="absolute top-3 left-3 px-2.5 py-1 bg-[color:var(--color-heading)] text-[color:var(--color-subtle-bg)] text-[10px] font-bold tracking-wider uppercase"
-              style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>
+              style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>
               Sold Out
             </div>
           )}
@@ -132,7 +132,7 @@ export default function ProductCard({ product, priority = false }) {
                   onClick={handleAddToCart}
                   aria-label="Add to cart"
                   className="flex-1 flex items-center justify-center gap-2 py-3 bg-[color:var(--color-heading)]/90 backdrop-blur-sm text-[color:var(--color-subtle-bg)] text-[10px] font-medium uppercase tracking-[0.15em] hover:bg-[color:var(--color-heading)] transition-colors"
-                  style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
+                  style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}
                 >
                   <FiShoppingCart className="w-3.5 h-3.5" />
                   Add to Cart
@@ -146,14 +146,14 @@ export default function ProductCard({ product, priority = false }) {
                   }}
                   aria-label="Buy now"
                   className="flex-1 flex items-center justify-center gap-2 py-3 bg-[color:var(--color-accent)]/90 backdrop-blur-sm text-white text-[10px] font-medium uppercase tracking-[0.15em] hover:bg-[color:var(--color-accent)] transition-colors"
-                  style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
+                  style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}
                 >
                   Buy Now
                 </button>
               </>
             ) : (
               <div className="flex-1 py-3 text-center bg-[color:var(--color-border-light)]/90 text-[color:var(--color-body)] text-[10px] font-medium uppercase tracking-[0.15em]"
-                style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>
+                style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>
                 Out of Stock
               </div>
             )}
@@ -165,13 +165,13 @@ export default function ProductCard({ product, priority = false }) {
 
           {/* Category */}
           <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-accent)] mb-1.5"
-            style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>
+            style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>
             {categoryLabel || 'Uncategorized'}
           </p>
 
           {/* Name */}
           <h3 className="text-sm sm:text-[15px] font-semibold text-[color:var(--color-heading)] mb-2 group-hover:text-[color:var(--color-muted)] transition-colors line-clamp-2 leading-snug"
-            style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>
+            style={{ fontFamily: "var(--font-playfair, 'Lora', serif)" }}>
             {product.name}
           </h3>
 
@@ -190,7 +190,7 @@ export default function ProductCard({ product, priority = false }) {
                 ))}
               </div>
               <span className="text-[10px] text-[color:var(--color-body)]"
-                style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>
+                style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>
                 {averageRating.toFixed(1)}{reviewCount > 0 ? ` (${reviewCount})` : ''}
               </span>
             </div>
@@ -202,29 +202,29 @@ export default function ProductCard({ product, priority = false }) {
               <div className="flex items-baseline gap-2 flex-wrap">
                 {/* Offer price â€” prominent */}
                 <span className="text-lg sm:text-xl font-bold text-[color:var(--color-heading)]"
-                  style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>
+                  style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>
                   â‚¹{(product.price ?? 0).toLocaleString('en-IN')}
                 </span>
                 {/* Original price â€” struck through */}
                 <span className="text-xs sm:text-sm text-[color:var(--color-body)] line-through"
-                  style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>
+                  style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>
                   â‚¹{(product.comparePrice ?? 0).toLocaleString('en-IN')}
                 </span>
                 {/* Savings */}
                 <span className="text-[10px] font-bold text-[color:var(--color-accent)] uppercase tracking-wider"
-                  style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>
+                  style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>
                   Save â‚¹{((product.comparePrice - product.price) ?? 0).toLocaleString('en-IN')}
                 </span>
               </div>
             ) : (
               <div className="flex items-center justify-between">
                 <span className="text-lg sm:text-xl font-bold text-[color:var(--color-heading)]"
-                  style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>
+                  style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>
                   â‚¹{(product.price ?? 0).toLocaleString('en-IN')}
                 </span>
                 {product.sizes && product.sizes.length > 0 && (
                   <span className="text-[10px] text-[color:var(--color-body)]"
-                    style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>
+                    style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>
                     {product.sizes.length} sizes
                   </span>
                 )}
@@ -239,14 +239,14 @@ export default function ProductCard({ product, priority = false }) {
             <button
               onClick={handleAddToCart}
               className="w-full py-2.5 bg-[color:var(--color-heading)] text-[color:var(--color-subtle-bg)] text-[10px] font-medium uppercase tracking-[0.15em] hover:bg-[color:var(--color-muted)] transition-colors"
-              style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
+              style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}
             >
               <FiShoppingCart className="w-3.5 h-3.5 inline mr-1.5" />
               Add to Cart
             </button>
           ) : (
             <div className="w-full py-2.5 bg-[color:var(--color-border-light)] text-[color:var(--color-body)] text-[10px] font-medium uppercase tracking-[0.15em] text-center"
-              style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>
+              style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>
               Out of Stock
             </div>
           )}

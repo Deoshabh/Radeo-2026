@@ -208,10 +208,10 @@ export default function ProductClient({ product }) {
                         <div className="space-y-6">
                             {/* Category & Name */}
                             <div>
-                                <p className="text-[11px] uppercase tracking-[0.2em] text-[#c9a96e] mb-3 font-medium" style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>
+                                <p className="text-[11px] uppercase tracking-[0.2em] text-[#c9a96e] mb-3 font-medium" style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>
                                     {product.category?.name}
                                 </p>
-                                <h1 className="text-3xl lg:text-4xl font-bold text-[#2a1a0a] mb-4" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>
+                                <h1 className="text-3xl lg:text-4xl font-bold text-[#2a1a0a] mb-4" style={{ fontFamily: "var(--font-playfair, 'Lora', serif)" }}>
                                     {product.name}
                                 </h1>
 
@@ -236,7 +236,7 @@ export default function ProductClient({ product }) {
                             </div>
 
                             {/* Description */}
-                            <p className="text-[#5c3d1e] leading-relaxed text-lg" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>
+                            <p className="text-[#5c3d1e] leading-relaxed text-lg" style={{ fontFamily: "var(--font-cormorant, 'Libre Baskerville', serif)" }}>
                                 {product.description}
                             </p>
 
@@ -382,7 +382,7 @@ export default function ProductClient({ product }) {
 
                             {/* Made to Order Notice */}
                             <div className="bg-[#f2ede4] p-4 border border-[#e8e0d0]">
-                                <p className="text-sm text-[#5c3d1e]" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>
+                                <p className="text-sm text-[#5c3d1e]" style={{ fontFamily: "var(--font-cormorant, 'Libre Baskerville', serif)" }}>
                                     <strong>Made to Order:</strong> This product is custom-crafted upon order.
                                     Please allow 7-10 business days for production and delivery.
                                 </p>
@@ -413,8 +413,8 @@ export default function ProductClient({ product }) {
                         <div className="prose max-w-none">
                             {activeTab === 'description' && (
                                 <div>
-                                    <h3 className="text-2xl font-bold mb-4 text-[#2a1a0a]" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>Product Description</h3>
-                                    <p className="text-[#5c3d1e] leading-relaxed text-lg" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>
+                                    <h3 className="text-2xl font-bold mb-4 text-[#2a1a0a]" style={{ fontFamily: "var(--font-playfair, 'Lora', serif)" }}>Product Description</h3>
+                                    <p className="text-[#5c3d1e] leading-relaxed text-lg" style={{ fontFamily: "var(--font-cormorant, 'Libre Baskerville', serif)" }}>
                                         {product.description || 'Crafted with precision and attention to detail, this shoe embodies timeless elegance and superior craftsmanship.'}
                                     </p>
                                 </div>
@@ -422,8 +422,8 @@ export default function ProductClient({ product }) {
 
                             {activeTab === 'specifications' && (
                                 <div>
-                                    <h3 className="text-2xl font-bold mb-4 text-[#2a1a0a]" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>Specifications</h3>
-                                    <ul className="space-y-2 text-[#5c3d1e]" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>
+                                    <h3 className="text-2xl font-bold mb-4 text-[#2a1a0a]" style={{ fontFamily: "var(--font-playfair, 'Lora', serif)" }}>Specifications</h3>
+                                    <ul className="space-y-2 text-[#5c3d1e]" style={{ fontFamily: "var(--font-cormorant, 'Libre Baskerville', serif)" }}>
                                         {product.specifications?.material && (
                                             <li><strong>Material:</strong> {product.specifications.material}</li>
                                         )}
@@ -454,9 +454,9 @@ export default function ProductClient({ product }) {
 
                             {activeTab === 'care' && (
                                 <div>
-                                    <h3 className="text-2xl font-bold mb-4 text-[#2a1a0a]" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>Care Instructions</h3>
+                                    <h3 className="text-2xl font-bold mb-4 text-[#2a1a0a]" style={{ fontFamily: "var(--font-playfair, 'Lora', serif)" }}>Care Instructions</h3>
                                     {product.careInstructions && product.careInstructions.length > 0 ? (
-                                        <ul className="space-y-2 text-[#5c3d1e]" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>
+                                        <ul className="space-y-2 text-[#5c3d1e]" style={{ fontFamily: "var(--font-cormorant, 'Libre Baskerville', serif)" }}>
                                             {product.careInstructions.map((instruction, index) => (
                                                 <li key={index} className="flex gap-3">
                                                     <span className="text-[#c9a96e] font-semibold">&bull;</span>
@@ -465,7 +465,7 @@ export default function ProductClient({ product }) {
                                             ))}
                                         </ul>
                                     ) : (
-                                        <p className="text-[#8a7460]" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>No care instructions available for this product.</p>
+                                        <p className="text-[#8a7460]" style={{ fontFamily: "var(--font-cormorant, 'Libre Baskerville', serif)" }}>No care instructions available for this product.</p>
                                     )}
                                 </div>
                             )}

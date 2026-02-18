@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 /* eslint-disable @next/next/no-img-element */
 
 import { useState, useEffect, useRef } from 'react';
@@ -185,7 +185,7 @@ export default function Navbar() {
                       ? 'text-[color:var(--color-heading)]'
                       : 'text-[color:var(--color-body)] hover:text-[color:var(--color-heading)]'
                   }`}
-                  style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
+                  style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}
                 >
                   {link.label}
                   {isActive && <span className="block w-full h-[1px] bg-[color:var(--color-accent)] mt-0.5" />}
@@ -202,7 +202,7 @@ export default function Navbar() {
               <Link
                 href="/categories"
                 className="px-4 py-2 text-sm font-medium uppercase tracking-[0.12em] text-[color:var(--color-body)] hover:text-[color:var(--color-heading)] transition-colors flex items-center gap-1 cursor-pointer"
-                style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
+                style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}
               >
                 Categories
                 <svg className={`w-3 h-3 transition-transform duration-200 ${isCategoriesOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -219,7 +219,7 @@ export default function Navbar() {
                   <Link
                     href="/categories"
                     className="flex items-center gap-2 px-5 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--color-accent)] hover:bg-[color:var(--color-page-bg)] border-b border-gray-100 transition-colors"
-                    style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
+                    style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}
                     onClick={() => setIsCategoriesOpen(false)}
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-[color:var(--color-accent)]" />
@@ -239,7 +239,7 @@ export default function Navbar() {
                           </div>
                         ) : (
                           <div className="w-10 h-10 rounded bg-[color:var(--color-subtle-bg)] flex items-center justify-center flex-shrink-0">
-                            <span className="text-[color:var(--color-muted)] font-bold text-sm" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>{cat.name.charAt(0)}</span>
+                            <span className="text-[color:var(--color-muted)] font-bold text-sm" style={{ fontFamily: "var(--font-playfair, 'Lora', serif)" }}>{cat.name.charAt(0)}</span>
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
@@ -266,7 +266,7 @@ export default function Navbar() {
                       ? 'text-[color:var(--color-heading)]'
                       : 'text-[color:var(--color-body)] hover:text-[color:var(--color-heading)]'
                   }`}
-                  style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
+                  style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}
                 >
                   {link.label}
                   {isActive && <span className="block w-full h-[1px] bg-[color:var(--color-accent)] mt-0.5" />}
@@ -284,7 +284,7 @@ export default function Navbar() {
             ) : (
               <span
                 className="text-2xl font-bold text-[color:var(--color-heading)] hover:text-[color:var(--color-muted)] transition-colors tracking-[0.15em]"
-                style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}
+                style={{ fontFamily: "var(--font-playfair, 'Lora', serif)" }}
               >
                 RADEO
               </span>
@@ -325,7 +325,7 @@ export default function Navbar() {
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="w-9 h-9 rounded-full bg-[color:var(--color-heading)] text-[color:var(--color-subtle-bg)] flex items-center justify-center text-xs font-bold hover:bg-[color:var(--color-muted)] transition-colors"
-                  style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
+                  style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}
                   aria-label="User menu"
                 >
                   {user?.name?.charAt(0).toUpperCase()}
@@ -357,7 +357,7 @@ export default function Navbar() {
               <Link
                 href="/auth/login"
                 className="hidden lg:inline-flex px-4 py-2 text-sm font-medium uppercase tracking-[0.12em] bg-[color:var(--color-heading)] text-[color:var(--color-subtle-bg)] hover:bg-[color:var(--color-muted)] transition-colors"
-                style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
+                style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}
               >
                 Login
               </Link>
@@ -388,7 +388,7 @@ export default function Navbar() {
                 onFocus={() => setIsSearchOpen(true)}
                 autoFocus
                 className="w-full pl-10 pr-4 py-2.5 border border-[color:var(--color-border-light)] rounded-none bg-transparent text-sm text-[color:var(--color-heading)] placeholder-[color:var(--color-body)] focus:outline-none focus:border-[color:var(--color-accent)] transition-colors"
-                style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}
+                style={{ fontFamily: "var(--font-cormorant, 'Libre Baskerville', serif)" }}
               />
               <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[color:var(--color-body)] w-4 h-4" />
             </form>
@@ -452,7 +452,7 @@ export default function Navbar() {
                   className={`block px-4 py-3 text-sm font-medium uppercase tracking-[0.12em] transition-colors ${
                     pathname === link.href ? 'text-[color:var(--color-heading)] bg-[color:var(--color-page-bg)]' : 'text-[color:var(--color-body)]'
                   }`}
-                  style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
+                  style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}
                 >
                   {link.label}
                 </Link>
@@ -464,7 +464,7 @@ export default function Navbar() {
                   href="/categories"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="block px-4 py-3 text-sm font-semibold uppercase tracking-[0.12em] text-[color:var(--color-accent)]"
-                  style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
+                  style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}
                 >
                   All Categories
                 </Link>
@@ -498,7 +498,7 @@ export default function Navbar() {
                   className={`block px-4 py-3 text-sm font-medium uppercase tracking-[0.12em] transition-colors ${
                     pathname === link.href ? 'text-[color:var(--color-heading)] bg-[color:var(--color-page-bg)]' : 'text-[color:var(--color-body)]'
                   }`}
-                  style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
+                  style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}
                 >
                   {link.label}
                 </Link>
@@ -511,7 +511,7 @@ export default function Navbar() {
                     href="/auth/login"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="block text-center px-4 py-3 text-sm font-medium uppercase tracking-[0.12em] bg-[color:var(--color-heading)] text-[color:var(--color-subtle-bg)]"
-                    style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}
+                    style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}
                   >
                     Login / Register
                   </Link>

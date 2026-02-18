@@ -27,8 +27,8 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
-        serif: ["var(--font-playfair)", "Georgia", "serif"],
+        sans: ["var(--font-inter)", "'Plus Jakarta Sans'", "system-ui", "sans-serif"],
+        serif: ["var(--font-playfair)", "'Lora'", "Georgia", "serif"],
       },
       spacing: {
         xs: "0.5rem", // 8px

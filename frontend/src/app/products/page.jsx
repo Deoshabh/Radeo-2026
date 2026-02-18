@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 // Rebuild trigger - v4
 import { useEffect, useState, Suspense, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -262,8 +262,8 @@ function ProductsContent() {
         <div className="mb-10" ref={headerRef}>
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
             <div>
-              <p className="text-[11px] text-[color:var(--color-body)] mb-3 uppercase tracking-[0.2em] font-medium" style={{ fontFamily: "var(--font-dm-mono, 'DM Mono', monospace)" }}>Home / Products</p>
-              <h1 className="text-4xl lg:text-5xl font-bold text-[color:var(--color-heading)]" style={{ fontFamily: "var(--font-playfair, 'Playfair Display', serif)" }}>
+              <p className="text-[11px] text-[color:var(--color-body)] mb-3 uppercase tracking-[0.2em] font-medium" style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>Home / Products</p>
+              <h1 className="text-4xl lg:text-5xl font-bold text-[color:var(--color-heading)]" style={{ fontFamily: "var(--font-playfair, 'Lora', serif)" }}>
                 {searchQuery ? `Search: "${searchQuery}"` : 'Our Collection'}
               </h1>
             </div>
@@ -302,7 +302,7 @@ function ProductsContent() {
                   updateFilters('sort', e.target.value);
                 }}
                 className="px-4 py-2 border border-[color:var(--color-border-light)] bg-transparent text-[color:var(--color-heading)] cursor-pointer hover:border-[color:var(--color-accent)] transition-colors focus:outline-none focus:border-[color:var(--color-accent)] text-sm"
-                style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}
+                style={{ fontFamily: "var(--font-cormorant, 'Libre Baskerville', serif)" }}
               >
                 <option value="featured">Featured</option>
                 <option value="price-asc">Price: Low to High</option>
@@ -528,7 +528,7 @@ function ProductsContent() {
               </div>
             ) : (
               <div className="text-center py-20 bg-white/60 border border-dashed border-[color:var(--color-border-light)]">
-                <p className="text-[color:var(--color-body)] text-lg mb-4" style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)" }}>No products found matching your criteria.</p>
+                <p className="text-[color:var(--color-body)] text-lg mb-4" style={{ fontFamily: "var(--font-cormorant, 'Libre Baskerville', serif)" }}>No products found matching your criteria.</p>
                 {activeFilterCount > 0 && (
                   <button onClick={clearFilters} className="px-6 py-2 text-[11px] uppercase tracking-[0.15em] border border-[color:var(--color-heading)] text-[color:var(--color-heading)] hover:bg-[color:var(--color-heading)] hover:text-[color:var(--color-subtle-bg)] transition-colors" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>
                     Clear Filters
