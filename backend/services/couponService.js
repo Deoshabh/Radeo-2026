@@ -1,5 +1,6 @@
 const Coupon = require('../models/Coupon');
 const Order = require('../models/Order');
+const CurrencyUtils = require('../utils/currencyUtils');
 
 class CouponService {
     /**
@@ -37,7 +38,7 @@ class CouponService {
             if (cartTotal < coupon.minOrderValue) {
                 return { 
                     valid: false, 
-                    message: `Minimum order value of ₹${coupon.minOrderValue} required` 
+                    message: `Minimum order value of ${CurrencyUtils.format(coupon.minOrderValue)} required` 
                 };
             }
 

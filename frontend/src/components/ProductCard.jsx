@@ -8,6 +8,7 @@ import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { useAuth } from '@/context/AuthContext';
 import { useSiteSettings } from '@/context/SiteSettingsContext';
+import { formatPrice } from '@/utils/helpers';
 import { toast } from 'react-hot-toast';
 import anime from 'animejs';
 
@@ -203,24 +204,24 @@ export default function ProductCard({ product, priority = false }) {
                 {/* Offer price â€” prominent */}
                 <span className="text-lg sm:text-xl font-bold text-[color:var(--color-heading)]"
                   style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>
-                  â‚¹{(product.price ?? 0).toLocaleString('en-IN')}
+                  {formatPrice(product.price ?? 0)}
                 </span>
-                {/* Original price â€” struck through */}
+                {/* Original price â€" struck through */}
                 <span className="text-xs sm:text-sm text-[color:var(--color-body)] line-through"
                   style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>
-                  â‚¹{(product.comparePrice ?? 0).toLocaleString('en-IN')}
+                  {formatPrice(product.comparePrice ?? 0)}
                 </span>
                 {/* Savings */}
                 <span className="text-[10px] font-bold text-[color:var(--color-accent)] uppercase tracking-wider"
                   style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>
-                  Save â‚¹{((product.comparePrice - product.price) ?? 0).toLocaleString('en-IN')}
+                  Save {formatPrice((product.comparePrice - product.price) ?? 0)}
                 </span>
               </div>
             ) : (
               <div className="flex items-center justify-between">
                 <span className="text-lg sm:text-xl font-bold text-[color:var(--color-heading)]"
                   style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>
-                  â‚¹{(product.price ?? 0).toLocaleString('en-IN')}
+                  {formatPrice(product.price ?? 0)}
                 </span>
                 {product.sizes && product.sizes.length > 0 && (
                   <span className="text-[10px] text-[color:var(--color-body)]"

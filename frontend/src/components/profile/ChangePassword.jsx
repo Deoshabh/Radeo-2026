@@ -58,53 +58,52 @@ export default function ChangePassword() {
     };
 
     return (
-        <div className="bg-white rounded-lg shadow-md p-6 mt-6">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-primary-900">Change Password</h2>
+        <div>
+            <div className="flex justify-between items-center mb-8">
+                <h2 className="label-upper text-primary-400">Change Password</h2>
                 <button
                     onClick={handleReset}
                     type="button"
-                    className="text-sm text-brand-brown hover:text-[color:var(--color-muted)] underline"
+                    className="label-upper text-[color:var(--color-accent)] hover:text-[color:var(--color-accent-hover)] transition-colors duration-150"
                 >
                     Forgot Password?
                 </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
+            <form onSubmit={handleSubmit} className="space-y-6 max-w-md">
                 <div>
-                    <label className="block text-sm font-medium text-primary-700 mb-2">
+                    <label className="label-upper block mb-2 text-primary-400">
                         New Password
                     </label>
                     <input
                         type="password"
                         value={passwords.newPassword}
                         onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
-                        className="w-full px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
+                        className="input-underline w-full"
                         required
                         minLength={6}
                     />
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-primary-700 mb-2">
+                    <label className="label-upper block mb-2 text-primary-400">
                         Confirm New Password
                     </label>
                     <input
                         type="password"
                         value={passwords.confirmPassword}
                         onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
-                        className="w-full px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
+                        className="input-underline w-full"
                         required
                         minLength={6}
                     />
                 </div>
 
-                <div className="pt-2">
+                <div className="pt-4">
                     <button
                         type="submit"
                         disabled={loading}
-                        className={`btn btn-primary w-full sm:w-auto ${loading ? 'opacity-70 cursor-not-allowed' : ''
-                            }`}
+                        className={`btn btn-primary ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         {loading ? 'Updating...' : 'Update Password'}
                     </button>

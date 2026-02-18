@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiPhone, FiHash, FiShield } from 'react-icons/fi';
+import { FiShield } from 'react-icons/fi';
 import { setupRecaptcha, sendOTP, verifyOTP } from '@/utils/firebaseAuth';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
@@ -126,27 +126,86 @@ export default function PhoneAuth({ onSuccess }) {
     setupRecaptcha('recaptcha-container');
   };
 
+  /* ── Shared inline styles ── */
+  const labelStyle = {
+    fontFamily: "var(--font-inter, 'DM Sans', sans-serif)",
+    fontSize: '11px',
+    fontWeight: 500,
+    textTransform: 'uppercase',
+    letterSpacing: '0.15em',
+    color: '#8A7E74',
+    display: 'block',
+    marginBottom: '8px',
+  };
+
+  const inputStyle = {
+    width: '100%',
+    padding: '12px 0',
+    fontFamily: "var(--font-inter, 'DM Sans', sans-serif)",
+    fontSize: '15px',
+    color: '#1A1714',
+    background: 'transparent',
+    border: 'none',
+    borderBottom: '1px solid #D4CFC9',
+    outline: 'none',
+    transition: 'border-color 150ms ease',
+  };
+
+  const inputFocusHandler = (e) => { e.target.style.borderBottomColor = '#B8973A'; };
+  const inputBlurHandler = (e) => { e.target.style.borderBottomColor = '#D4CFC9'; };
+
+  const primaryBtnStyle = {
+    width: '100%',
+    height: '52px',
+    fontFamily: "var(--font-inter, 'DM Sans', sans-serif)",
+    fontSize: '13px',
+    fontWeight: 500,
+    textTransform: 'uppercase',
+    letterSpacing: '0.15em',
+    background: '#1A1714',
+    color: '#F0EBE1',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'background 150ms ease',
+  };
+
+  const linkBtnStyle = {
+    fontFamily: "var(--font-inter, 'DM Sans', sans-serif)",
+    fontSize: '13px',
+    color: '#B8973A',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    textDecoration: 'none',
+  };
+
+  const subtextStyle = {
+    fontFamily: "var(--font-inter, 'DM Sans', sans-serif)",
+    fontSize: '13px',
+    color: '#8A7E74',
+  };
+
   // Phone Number Input Step
   if (step === 'phone') {
     return (
-      <div className="space-y-6">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-primary-900 mb-2">Sign In with Phone</h2>
-          <p className="text-primary-600">Enter your phone number to receive an OTP</p>
-        </div>
-
-        <form onSubmit={handleSendOTP} className="space-y-4">
+      <div>
+        <form onSubmit={handleSendOTP} className="space-y-6">
           <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-primary-900 mb-2">
-              Phone Number
-            </label>
-            
-            <div className="flex gap-2">
+            <label htmlFor="phone" style={labelStyle}>Phone Number</label>
+            <div className="flex gap-3 items-end">
               {/* Country Code Selector */}
               <select
                 value={countryCode}
                 onChange={(e) => setCountryCode(e.target.value)}
-                className="input w-24"
+                style={{
+                  ...inputStyle,
+                  width: '90px',
+                  cursor: 'pointer',
+                  appearance: 'none',
+                  paddingRight: '4px',
+                }}
+                onFocus={inputFocusHandler}
+                onBlur={inputBlurHandler}
               >
                 <option value="+91">🇮🇳 +91</option>
                 <option value="+1">🇺🇸 +1</option>
@@ -161,22 +220,20 @@ export default function PhoneAuth({ onSuccess }) {
               </select>
 
               {/* Phone Number Input */}
-              <div className="relative flex-1">
-                <FiPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-400" />
-                <input
-                  type="tel"
-                  id="phone"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                  required
-                  maxLength={10}
-                  className="input pl-10"
-                  placeholder="9876543210"
-                />
-              </div>
+              <input
+                type="tel"
+                id="phone"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                required
+                maxLength={10}
+                style={{ ...inputStyle, flex: 1 }}
+                placeholder="9876543210"
+                onFocus={inputFocusHandler}
+                onBlur={inputBlurHandler}
+              />
             </div>
-            
-            <p className="text-xs text-primary-500 mt-1">
+            <p style={{ fontFamily: "var(--font-inter, 'DM Sans', sans-serif)", fontSize: '11px', color: '#A09890', marginTop: '6px' }}>
               Enter phone number without country code
             </p>
           </div>
@@ -184,17 +241,22 @@ export default function PhoneAuth({ onSuccess }) {
           {/* reCAPTCHA Container */}
           <div id="recaptcha-container" className="flex justify-center"></div>
 
-          <div className="bg-primary-50 rounded-lg p-4 flex items-start gap-3">
-            <FiShield className="w-5 h-5 text-brand-brown flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-primary-700">
-              <p className="font-medium mb-1">Secure Authentication</p>
-              <p className="text-xs">
+          <div className="flex items-start gap-3 py-3 px-4" style={{ background: '#F0EBE1', borderLeft: '2px solid #B8973A' }}>
+            <FiShield className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#B8973A' }} />
+            <div>
+              <p style={{ fontFamily: "var(--font-inter, 'DM Sans', sans-serif)", fontSize: '12px', fontWeight: 500, color: '#1A1714', marginBottom: '2px' }}>Secure Authentication</p>
+              <p style={{ fontFamily: "var(--font-inter, 'DM Sans', sans-serif)", fontSize: '11px', color: '#8A7E74' }}>
                 We&apos;ll send a 6-digit OTP to verify your phone number. Standard SMS charges may apply.
               </p>
             </div>
           </div>
 
-          <button type="submit" disabled={loading} className="w-full btn btn-primary">
+          <button
+            type="submit" disabled={loading}
+            style={{ ...primaryBtnStyle, opacity: loading ? 0.6 : 1 }}
+            onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = '#2C2420'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = '#1A1714'; }}
+          >
             {loading ? 'Sending OTP...' : 'Send OTP'}
           </button>
         </form>
@@ -205,72 +267,64 @@ export default function PhoneAuth({ onSuccess }) {
   // OTP Verification Step
   if (step === 'otp') {
     return (
-      <div className="space-y-6">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-primary-900 mb-2">Verify OTP</h2>
-          <p className="text-primary-600">
-            Enter the 6-digit code sent to
-          </p>
-          <p className="text-brand-brown font-medium">
+      <div>
+        <div className="text-center mb-6">
+          <h2 style={{ fontFamily: "var(--font-playfair, 'Cormorant Garamond', serif)", fontSize: '1.6rem', fontWeight: 400, color: '#1A1714', marginBottom: '4px' }}>Verify OTP</h2>
+          <p style={subtextStyle}>Enter the 6-digit code sent to</p>
+          <p style={{ fontFamily: "var(--font-inter, 'DM Sans', sans-serif)", fontSize: '14px', fontWeight: 500, color: '#B8973A' }}>
             {countryCode} {phoneNumber}
           </p>
         </div>
 
-        <form onSubmit={handleVerifyOTP} className="space-y-4">
+        <form onSubmit={handleVerifyOTP} className="space-y-6">
           <div>
-            <label htmlFor="otp" className="block text-sm font-medium text-primary-900 mb-2">
-              Enter OTP
-            </label>
-            <div className="relative">
-              <FiHash className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-400" />
-              <input
-                type="text"
-                id="otp"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                required
-                maxLength={6}
-                className="input pl-10 text-center text-2xl tracking-widest font-mono"
-                placeholder="000000"
-                autoComplete="one-time-code"
-              />
-            </div>
+            <label htmlFor="otp" style={labelStyle}>Enter OTP</label>
+            <input
+              type="text"
+              id="otp"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+              required
+              maxLength={6}
+              style={{ ...inputStyle, textAlign: 'center', fontSize: '24px', letterSpacing: '0.5em', fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}
+              placeholder="000000"
+              autoComplete="one-time-code"
+              onFocus={inputFocusHandler}
+              onBlur={inputBlurHandler}
+            />
           </div>
 
-          <button type="submit" disabled={loading || otp.length !== 6} className="w-full btn btn-primary">
+          <button
+            type="submit" disabled={loading || otp.length !== 6}
+            style={{ ...primaryBtnStyle, opacity: (loading || otp.length !== 6) ? 0.6 : 1 }}
+            onMouseEnter={(e) => { if (!loading && otp.length === 6) e.currentTarget.style.background = '#2C2420'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = '#1A1714'; }}
+          >
             {loading ? 'Verifying...' : 'Verify & Sign In'}
           </button>
         </form>
 
-        <div className="space-y-3">
+        <div className="space-y-3 mt-6">
           <div className="text-center">
             {timer > 0 ? (
-              <p className="text-sm text-primary-600">
-                Resend OTP in <span className="font-medium text-brand-brown">{timer}s</span>
+              <p style={subtextStyle}>
+                Resend OTP in <span style={{ color: '#B8973A', fontWeight: 500 }}>{timer}s</span>
               </p>
             ) : (
-              <button
-                onClick={handleResendOTP}
-                disabled={loading}
-                className="text-sm text-brand-brown hover:underline font-medium"
-              >
+              <button onClick={handleResendOTP} disabled={loading} style={{ ...linkBtnStyle, fontWeight: 500 }}>
                 Resend OTP
               </button>
             )}
           </div>
-
           <div className="text-center">
-            <button
-              onClick={handleChangeNumber}
-              className="text-sm text-primary-600 hover:underline"
-            >
+            <button onClick={handleChangeNumber} style={{ ...linkBtnStyle, color: '#8A7E74' }}>
               Change phone number
             </button>
           </div>
         </div>
 
-        <div className="bg-primary-50 rounded-lg p-4 text-center">
-          <p className="text-xs text-primary-600">
+        <div className="mt-6 py-3 px-4 text-center" style={{ background: '#F0EBE1' }}>
+          <p style={{ fontFamily: "var(--font-inter, 'DM Sans', sans-serif)", fontSize: '11px', color: '#8A7E74' }}>
             Didn&apos;t receive the OTP? Check your SMS inbox or try resending after the cooldown period.
           </p>
         </div>

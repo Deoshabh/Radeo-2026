@@ -15,7 +15,8 @@ async function getProduct(slug) {
       return null;
     }
 
-    return res.json();
+    const data = await res.json();
+    return data?.product || data?.data || data || null;
   } catch (error) {
     console.error('[ProductSSR] Fetch Error:', error);
     return null;

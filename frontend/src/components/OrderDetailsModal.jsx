@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { FiX, FiPackage, FiUser, FiMapPin, FiCreditCard, FiTruck, FiPhone, FiMail, FiCalendar } from 'react-icons/fi';
-import { formatDateTime as formatDate } from '@/utils/helpers';
+import { formatDateTime as formatDate, formatPrice } from '@/utils/helpers';
 
 export default function OrderDetailsModal({ order, isOpen, onClose }) {
   if (!isOpen || !order) return null;
@@ -148,12 +148,12 @@ export default function OrderDetailsModal({ order, isOpen, onClose }) {
                       Size: {item.size} | Quantity: {item.quantity}
                     </div>
                     <div className="text-sm text-gray-600 mt-1">
-                      Price: ₹{item.price?.toLocaleString('en-IN')}
+                      Price: {formatPrice(item.price ?? 0)}
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="font-semibold text-gray-900">
-                      ₹{(item.price * item.quantity)?.toLocaleString('en-IN')}
+                      {formatPrice((item.price || 0) * (item.quantity || 1))}
                     </div>
                   </div>
                 </div>
@@ -167,21 +167,21 @@ export default function OrderDetailsModal({ order, isOpen, onClose }) {
             <div className="space-y-2">
               <div className="flex justify-between text-gray-700">
                 <span>Subtotal</span>
-                <span>₹{order.subtotal?.toLocaleString('en-IN')}</span>
+                <span>{formatPrice(order.subtotal ?? 0)}</span>
               </div>
               <div className="flex justify-between text-gray-700">
                 <span>Shipping</span>
-                <span>₹{order.shippingCost?.toLocaleString('en-IN')}</span>
+                <span>{formatPrice(order.shippingCost ?? 0)}</span>
               </div>
               {order.discount > 0 && (
                 <div className="flex justify-between text-green-600">
                   <span>Discount</span>
-                  <span>-₹{order.discount?.toLocaleString('en-IN')}</span>
+                  <span>-{formatPrice(order.discount ?? 0)}</span>
                 </div>
               )}
               <div className="border-t pt-2 flex justify-between text-lg font-bold text-gray-900">
                 <span>Total</span>
-                <span>₹{(order.total || order.totalAmount)?.toLocaleString('en-IN')}</span>
+                <span>{formatPrice(order.total || order.totalAmount || 0)}</span>
               </div>
             </div>
           </div>

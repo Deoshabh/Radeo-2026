@@ -12,6 +12,7 @@ import toast from 'react-hot-toast';
 import ProductMetadata from '@/components/ProductMetadata';
 import ReviewSection from '@/components/ReviewSection';
 import Product360Viewer from '@/components/products/Product360Viewer';
+import { formatPrice } from '@/utils/helpers';
 
 export default function ProductClient({ product }) {
     const router = useRouter();
@@ -219,10 +220,10 @@ export default function ProductClient({ product }) {
                                 {product.comparePrice && product.comparePrice > product.price ? (
                                     <div className="flex items-center gap-3 flex-wrap">
                                         <p className="text-2xl font-bold text-[#2a1a0a]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>
-                                            ₹{product.price?.toLocaleString('en-IN')}
+                                            {formatPrice(product.price ?? 0)}
                                         </p>
                                         <p className="text-lg text-[#8a7460] line-through" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>
-                                            ₹{product.comparePrice?.toLocaleString('en-IN')}
+                                            {formatPrice(product.comparePrice ?? 0)}
                                         </p>
                                         <span className="bg-[#2a1a0a] text-[#f2ede4] text-[10px] font-bold px-3 py-1 uppercase tracking-wider" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>
                                             {Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)}% OFF
@@ -230,7 +231,7 @@ export default function ProductClient({ product }) {
                                     </div>
                                 ) : (
                                     <p className="text-2xl font-bold text-[#2a1a0a]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>
-                                        ₹{product.price?.toLocaleString('en-IN')}
+                                        {formatPrice(product.price ?? 0)}
                                     </p>
                                 )}
                             </div>

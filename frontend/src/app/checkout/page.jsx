@@ -7,7 +7,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { orderAPI, addressAPI, couponAPI } from '@/utils/api';
 import toast from 'react-hot-toast';
-import { FiMapPin, FiPlus, FiEdit2, FiTag, FiCreditCard, FiDollarSign, FiTrash2, FiX, FiCheck } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiCreditCard, FiDollarSign, FiTrash2, FiX } from 'react-icons/fi';
+import { formatPrice } from '@/utils/helpers';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -158,7 +159,7 @@ export default function CheckoutPage() {
 
       setAppliedCoupon(coupon);
       setDiscount(discountAmount);
-      toast.success(`Coupon applied! You saved â‚¹${discountAmount.toLocaleString()}`);
+      toast.success(`Coupon applied! You saved ${formatPrice(discountAmount)}`);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Invalid coupon code');
     }
@@ -295,25 +296,28 @@ export default function CheckoutPage() {
 
   if (loading || !cart) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-primary-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-900"></div>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-background)' }}>
+        <div className="spinner"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-primary-50">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
-        <h1 className="text-2xl sm:text-3xl lg:text-3xl font-bold text-primary-900 mb-6 sm:mb-8">Checkout</h1>
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
+        {/* Page heading */}
+        <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight mb-10" style={{ color: 'var(--color-text-primary)' }}>
+          Checkout
+        </h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Shipping Address */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-primary-900 flex items-center gap-2">
-                  <FiMapPin className="text-[color:var(--color-accent)]" />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+          {/* ── Main Content ── */}
+          <div className="lg:col-span-8 space-y-8">
+            {/* ── Shipping Address ── */}
+            <section>
+              <div className="flex items-center justify-between mb-5 pb-3" style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <h2 className="label-upper text-xs flex items-center gap-2" style={{ color: 'var(--color-text-secondary)' }}>
+                  <span className="inline-flex items-center justify-center w-6 h-6 text-[0.625rem] font-medium" style={{ border: '1px solid var(--color-text-secondary)', color: 'var(--color-text-secondary)' }}>1</span>
                   Shipping Address
                 </h2>
                 <button
@@ -325,86 +329,102 @@ export default function CheckoutPage() {
                       setShowAddressForm(true);
                     }
                   }}
-                  className="flex items-center gap-2 text-[color:var(--color-accent)] hover:text-[color:var(--color-muted)]"
+                  className="inline-flex items-center gap-1.5 text-xs tracking-[0.08em] uppercase transition-colors duration-150"
+                  style={{ color: 'var(--color-accent)' }}
                 >
-                  {showAddressForm && !editingAddressId ? <><FiX /> Cancel</> : <><FiPlus /> Add New</>}
+                  {showAddressForm && !editingAddressId ? <><FiX className="w-3.5 h-3.5" /> Cancel</> : <><FiPlus className="w-3.5 h-3.5" /> Add New</>}
                 </button>
               </div>
 
               {/* Address Form */}
               {showAddressForm && (
-                <form onSubmit={handleAddAddress} className="mb-6 p-4 border border-primary-200 rounded-lg bg-primary-50">
-                  <h3 className="text-sm font-semibold text-primary-800 mb-3">
-                    {editingAddressId ? 'Edit Address' : 'Add New Address'}
+                <form onSubmit={handleAddAddress} className="mb-6 p-5 sm:p-6" style={{ border: '1px solid var(--color-border)', backgroundColor: 'var(--color-warm-bg)' }}>
+                  <h3 className="label-upper text-xs mb-5" style={{ color: 'var(--color-text-secondary)' }}>
+                    {editingAddressId ? 'Edit Address' : 'New Address'}
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input
-                      type="text"
-                      placeholder="Full Name"
-                      value={addressForm.fullName}
-                      onChange={(e) => setAddressForm({ ...addressForm, fullName: e.target.value })}
-                      className="px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
-                      required
-                    />
-                    <input
-                      type="tel"
-                      placeholder="Phone"
-                      value={addressForm.phone}
-                      onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
-                      className="px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
-                      required
-                    />
-                    <input
-                      type="text"
-                      placeholder="Address Line 1"
-                      value={addressForm.addressLine1}
-                      onChange={(e) => setAddressForm({ ...addressForm, addressLine1: e.target.value })}
-                      className="md:col-span-2 px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
-                      required
-                    />
-                    <input
-                      type="text"
-                      placeholder="Address Line 2 (Optional)"
-                      value={addressForm.addressLine2}
-                      onChange={(e) => setAddressForm({ ...addressForm, addressLine2: e.target.value })}
-                      className="md:col-span-2 px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
-                    />
-                    <input
-                      type="text"
-                      placeholder="City"
-                      value={addressForm.city}
-                      onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
-                      className="px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
-                      required
-                    />
-                    <input
-                      type="text"
-                      placeholder="State"
-                      value={addressForm.state}
-                      onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
-                      className="px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
-                      required
-                    />
-                    <input
-                      type="text"
-                      placeholder="Postal Code"
-                      value={addressForm.postalCode}
-                      onChange={(e) => setAddressForm({ ...addressForm, postalCode: e.target.value })}
-                      className="px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
-                      required
-                      maxLength="6"
-                      pattern="[0-9]{6}"
-                      title="Please enter a valid 6-digit PIN code"
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <label className="label-upper text-[0.625rem] mb-1.5 block" style={{ color: 'var(--color-text-secondary)' }}>Full Name</label>
+                      <input
+                        type="text"
+                        value={addressForm.fullName}
+                        onChange={(e) => setAddressForm({ ...addressForm, fullName: e.target.value })}
+                        className="input-underline w-full"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="label-upper text-[0.625rem] mb-1.5 block" style={{ color: 'var(--color-text-secondary)' }}>Phone</label>
+                      <input
+                        type="tel"
+                        value={addressForm.phone}
+                        onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
+                        className="input-underline w-full"
+                        required
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="label-upper text-[0.625rem] mb-1.5 block" style={{ color: 'var(--color-text-secondary)' }}>Address Line 1</label>
+                      <input
+                        type="text"
+                        value={addressForm.addressLine1}
+                        onChange={(e) => setAddressForm({ ...addressForm, addressLine1: e.target.value })}
+                        className="input-underline w-full"
+                        required
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="label-upper text-[0.625rem] mb-1.5 block" style={{ color: 'var(--color-text-secondary)' }}>Address Line 2 <span className="normal-case tracking-normal">(optional)</span></label>
+                      <input
+                        type="text"
+                        value={addressForm.addressLine2}
+                        onChange={(e) => setAddressForm({ ...addressForm, addressLine2: e.target.value })}
+                        className="input-underline w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="label-upper text-[0.625rem] mb-1.5 block" style={{ color: 'var(--color-text-secondary)' }}>City</label>
+                      <input
+                        type="text"
+                        value={addressForm.city}
+                        onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                        className="input-underline w-full"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="label-upper text-[0.625rem] mb-1.5 block" style={{ color: 'var(--color-text-secondary)' }}>State</label>
+                      <input
+                        type="text"
+                        value={addressForm.state}
+                        onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
+                        className="input-underline w-full"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="label-upper text-[0.625rem] mb-1.5 block" style={{ color: 'var(--color-text-secondary)' }}>PIN Code</label>
+                      <input
+                        type="text"
+                        value={addressForm.postalCode}
+                        onChange={(e) => setAddressForm({ ...addressForm, postalCode: e.target.value })}
+                        className="input-underline w-full"
+                        required
+                        maxLength="6"
+                        pattern="[0-9]{6}"
+                        title="Please enter a valid 6-digit PIN code"
+                      />
+                    </div>
                   </div>
-                  <div className="flex gap-3 mt-4">
-                    <button type="submit" className="btn btn-primary flex items-center gap-2">
-                      <FiCheck className="w-4 h-4" /> {editingAddressId ? 'Update Address' : 'Save Address'}
+                  <div className="flex gap-4 mt-6">
+                    <button type="submit" className="btn-editorial text-xs px-6 py-2.5">
+                      {editingAddressId ? 'Update' : 'Save Address'}
                     </button>
                     <button
                       type="button"
                       onClick={handleCancelAddressForm}
-                      className="btn btn-secondary"
+                      className="text-xs tracking-[0.08em] uppercase transition-opacity duration-150 hover:opacity-60"
+                      style={{ color: 'var(--color-text-secondary)' }}
                     >
                       Cancel
                     </button>
@@ -414,189 +434,254 @@ export default function CheckoutPage() {
 
               {/* Address List */}
               {addresses.length === 0 ? (
-                <p className="text-center text-primary-600 py-8">No addresses found. Please add one.</p>
+                <p className="text-sm py-8 text-center" style={{ color: 'var(--color-text-secondary)' }}>No addresses found. Please add one.</p>
               ) : (
                 <div className="space-y-3">
-                  {addresses.map((address) => (
-                    <div
-                      key={address._id}
-                      onClick={() => setSelectedAddress(address)}
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${selectedAddress?._id === address._id
-                        ? 'border-[color:var(--color-accent)] bg-[color:var(--color-subtle-bg)]'
-                        : 'border-primary-200 hover:border-primary-400'
-                        }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="font-semibold text-primary-900">{address.fullName}</span>
-                            {address.isDefault && (
-                              <span className="px-2 py-0.5 text-xs bg-[color:var(--color-heading)] text-white rounded">Default</span>
-                            )}
+                  {addresses.map((address) => {
+                    const isSelected = selectedAddress?._id === address._id;
+                    return (
+                      <div
+                        key={address._id}
+                        onClick={() => setSelectedAddress(address)}
+                        className="group p-4 sm:p-5 cursor-pointer transition-all duration-200"
+                        style={{
+                          border: isSelected ? '2px solid var(--color-accent)' : '1px solid var(--color-border)',
+                          backgroundColor: isSelected ? 'var(--color-warm-bg)' : 'transparent',
+                          padding: isSelected ? 'calc(1rem - 1px)' : undefined,
+                        }}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2.5 mb-1.5">
+                              <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>{address.fullName}</span>
+                              {address.isDefault && (
+                                <span className="label-upper text-[0.5625rem] px-2 py-0.5" style={{ backgroundColor: 'var(--color-text-primary)', color: 'var(--color-background)' }}>Default</span>
+                              )}
+                            </div>
+                            <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>{address.addressLine1}</p>
+                            {address.addressLine2 && <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>{address.addressLine2}</p>}
+                            <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                              {address.city}, {address.state} &ndash; {address.postalCode}
+                            </p>
+                            <p className="text-xs font-mono mt-1.5" style={{ color: 'var(--color-text-secondary)' }}>{address.phone}</p>
                           </div>
-                          <p className="text-primary-700 text-sm">{address.addressLine1}</p>
-                          {address.addressLine2 && <p className="text-primary-700 text-sm">{address.addressLine2}</p>}
-                          <p className="text-primary-700 text-sm">
-                            {address.city}, {address.state} - {address.postalCode}
-                          </p>
-                          <p className="text-primary-600 text-sm mt-1">Phone: {address.phone}</p>
-                        </div>
-                        <div className="flex items-center gap-2 ml-3">
-                          <button
-                            onClick={(e) => handleEditAddress(e, address)}
-                            className="p-1.5 text-primary-500 hover:text-[color:var(--color-accent)] hover:bg-primary-100 rounded transition-colors"
-                            title="Edit address"
-                          >
-                            <FiEdit2 className="w-4 h-4" />
-                          </button>
-                          {!address.isDefault && (
+                          <div className="flex items-center gap-2 ml-3">
                             <button
-                              onClick={(e) => handleDeleteAddress(e, address._id)}
-                              className="p-1.5 text-primary-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                              title="Delete address"
+                              onClick={(e) => handleEditAddress(e, address)}
+                              className="p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                              style={{ color: 'var(--color-text-secondary)' }}
+                              title="Edit address"
                             >
-                              <FiTrash2 className="w-4 h-4" />
+                              <FiEdit2 className="w-3.5 h-3.5" />
                             </button>
-                          )}
-                          <input
-                            type="radio"
-                            checked={selectedAddress?._id === address._id}
-                            onChange={() => setSelectedAddress(address)}
-                            className="ml-1"
-                          />
+                            {!address.isDefault && (
+                              <button
+                                onClick={(e) => handleDeleteAddress(e, address._id)}
+                                className="p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                                style={{ color: 'var(--color-text-secondary)' }}
+                                title="Delete address"
+                              >
+                                <FiTrash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            {/* Custom radio indicator */}
+                            <div
+                              className="w-5 h-5 flex items-center justify-center flex-shrink-0 transition-colors duration-200"
+                              style={{
+                                border: `1.5px solid ${isSelected ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                                borderRadius: '50%',
+                              }}
+                            >
+                              {isSelected && (
+                                <div className="w-2.5 h-2.5" style={{ backgroundColor: 'var(--color-accent)', borderRadius: '50%' }} />
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
-            </div>
+            </section>
 
-            {/* Payment Method */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-bold text-primary-900 flex items-center gap-2 mb-6">
-                <FiCreditCard className="text-[color:var(--color-accent)]" />
-                Payment Method
-              </h2>
+            {/* ── Payment Method ── */}
+            <section>
+              <div className="mb-5 pb-3" style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <h2 className="label-upper text-xs flex items-center gap-2" style={{ color: 'var(--color-text-secondary)' }}>
+                  <span className="inline-flex items-center justify-center w-6 h-6 text-[0.625rem] font-medium" style={{ border: '1px solid var(--color-text-secondary)', color: 'var(--color-text-secondary)' }}>2</span>
+                  Payment Method
+                </h2>
+              </div>
               <div className="space-y-3">
+                {/* Razorpay */}
                 <div
                   onClick={() => setPaymentMethod('razorpay')}
-                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${paymentMethod === 'razorpay'
-                    ? 'border-[color:var(--color-accent)] bg-[color:var(--color-subtle-bg)]'
-                    : 'border-primary-200 hover:border-primary-400'
-                    }`}
+                  className="group p-4 sm:p-5 cursor-pointer transition-all duration-200"
+                  style={{
+                    border: paymentMethod === 'razorpay' ? '2px solid var(--color-accent)' : '1px solid var(--color-border)',
+                    backgroundColor: paymentMethod === 'razorpay' ? 'var(--color-warm-bg)' : 'transparent',
+                    padding: paymentMethod === 'razorpay' ? 'calc(1rem - 1px)' : undefined,
+                  }}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <FiCreditCard className="w-5 h-5 text-primary-600" />
+                      <FiCreditCard className="w-4 h-4" style={{ color: 'var(--color-text-secondary)' }} />
                       <div>
-                        <p className="font-semibold text-primary-900">Credit/Debit Card, UPI, Net Banking</p>
-                        <p className="text-sm text-primary-600">Secured payment via Razorpay</p>
+                        <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>Card, UPI, Net Banking</p>
+                        <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>Secured via Razorpay</p>
                       </div>
                     </div>
-                    <input
-                      type="radio"
-                      checked={paymentMethod === 'razorpay'}
-                      onChange={() => setPaymentMethod('razorpay')}
-                    />
+                    <div
+                      className="w-5 h-5 flex items-center justify-center flex-shrink-0 transition-colors duration-200"
+                      style={{
+                        border: `1.5px solid ${paymentMethod === 'razorpay' ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                        borderRadius: '50%',
+                      }}
+                    >
+                      {paymentMethod === 'razorpay' && (
+                        <div className="w-2.5 h-2.5" style={{ backgroundColor: 'var(--color-accent)', borderRadius: '50%' }} />
+                      )}
+                    </div>
                   </div>
                 </div>
 
+                {/* COD */}
                 <div
                   onClick={() => setPaymentMethod('cod')}
-                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${paymentMethod === 'cod'
-                    ? 'border-[color:var(--color-accent)] bg-[color:var(--color-subtle-bg)]'
-                    : 'border-primary-200 hover:border-primary-400'
-                    }`}
+                  className="group p-4 sm:p-5 cursor-pointer transition-all duration-200"
+                  style={{
+                    border: paymentMethod === 'cod' ? '2px solid var(--color-accent)' : '1px solid var(--color-border)',
+                    backgroundColor: paymentMethod === 'cod' ? 'var(--color-warm-bg)' : 'transparent',
+                    padding: paymentMethod === 'cod' ? 'calc(1rem - 1px)' : undefined,
+                  }}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <FiDollarSign className="w-5 h-5 text-primary-600" />
+                      <FiDollarSign className="w-4 h-4" style={{ color: 'var(--color-text-secondary)' }} />
                       <div>
-                        <p className="font-semibold text-primary-900">Cash on Delivery</p>
-                        <p className="text-sm text-primary-600">Pay when you receive</p>
+                        <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>Cash on Delivery</p>
+                        <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>Pay when delivered</p>
                       </div>
                     </div>
-                    <input
-                      type="radio"
-                      checked={paymentMethod === 'cod'}
-                      onChange={() => setPaymentMethod('cod')}
-                    />
+                    <div
+                      className="w-5 h-5 flex items-center justify-center flex-shrink-0 transition-colors duration-200"
+                      style={{
+                        border: `1.5px solid ${paymentMethod === 'cod' ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                        borderRadius: '50%',
+                      }}
+                    >
+                      {paymentMethod === 'cod' && (
+                        <div className="w-2.5 h-2.5" style={{ backgroundColor: 'var(--color-accent)', borderRadius: '50%' }} />
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </section>
           </div>
 
-          {/* Order Summary Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-md p-6 sticky top-4">
-              <h2 className="text-xl font-bold text-primary-900 mb-6">Order Summary</h2>
+          {/* ── Order Summary Sidebar ── */}
+          <div className="lg:col-span-4">
+            <div className="sticky top-24 p-6 sm:p-8" style={{ border: '1px solid var(--color-border)', backgroundColor: 'var(--color-warm-bg)' }}>
+              <h2 className="label-upper text-xs mb-6" style={{ color: 'var(--color-text-secondary)' }}>Order Summary</h2>
 
               {/* Coupon Code */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-primary-700 mb-2 flex items-center gap-2">
-                  <FiTag /> Have a Coupon?
+              <div className="mb-6 pb-6" style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <label className="label-upper text-[0.625rem] mb-2 block" style={{ color: 'var(--color-text-secondary)' }}>
+                  Promo Code
                 </label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                    placeholder="Enter coupon code"
+                    placeholder="Enter code"
                     disabled={!!appliedCoupon}
-                    className="flex-1 px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900 disabled:bg-primary-50"
+                    className="flex-1 bg-transparent text-sm px-0 py-2 font-mono tracking-wider disabled:opacity-40 focus:outline-none"
+                    style={{
+                      borderBottom: '1px solid var(--color-border)',
+                      color: 'var(--color-text-primary)',
+                    }}
                   />
                   {appliedCoupon ? (
-                    <button onClick={handleRemoveCoupon} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                    <button
+                      onClick={handleRemoveCoupon}
+                      className="text-xs tracking-[0.08em] uppercase px-3 py-2 transition-opacity hover:opacity-70"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
                       Remove
                     </button>
                   ) : (
-                    <button onClick={handleApplyCoupon} className="px-4 py-2 bg-[color:var(--color-heading)] text-white rounded-lg hover:bg-[color:var(--color-muted)]">
+                    <button
+                      onClick={handleApplyCoupon}
+                      className="text-xs tracking-[0.08em] uppercase px-3 py-2 font-medium transition-opacity hover:opacity-70"
+                      style={{ color: 'var(--color-accent)' }}
+                    >
                       Apply
                     </button>
                   )}
                 </div>
+                {appliedCoupon && (
+                  <p className="text-xs mt-2" style={{ color: 'var(--color-accent)' }}>
+                    {appliedCoupon.code} applied &mdash; saving {formatPrice(discount)}
+                  </p>
+                )}
               </div>
 
               {/* Price Breakdown */}
-              <div className="space-y-3 mb-6">
-                <div className="flex justify-between text-primary-700">
-                  <span>Subtotal ({cartCount} items)</span>
-                  <span>â‚¹{subtotal.toLocaleString()}</span>
+              <div className="space-y-3 mb-6 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                <div className="flex justify-between">
+                  <span>Subtotal ({cartCount} {cartCount === 1 ? 'item' : 'items'})</span>
+                  <span style={{ color: 'var(--color-text-primary)' }}>{formatPrice(subtotal)}</span>
                 </div>
-                <div className="flex justify-between text-primary-700">
+                <div className="flex justify-between">
                   <span>Shipping</span>
-                  <span>{shippingCost === 0 ? 'FREE' : `â‚¹${shippingCost}`}</span>
+                  <span style={{ color: shippingCost === 0 ? 'var(--color-accent)' : 'var(--color-text-secondary)' }}>
+                    {shippingCost === 0 ? 'Complimentary' : formatPrice(shippingCost)}
+                  </span>
                 </div>
                 {discount > 0 && (
-                  <div className="flex justify-between text-green-600">
+                  <div className="flex justify-between" style={{ color: 'var(--color-accent)' }}>
                     <span>Discount</span>
-                    <span>-â‚¹{discount.toLocaleString()}</span>
+                    <span>&minus;{formatPrice(discount)}</span>
                   </div>
                 )}
                 {subtotal < 1000 && shippingCost > 0 && (
-                  <p className="text-xs text-primary-600">Add â‚¹{(1000 - subtotal).toLocaleString()} more for FREE shipping</p>
+                  <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                    Add {formatPrice(1000 - subtotal)} more for complimentary shipping
+                  </p>
                 )}
               </div>
 
-              <div className="pt-6 border-t border-primary-200 mb-6">
-                <div className="flex justify-between text-xl font-bold text-primary-900">
-                  <span>Total</span>
-                  <span>â‚¹{total.toLocaleString()}</span>
+              {/* Total */}
+              <div className="pt-4 mb-6" style={{ borderTop: '1px solid var(--color-text-primary)' }}>
+                <div className="flex justify-between items-baseline">
+                  <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Total</span>
+                  <span className="font-serif text-xl sm:text-2xl font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                    {formatPrice(total)}
+                  </span>
                 </div>
+                <p className="text-[0.6875rem] mt-1 text-right" style={{ color: 'var(--color-text-secondary)' }}>
+                  Including all applicable taxes
+                </p>
               </div>
 
+              {/* Place Order CTA */}
               <button
                 onClick={handlePlaceOrder}
                 disabled={!selectedAddress || isProcessing}
-                className="w-full btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-editorial w-full disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {isProcessing ? 'Processing...' : 'Place Order'}
+                {isProcessing ? 'Processing\u2026' : 'Place Order'}
               </button>
 
-              <Link href="/cart" className="block text-center mt-4 text-[color:var(--color-accent)] hover:underline">
-                Back to Cart
+              <Link
+                href="/cart"
+                className="block text-center mt-4 text-xs tracking-[0.08em] uppercase transition-opacity hover:opacity-60"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                Back to Bag
               </Link>
             </div>
           </div>

@@ -17,6 +17,7 @@ import ViewContactModal from '@/components/ViewContactModal';
 import BulkActionsBar from '@/components/BulkActionsBar';
 import OrderDetailsModal from '@/components/OrderDetailsModal';
 import UserHistoryModal from '@/components/UserHistoryModal';
+import { formatPrice } from '@/utils/helpers';
 import toast from 'react-hot-toast';
 import {
   FiPackage,
@@ -586,7 +587,7 @@ export default function AdminOrdersDashboard() {
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-gray-900">
-                            ₹{(order.total || order.totalAmount || 0).toLocaleString('en-IN')}
+                            {formatPrice(order.total || order.totalAmount || 0)}
                           </span>
                           {order.payment?.method === 'cod' ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded bg-orange-100 text-orange-800">

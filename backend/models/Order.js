@@ -12,7 +12,7 @@ const orderItemSchema = new mongoose.Schema(
     size: String,
     color: { type: String, default: "" },
     quantity: Number,
-    price: Number, // snapshot price (₹ in cents)
+    price: Number, // snapshot price in INR
   },
   { _id: false },
 );

@@ -16,8 +16,9 @@ async function getCmsPage(slug) {
 
     if (!response.ok) return null;
     const data = await response.json();
-    return data?.page || null;
-  } catch {
+    return data?.page || data?.data?.page || null;
+  } catch (error) {
+    console.error('[CMS Page SSR] Fetch Error:', error);
     return null;
   }
 }

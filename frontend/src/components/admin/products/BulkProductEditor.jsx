@@ -17,10 +17,7 @@ export default function BulkProductEditor() {
     const fetchProducts = useCallback(async () => {
         setLoading(true);
         try {
-            // Fetch all products (pagination handling might be needed for large datasets)
-            // For now, assuming standard fetch returns a list or standard object
-            const data = await adminAPI.getProducts({ limit: 100 });
-            // Adjust based on actual API response structure (data.products or data)
+            const { data } = await adminAPI.getAllProducts({ limit: 100 });
             setProducts(data.products || data || []);
             setEdits({});
             setModifiedRows(new Set());

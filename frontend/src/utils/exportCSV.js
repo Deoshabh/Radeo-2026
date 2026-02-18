@@ -1,3 +1,5 @@
+import { formatPrice } from '@/utils/helpers';
+
 /**
  * Export orders to CSV
  * @param {Array} orders - Array of order objects
@@ -54,7 +56,7 @@ export const exportOrdersToCSV = (orders, filename = null) => {
         ? `+91${order.shippingAddress.phone}`
         : "N/A",
       items,
-      `₹${(order.total || order.totalAmount || 0).toLocaleString("en-IN")}`,
+      formatPrice(order.total || order.totalAmount || 0),
       order.status || "N/A",
       order.payment?.method === "cod" ? "Cash on Delivery" : "Online Payment",
       new Date(order.createdAt).toLocaleString("en-IN"),

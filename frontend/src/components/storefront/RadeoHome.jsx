@@ -5,7 +5,9 @@ import Link from 'next/link';
 import anime from 'animejs';
 import { useSiteSettings } from '@/context/SiteSettingsContext';
 import { SITE_SETTINGS_DEFAULTS } from '@/constants/siteSettingsDefaults';
+import IntroSplash from './IntroSplash';
 import s from './RadeoHome.module.css';
+import { formatPrice } from '@/utils/helpers';
 
 /* ── Helpers ── */
 const MINIO_BASE = process.env.NEXT_PUBLIC_MINIO_URL || '';
@@ -58,10 +60,7 @@ export default function RadeoHome() {
   }, [settings]);
 
   const rootRef = useRef(null);
-  const preloaderRef = useRef(null);
-  const preloaderBarRef = useRef(null);
-  const preloaderCounterRef = useRef(null);
-  const [preloaderDone, setPreloaderDone] = useState(false);
+  const [introComplete, setIntroComplete] = useState(false);
   const [testimonialIdx, setTestimonialIdx] = useState(0);
   const [products, setProducts] = useState([]);
   const hasAnimated = useRef(false);
@@ -81,21 +80,16 @@ export default function RadeoHome() {
     }).catch(() => setProducts([]));
   }, [hp.collection.enabled, hp.collection.useRealProducts, hp.collection.productLimit, hp.collection.productSelection]);
 
-  /* ── Preloader ── */
+  /* ── Hero entrance — triggered after IntroSplash completes or on revisit ── */
   useEffect(() => {
     if (hasAnimated.current) return;
-    hasAnimated.current = true;
-    const counter = { val: 0 };
-    const counterEl = preloaderCounterRef.current;
-    const tl = anime.timeline({ easing: 'easeOutExpo' });
-
-    tl.add({ targets: `.${s.preloaderLetter}`, translateY: ['110%', '0%'], duration: 700, delay: anime.stagger(80) });
-    tl.add({ targets: preloaderBarRef.current, width: ['0%', '100%'], duration: 1600, easing: 'easeInOutQuart' }, '-=400');
-    tl.add({ targets: counter, val: [0, 100], round: 1, duration: 1600, easing: 'easeInOutQuart', update: () => { if (counterEl) counterEl.textContent = String(Math.floor(counter.val)).padStart(3, '0'); } }, '-=1600');
-    tl.add({ targets: `.${s.preloaderLetter}`, translateY: ['0%', '-110%'], duration: 500, delay: anime.stagger(50), easing: 'easeInExpo' });
-    tl.add({ targets: [preloaderBarRef.current, preloaderCounterRef.current], opacity: 0, duration: 300 }, '-=300');
-    tl.add({ targets: preloaderRef.current, translateY: '-100%', duration: 800, easing: 'easeInOutExpo', complete: () => { setPreloaderDone(true); runHeroEntrance(); } });
-  }, []);
+    // Check if intro was already seen (revisit)
+    const alreadySeen = typeof window !== 'undefined' && sessionStorage.getItem('radeo_intro_seen');
+    if (alreadySeen || introComplete) {
+      hasAnimated.current = true;
+      runHeroEntrance();
+    }
+  }, [introComplete]);
 
   function runHeroEntrance() {
     const tl = anime.timeline({ easing: 'easeOutExpo' });
@@ -149,7 +143,7 @@ export default function RadeoHome() {
     function onScroll() {
       const sy = window.scrollY;
       if (sy < window.innerHeight * 1.5) {
-        if (heroImg) heroImg.style.transform = `translateY(${sy * 0.18}px)`;
+        if (heroImg) heroImg.style.transform = `translateY(${sy * 0.6}px) scale(1.1)`;
         if (heroContent) heroContent.style.transform = `translateY(${sy * 0.06}px)`;
       }
     }
@@ -195,21 +189,17 @@ export default function RadeoHome() {
   /* ── Product helpers ── */
   function getProductImage(p) { if (p?.images?.length) return p.images[0].url || p.images[0]; return p?.image || FALLBACK; }
   function getProductHoverImage(p) { if (p?.images?.length > 1) return p.images[1].url || p.images[1]; return getProductImage(p); }
-  function getProductPrice(p) { const pr = p?.salePrice || p?.price; return pr ? `₹ ${Number(pr).toLocaleString('en-IN')}` : ''; }
+  function getProductPrice(p) { return p?.price ? formatPrice(Number(p.price)) : ''; }
+  function getProductComparePrice(p) { return (p?.comparePrice && p.comparePrice > p.price) ? formatPrice(Number(p.comparePrice)) : ''; }
+  function getProductDiscount(p) { return (p?.comparePrice && p.comparePrice > p.price) ? Math.round(((p.comparePrice - p.price) / p.comparePrice) * 100) : 0; }
   function getProductTag(p) { return p?.category?.name || p?.tags?.[0] || ''; }
 
   /* ═══════════════════════ RENDER ═══════════════════════ */
   return (
     <div className={s.radeoRoot} ref={rootRef}>
 
-      {/* ─── PRELOADER ─── */}
-      <div className={`${s.preloader} ${preloaderDone ? s.preloaderHidden : ''}`} ref={preloaderRef}>
-        <div className={s.preloaderWord}>
-          {'RADEO'.split('').map((ch, i) => <span key={i} className={s.preloaderLetter}>{ch}</span>)}
-        </div>
-        <div className={s.preloaderBarWrap}><div className={s.preloaderBar} ref={preloaderBarRef}></div></div>
-        <div className={s.preloaderCounter} ref={preloaderCounterRef}>000</div>
-      </div>
+      {/* ─── INTRO SPLASH (first visit only) ─── */}
+      <IntroSplash onComplete={() => setIntroComplete(true)} />
 
       {/* ─── HERO ─── */}
       {hp.hero.enabled !== false && (
@@ -228,7 +218,7 @@ export default function RadeoHome() {
             <p className={s.heroDesc}>{hp.hero.description}</p>
             <div className={s.heroCtas}>
               <Link href={hp.hero.primaryButtonLink || '/products'}><button className={s.btnPrimary}>{hp.hero.primaryButtonText}</button></Link>
-              <Link href={hp.hero.secondaryButtonLink || '#craft'}><button className={s.btnGhost}>{hp.hero.secondaryButtonText} <span>→</span></button></Link>
+              <Link href={hp.hero.secondaryButtonLink || '#craft'} className={s.heroTextCta}>{hp.hero.secondaryButtonText} <span className={s.heroCtaArrow}>→</span></Link>
             </div>
             <div className={s.heroStats}>
               {(hp.hero.stats || []).map((st, i) => (
@@ -272,10 +262,13 @@ export default function RadeoHome() {
                       <h3 className={s.cardName}>{p.name}</h3>
                       <div className={s.cardFooter}>
                         <span className={s.cardPrice}>{getProductPrice(p)}</span>
-                        {p.salePrice && p.price > p.salePrice && <span className={s.cardPriceOld}>₹ {Number(p.price).toLocaleString('en-IN')}</span>}
+                        {getProductComparePrice(p) && <span className={s.cardPriceOld}>{getProductComparePrice(p)}</span>}
+                        {getProductDiscount(p) > 0 && <span className={s.cardDiscount}>{getProductDiscount(p)}% OFF</span>}
                       </div>
                     </div>
-                    {p.isNew && <span className={s.cardBadge}>New</span>}
+                    {(p.isNew || getProductDiscount(p) > 0) && (
+                      <span className={s.cardBadge}>{p.isNew ? 'New' : `${getProductDiscount(p)}% OFF`}</span>
+                    )}
                   </div>
                 </Link>
               )) : (

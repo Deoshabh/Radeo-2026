@@ -12,6 +12,7 @@ import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { useSiteSettings } from '@/context/SiteSettingsContext';
 import { productAPI, categoryAPI } from '@/utils/api';
+import { formatPrice } from '@/utils/helpers';
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    RADEO NAVBAR â€” Luxury Minimal Navigation
@@ -409,7 +410,7 @@ export default function Navbar() {
                     <div className="flex-1 min-w-0">
                       <h4 className="text-sm font-medium text-[color:var(--color-heading)] truncate">{product.name}</h4>
                       <p className="text-xs text-[color:var(--color-body)] uppercase tracking-wider">{product.category?.name}</p>
-                      <p className="text-sm font-semibold text-[color:var(--color-accent-hover)]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>â‚¹{product.price?.toLocaleString()}</p>
+                      <p className="text-sm font-semibold text-[color:var(--color-accent-hover)]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>{formatPrice(product.price ?? 0)}</p>
                     </div>
                   </Link>
                 ))}

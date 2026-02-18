@@ -9,6 +9,7 @@ import {
     Tooltip,
     ResponsiveContainer
 } from 'recharts';
+import { formatPrice } from '@/utils/helpers';
 
 export default function RevenueChart({ data }) {
     // Use passed data or fallback to empty array (but don't show mock data if real data is expected)
@@ -53,12 +54,12 @@ export default function RevenueChart({ data }) {
                         axisLine={false}
                         tickLine={false}
                         tick={{ fill: '#6B7280', fontSize: 12 }}
-                        tickFormatter={(value) => `₹${value}`}
+                        tickFormatter={(value) => formatPrice(value)}
                     />
                     <Tooltip
                         contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                         itemStyle={{ color: '#3B2F2F' }}
-                        formatter={(value) => [`₹${value}`, 'Revenue']}
+                        formatter={(value) => [formatPrice(value), 'Revenue']}
                     />
                     <Area
                         type="monotone"

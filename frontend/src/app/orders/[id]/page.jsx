@@ -9,6 +9,7 @@ import { orderAPI } from '@/utils/api';
 import { FiPackage, FiTruck, FiCheck, FiX, FiArrowLeft, FiMapPin, FiClock, FiDollarSign } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import OrderTracker from '@/components/OrderTracker';
+import { formatPrice } from '@/utils/helpers';
 
 export default function OrderDetailPage() {
   const router = useRouter();
@@ -186,7 +187,7 @@ export default function OrderDetailPage() {
               <FiDollarSign className="w-5 h-5 text-primary-600 mt-0.5" />
               <div>
                 <p className="text-sm text-primary-600">Total Amount</p>
-                <p className="font-semibold text-primary-900">₹{(order.totalAmount || order.total || 0).toLocaleString('en-IN')}</p>
+                <p className="font-semibold text-primary-900">{formatPrice(order.totalAmount || order.total || 0)}</p>
               </div>
             </div>
             <div className="flex items-start gap-3 p-4 bg-primary-50 rounded-lg">
@@ -285,9 +286,9 @@ export default function OrderDetailPage() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-primary-900">₹{item.price?.toLocaleString()}</p>
+                      <p className="font-semibold text-primary-900">{formatPrice(item.price ?? 0)}</p>
                       {item.quantity > 1 && (
-                        <p className="text-sm text-primary-600">₹{(item.price / item.quantity).toLocaleString()} each</p>
+                        <p className="text-sm text-primary-600">{formatPrice((item.price || 0) / item.quantity)} each</p>
                       )}
                     </div>
                   </div>
@@ -299,17 +300,17 @@ export default function OrderDetailPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-primary-700">
                     <span>Subtotal</span>
-                    <span>₹{order.subtotal?.toLocaleString()}</span>
+                    <span>{formatPrice(order.subtotal ?? 0)}</span>
                   </div>
                   {order.discount > 0 && (
                     <div className="flex justify-between text-green-600">
                       <span>Discount</span>
-                      <span>-₹{order.discount?.toLocaleString()}</span>
+                      <span>-{formatPrice(order.discount ?? 0)}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-lg font-bold text-primary-900 pt-2 border-t border-primary-200">
                     <span>Total</span>
-                    <span>₹{order.total?.toLocaleString()}</span>
+                    <span>{formatPrice(order.total ?? 0)}</span>
                   </div>
                 </div>
               </div>

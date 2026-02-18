@@ -13,6 +13,7 @@ import ImageUploadWithEditor from '@/components/ImageUploadWithEditor';
 import Image360Upload from '@/components/Image360Upload';
 import ProductViewer360 from '@/components/viewer/ProductViewer360';
 import toast from 'react-hot-toast';
+import { formatPrice } from '@/utils/helpers';
 import { FiPlus, FiX } from 'react-icons/fi';
 
 function ProductFormContent() {
@@ -677,28 +678,28 @@ function ProductFormContent() {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between items-center">
                         <span className="text-blue-700">Base Price:</span>
-                        <span className="font-medium text-blue-900">₹{parseFloat(formData.price || 0).toLocaleString('en-IN')}</span>
+                        <span className="font-medium text-blue-900">{formatPrice(parseFloat(formData.price || 0))}</span>
                       </div>
                       {formData.gstPercentage > 0 && (
                         <div className="flex justify-between items-center">
                           <span className="text-blue-700">+ GST ({formData.gstPercentage}%):</span>
-                          <span className="font-medium text-blue-900">₹{(parseFloat(formData.price || 0) * parseFloat(formData.gstPercentage || 0) / 100).toFixed(2)}</span>
+                          <span className="font-medium text-blue-900">{formatPrice(parseFloat(formData.price || 0) * parseFloat(formData.gstPercentage || 0) / 100)}</span>
                         </div>
                       )}
                       {formData.averageDeliveryCost > 0 && (
                         <div className="flex justify-between items-center">
                           <span className="text-blue-700">+ Delivery Cost:</span>
-                          <span className="font-medium text-blue-900">₹{parseFloat(formData.averageDeliveryCost || 0).toLocaleString('en-IN')}</span>
+                          <span className="font-medium text-blue-900">{formatPrice(parseFloat(formData.averageDeliveryCost || 0))}</span>
                         </div>
                       )}
                       <div className="flex justify-between items-center pt-2 border-t border-blue-300">
                         <span className="text-blue-900 font-semibold">Total Customer Price:</span>
                         <span className="font-bold text-blue-900 text-lg">
-                          ₹{(
+                          {formatPrice(
                             parseFloat(formData.price || 0) +
                             (parseFloat(formData.price || 0) * parseFloat(formData.gstPercentage || 0) / 100) +
                             parseFloat(formData.averageDeliveryCost || 0)
-                          ).toFixed(2)}
+                          )}
                         </span>
                       </div>
 
@@ -709,14 +710,14 @@ function ProductFormContent() {
                           <div className="bg-white rounded-lg p-3 border border-blue-300">
                             <div className="flex items-center gap-3">
                               <span className="text-xl font-bold text-green-600">
-                                ₹{(
+                                {formatPrice(
                                   parseFloat(formData.price || 0) +
                                   (parseFloat(formData.price || 0) * parseFloat(formData.gstPercentage || 0) / 100) +
                                   parseFloat(formData.averageDeliveryCost || 0)
-                                ).toFixed(0)}
+                                )}
                               </span>
                               <span className="text-gray-500 line-through text-sm">
-                                ₹{parseFloat(formData.comparePrice || 0).toLocaleString('en-IN')}
+                                {formatPrice(parseFloat(formData.comparePrice || 0))}
                               </span>
                               <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
                                 {Math.round(((parseFloat(formData.comparePrice || 0) - (parseFloat(formData.price || 0) + (parseFloat(formData.price || 0) * parseFloat(formData.gstPercentage || 0) / 100) + parseFloat(formData.averageDeliveryCost || 0))) / parseFloat(formData.comparePrice || 1)) * 100)}% OFF

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { adminAPI } from '@/utils/api';
-import { formatDate } from '@/utils/helpers';
+import { formatDate, formatPrice } from '@/utils/helpers';
 import { useAuth } from '@/context/AuthContext';
 import AdminLayout from '@/components/AdminLayout';
 import toast from 'react-hot-toast';
@@ -211,7 +211,7 @@ export default function CouponsPage() {
                         </span>
                       ) : (
                         <span className="text-2xl font-bold text-brand-brown">
-                          ₹{coupon.value} OFF
+                          {formatPrice(coupon.value)} OFF
                         </span>
                       )}
                     </div>
@@ -230,10 +230,10 @@ export default function CouponsPage() {
 
                 <div className="space-y-2 text-sm text-primary-600 mb-4">
                   {coupon.minPurchase && (
-                    <p>• Min. purchase: ₹{coupon.minPurchase.toLocaleString()}</p>
+                    <p>• Min. purchase: {formatPrice(coupon.minPurchase)}</p>
                   )}
                   {coupon.maxDiscount && coupon.type === 'percent' && (
-                    <p>• Max. discount: ₹{coupon.maxDiscount.toLocaleString()}</p>
+                    <p>• Max. discount: {formatPrice(coupon.maxDiscount)}</p>
                   )}
                   {coupon.usageLimit && (
                     <p>• Usage limit: {coupon.usageLimit} times (Used: {coupon.usedCount || 0})</p>

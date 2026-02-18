@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   FiFacebook,
   FiTwitter,
@@ -9,6 +9,8 @@ import {
   FiMail,
   FiPhone,
   FiMapPin,
+  FiArrowUp,
+  FiArrowRight,
 } from 'react-icons/fi';
 import { useSiteSettings } from '@/context/SiteSettingsContext';
 
@@ -17,6 +19,16 @@ const SOCIAL_ICON_MAP = {
   twitter: FiTwitter,
   instagram: FiInstagram,
 };
+
+/* ── Design tokens ── */
+const FOOTER_BG = '#1A1714';
+const FOOTER_CREAM = '#F0EBE1';
+const FOOTER_GOLD = '#B8973A';
+const FOOTER_MUTED = '#6B6560';
+const FOOTER_COL_HEADER = '#9A8E84';
+const FOOTER_BORDER = '#3A3530';
+const FOOTER_LEGAL_BORDER = '#2A2520';
+const FOOTER_LEGAL_TEXT = '#4A4540';
 
 export default function Footer() {
   const { settings } = useSiteSettings();
@@ -40,18 +52,13 @@ export default function Footer() {
     .filter((link) => link.enabled)
     .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-  // Theme Styles
-  const bgColor = footerTheme.colors?.background || 'var(--color-primary-900)';
-  const textColor = footerTheme.colors?.text || 'var(--color-background)';
   const showNewsletter = footerTheme.showNewsletter !== false;
   const showSocials = footerTheme.showSocialLinks !== false;
-  const footerLayout = footerTheme.layout || '4-col';
+  const isMinimalLayout = footerTheme.layout === 'minimal';
 
   const handleNewsletterSubmit = async (event) => {
     event.preventDefault();
-    if (!newsletterEmail.trim()) {
-      return;
-    }
+    if (!newsletterEmail.trim()) return;
 
     try {
       setNewsletterStatus('submitting');
@@ -65,9 +72,7 @@ export default function Footer() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Newsletter request failed');
-      }
+      if (!response.ok) throw new Error('Newsletter request failed');
 
       setNewsletterEmail('');
       setNewsletterStatus('success');
@@ -76,33 +81,55 @@ export default function Footer() {
     }
   };
 
-  const gridClassByLayout = {
-    '4-col': 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8',
-    '2-col': 'grid grid-cols-1 md:grid-cols-2 gap-8',
-  };
-
-  const isCenteredLayout = footerLayout === 'centered';
-  const isMinimalLayout = footerLayout === 'minimal';
-  const shouldShowContact = !isMinimalLayout;
-  const contentContainerClass = isCenteredLayout
-    ? 'max-w-5xl mx-auto text-center'
-    : (gridClassByLayout[footerLayout] || gridClassByLayout['4-col']);
+  const scrollToTop = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   return (
     <footer
-      className="mt-20 transition-colors duration-300"
-      style={{ backgroundColor: bgColor, color: textColor }}
+      className="mt-20"
+      style={{ backgroundColor: FOOTER_BG, color: FOOTER_CREAM }}
     >
-      <div className="container-custom py-12">
-        <div className={contentContainerClass}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '4rem 2rem 0' }}>
+
+        {/* ═══ MAIN GRID ═══ */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1.4fr repeat(auto-fit, minmax(140px, 1fr))',
+            gap: '3rem',
+          }}
+        >
+          {/* Brand column */}
           <div>
-            <h3 className="text-2xl font-bold mb-4" style={{ fontFamily: "var(--font-playfair, 'Lora', serif)" }}>{footerContent.brand?.name || 'Radeo'}</h3>
-            <p className="opacity-80 mb-4" style={{ fontFamily: "var(--font-cormorant, 'Libre Baskerville', serif)", fontSize: '1.1rem' }}>
+            <h3
+              style={{
+                fontFamily: "var(--font-playfair, 'Lora', serif)",
+                fontSize: '28px',
+                fontWeight: 400,
+                marginBottom: '0.8rem',
+                color: FOOTER_CREAM,
+              }}
+            >
+              {footerContent.brand?.name || 'Radeo'}
+            </h3>
+            <p
+              style={{
+                fontFamily: "var(--font-cormorant, 'Libre Baskerville', serif)",
+                fontSize: '14px',
+                lineHeight: 1.7,
+                color: FOOTER_MUTED,
+                marginBottom: '1.5rem',
+                maxWidth: '280px',
+              }}
+            >
               {footerContent.brand?.description ||
                 'Premium handcrafted shoes made with timeless craftsmanship and finest materials.'}
             </p>
+
+            {/* Social icons — 36px circles */}
             {showSocials && socialLinks.length > 0 && (
-              <div className={`flex gap-4 ${isCenteredLayout ? 'justify-center' : ''}`}>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
                 {socialLinks.map((social) => {
                   const Icon = SOCIAL_ICON_MAP[social.platform] || FiInstagram;
                   return (
@@ -111,10 +138,27 @@ export default function Footer() {
                       href={social.url || '#'}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="hover:opacity-75 transition-opacity"
-                      style={{ color: textColor }}
+                      style={{
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '50%',
+                        border: `1px solid ${FOOTER_BORDER}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: FOOTER_CREAM,
+                        transition: 'border-color 0.3s, color 0.3s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = FOOTER_GOLD;
+                        e.currentTarget.style.color = FOOTER_GOLD;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = FOOTER_BORDER;
+                        e.currentTarget.style.color = FOOTER_CREAM;
+                      }}
                     >
-                      <Icon className="w-5 h-5" />
+                      <Icon style={{ width: '16px', height: '16px' }} />
                     </a>
                   );
                 })}
@@ -122,10 +166,23 @@ export default function Footer() {
             )}
           </div>
 
+          {/* Dynamic columns */}
           {!isMinimalLayout && columns.map((column) => (
             <div key={column.id || column.title}>
-              <h4 className="text-sm font-semibold mb-4 uppercase tracking-[0.15em]" style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>{column.title}</h4>
-              <ul className="space-y-2">
+              <h4
+                style={{
+                  fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)",
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.2em',
+                  color: FOOTER_COL_HEADER,
+                  marginBottom: '1.2rem',
+                }}
+              >
+                {column.title}
+              </h4>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                 {(column.links || [])
                   .filter((link) => link.enabled)
                   .sort((a, b) => (a.order || 0) - (b.order || 0))
@@ -133,8 +190,17 @@ export default function Footer() {
                     <li key={`${column.title}-${link.text}`}>
                       <Link
                         href={link.url || '/'}
-                        className="opacity-70 hover:opacity-100 transition-opacity"
-                        style={{ color: textColor }}
+                        style={{
+                          color: FOOTER_MUTED,
+                          textDecoration: 'none',
+                          fontSize: '14px',
+                          lineHeight: 1.6,
+                          display: 'inline-block',
+                          position: 'relative',
+                          transition: 'color 0.3s',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = FOOTER_CREAM; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = FOOTER_MUTED; }}
                       >
                         {link.text}
                       </Link>
@@ -144,84 +210,202 @@ export default function Footer() {
             </div>
           ))}
 
-          {shouldShowContact && (
-          <div>
-            <h4 className="text-sm font-semibold mb-4 uppercase tracking-[0.15em]" style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>Contact Us</h4>
-            <ul className="space-y-3">
-              {contact.showAddress && contact.address && (
-                <li className="flex items-start gap-2 opacity-80">
-                  <FiMapPin className="w-5 h-5 mt-1 flex-shrink-0" />
-                  <span>{contact.address}</span>
-                </li>
-              )}
-              {contact.showPhone && contact.phone && (
-                <li className="flex items-center gap-2 opacity-80">
-                  <FiPhone className="w-5 h-5" />
-                  <a
-                    href={`tel:${String(contact.phone).replace(/\s+/g, '')}`}
-                    className="hover:opacity-100 transition-opacity"
-                  >
-                    {contact.phone}
-                  </a>
-                </li>
-              )}
-              {contact.showEmail && contact.email && (
-                <li className="flex items-center gap-2 opacity-80">
-                  <FiMail className="w-5 h-5" />
-                  <a href={`mailto:${contact.email}`} className="hover:opacity-100 transition-opacity">
-                    {contact.email}
-                  </a>
-                </li>
-              )}
-            </ul>
-          </div>
+          {/* Contact column */}
+          {!isMinimalLayout && (
+            <div>
+              <h4
+                style={{
+                  fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)",
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.2em',
+                  color: FOOTER_COL_HEADER,
+                  marginBottom: '1.2rem',
+                }}
+              >
+                Contact Us
+              </h4>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {contact.showAddress && contact.address && (
+                  <li style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', color: FOOTER_MUTED, fontSize: '14px' }}>
+                    <FiMapPin style={{ width: '16px', height: '16px', marginTop: '2px', flexShrink: 0 }} />
+                    <span>{contact.address}</span>
+                  </li>
+                )}
+                {contact.showPhone && contact.phone && (
+                  <li style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '14px' }}>
+                    <FiPhone style={{ width: '16px', height: '16px', flexShrink: 0, color: FOOTER_MUTED }} />
+                    <a href={`tel:${String(contact.phone).replace(/\s+/g, '')}`} style={{ color: FOOTER_MUTED, textDecoration: 'none', transition: 'color 0.3s' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.color = FOOTER_CREAM; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.color = FOOTER_MUTED; }}
+                    >
+                      {contact.phone}
+                    </a>
+                  </li>
+                )}
+                {contact.showEmail && contact.email && (
+                  <li style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '14px' }}>
+                    <FiMail style={{ width: '16px', height: '16px', flexShrink: 0, color: FOOTER_MUTED }} />
+                    <a href={`mailto:${contact.email}`} style={{ color: FOOTER_MUTED, textDecoration: 'none', transition: 'color 0.3s' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.color = FOOTER_CREAM; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.color = FOOTER_MUTED; }}
+                    >
+                      {contact.email}
+                    </a>
+                  </li>
+                )}
+              </ul>
+            </div>
           )}
         </div>
 
-        {footerTheme.showNewsletter !== false && (
-          <div className="border-t mt-8 pt-8" style={{ borderColor: `${textColor}33` }}>
-            <div className="max-w-md mx-auto text-center">
-              <h4 className="text-sm font-semibold mb-2 uppercase tracking-[0.15em]" style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>{footerContent.newsletter?.title || 'Subscribe to Our Newsletter'}</h4>
-              <p className="opacity-80 mb-4" style={{ fontFamily: "var(--font-cormorant, 'Libre Baskerville', serif)" }}>{footerContent.newsletter?.description || 'Get updates on new products and exclusive offers'}</p>
-              <form onSubmit={handleNewsletterSubmit} className="flex gap-2">
+        {/* ═══ NEWSLETTER — left-aligned, bottom-border input + gold arrow ═══ */}
+        {showNewsletter && (
+          <div
+            style={{
+              borderTop: `1px solid ${FOOTER_BORDER}`,
+              marginTop: '3rem',
+              paddingTop: '2.5rem',
+              paddingBottom: '0.5rem',
+            }}
+          >
+            <div style={{ maxWidth: '480px' }}>
+              <h4
+                style={{
+                  fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)",
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.2em',
+                  color: FOOTER_COL_HEADER,
+                  marginBottom: '0.5rem',
+                }}
+              >
+                {footerContent.newsletter?.title || 'Subscribe to Our Newsletter'}
+              </h4>
+              <p
+                style={{
+                  fontFamily: "var(--font-cormorant, 'Libre Baskerville', serif)",
+                  fontSize: '14px',
+                  color: FOOTER_MUTED,
+                  marginBottom: '1.2rem',
+                  lineHeight: 1.6,
+                }}
+              >
+                {footerContent.newsletter?.description || 'Get updates on new products and exclusive offers'}
+              </p>
+              <form onSubmit={handleNewsletterSubmit} style={{ display: 'flex', alignItems: 'stretch', gap: '0' }}>
                 <input
                   type="email"
                   value={newsletterEmail}
                   onChange={(event) => setNewsletterEmail(event.target.value)}
                   required
                   placeholder={footerContent.newsletter?.placeholder || 'Enter your email'}
-                  className="flex-1 px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-brand-tan placeholder-white/50"
-                  style={{ color: textColor, borderColor: `${textColor}33` }}
+                  style={{
+                    flex: 1,
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: `1px solid ${FOOTER_BORDER}`,
+                    padding: '0.75rem 0',
+                    color: FOOTER_CREAM,
+                    fontSize: '14px',
+                    fontFamily: "var(--font-cormorant, 'Libre Baskerville', serif)",
+                    outline: 'none',
+                  }}
                 />
                 <button
                   type="submit"
                   disabled={newsletterStatus === 'submitting'}
-                  className="btn px-6 font-medium"
-                  style={{ backgroundColor: textColor, color: bgColor }}
+                  aria-label="Subscribe"
+                  style={{
+                    width: '44px',
+                    height: '44px',
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: `1px solid ${FOOTER_BORDER}`,
+                    color: FOOTER_GOLD,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'color 0.3s',
+                  }}
                 >
-                  {footerContent.newsletter?.buttonText || 'Subscribe'}
+                  <FiArrowRight style={{ width: '18px', height: '18px' }} />
                 </button>
               </form>
               {newsletterStatus === 'success' && (
-                <p className="mt-3 text-sm opacity-80">Subscription request sent successfully.</p>
+                <p style={{ marginTop: '0.75rem', fontSize: '13px', color: FOOTER_MUTED }}>Subscription request sent successfully.</p>
               )}
               {newsletterStatus === 'error' && (
-                <p className="mt-3 text-sm text-red-300">Unable to subscribe right now. Please try again.</p>
+                <p style={{ marginTop: '0.75rem', fontSize: '13px', color: '#B91C1C' }}>Unable to subscribe right now. Please try again.</p>
               )}
             </div>
           </div>
         )}
 
-        <div className="border-t mt-8 pt-8 flex flex-col md:flex-row justify-between items-center gap-4" style={{ borderColor: `${textColor}33` }}>
-          <p className="opacity-70 text-sm">
+        {/* ═══ LEGAL ROW + Back-to-top ═══ */}
+        <div
+          style={{
+            borderTop: `1px solid ${FOOTER_LEGAL_BORDER}`,
+            marginTop: '2.5rem',
+            padding: '1.5rem 0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '1rem',
+          }}
+        >
+          <p style={{ fontSize: '13px', color: FOOTER_LEGAL_TEXT, margin: 0 }}>
             &copy; {currentYear} {footerContent.brand?.name || 'Radeo'}. {footerContent.legal?.copyrightText || 'All rights reserved.'}
           </p>
-          <div className="flex gap-6 text-sm">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
             {legalLinks.map((link) => (
-              <Link key={link.text} href={link.url || '/'} className="opacity-70 hover:opacity-100 transition-opacity" style={{ color: textColor }}>
+              <Link
+                key={link.text}
+                href={link.url || '/'}
+                style={{
+                  fontSize: '13px',
+                  color: FOOTER_LEGAL_TEXT,
+                  textDecoration: 'none',
+                  transition: 'color 0.3s',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = FOOTER_CREAM; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = FOOTER_LEGAL_TEXT; }}
+              >
                 {link.text}
               </Link>
             ))}
+            {/* Back to top */}
+            <button
+              onClick={scrollToTop}
+              aria-label="Back to top"
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                border: `1px solid ${FOOTER_BORDER}`,
+                background: 'transparent',
+                color: FOOTER_MUTED,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'border-color 0.3s, color 0.3s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = FOOTER_GOLD;
+                e.currentTarget.style.color = FOOTER_GOLD;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = FOOTER_BORDER;
+                e.currentTarget.style.color = FOOTER_MUTED;
+              }}
+            >
+              <FiArrowUp style={{ width: '16px', height: '16px' }} />
+            </button>
           </div>
         </div>
       </div>

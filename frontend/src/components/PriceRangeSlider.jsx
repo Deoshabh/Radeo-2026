@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { formatPrice } from '@/utils/helpers';
 
 export default function PriceRangeSlider({ min, max, value, onChange }) {
   const [minValue, setMinValue] = useState(value?.min || min);
@@ -31,26 +32,29 @@ export default function PriceRangeSlider({ min, max, value, onChange }) {
     onChange({ min: minValue, max: maxValue });
   };
 
-  const getSliderBackground = () => {
-    const minPercent = ((minValue - min) / (max - min)) * 100;
-    const maxPercent = ((maxValue - min) / (max - min)) * 100;
-    return `linear-gradient(to right, #e5e7eb 0%, #e5e7eb ${minPercent}%, #8B4513 ${minPercent}%, #8B4513 ${maxPercent}%, #e5e7eb ${maxPercent}%, #e5e7eb 100%)`;
-  };
+  const minPercent = ((minValue - min) / (max - min)) * 100;
+  const maxPercent = ((maxValue - min) / (max - min)) * 100;
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-primary-600">₹{minValue.toLocaleString('en-IN')}</span>
-        <span className="text-primary-600">₹{maxValue.toLocaleString('en-IN')}</span>
+      <div className="flex items-center justify-between text-xs font-mono" style={{ color: 'var(--color-text-primary)' }}>
+        <span>{formatPrice(minValue)}</span>
+        <span>{formatPrice(maxValue)}</span>
       </div>
 
-      <div className="relative h-2">
+      <div className="relative h-[2px]">
         {/* Background track */}
-        <div 
-          className="absolute w-full h-2 rounded-full"
-          style={{ background: getSliderBackground() }}
+        <div className="absolute w-full h-full" style={{ backgroundColor: 'var(--color-border)' }} />
+        {/* Active track */}
+        <div
+          className="absolute h-full"
+          style={{
+            left: `${minPercent}%`,
+            width: `${maxPercent - minPercent}%`,
+            backgroundColor: 'var(--color-accent)',
+          }}
         />
-        
+
         {/* Min slider */}
         <input
           type="range"
@@ -61,9 +65,9 @@ export default function PriceRangeSlider({ min, max, value, onChange }) {
           onChange={handleMinChange}
           onMouseUp={handleMinBlur}
           onTouchEnd={handleMinBlur}
-          className="absolute w-full h-2 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-moz-range-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-brand-brown [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-brand-brown [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:shadow-md"
+          className="absolute w-full h-[2px] appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-moz-range-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--color-accent)] [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-sm [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[var(--color-accent)] [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:shadow-sm"
         />
-        
+
         {/* Max slider */}
         <input
           type="range"
@@ -74,7 +78,7 @@ export default function PriceRangeSlider({ min, max, value, onChange }) {
           onChange={handleMaxChange}
           onMouseUp={handleMaxBlur}
           onTouchEnd={handleMaxBlur}
-          className="absolute w-full h-2 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-moz-range-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-brand-brown [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-brand-brown [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:shadow-md"
+          className="absolute w-full h-[2px] appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-moz-range-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--color-accent)] [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-sm [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[var(--color-accent)] [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:shadow-sm"
         />
       </div>
 
@@ -86,9 +90,13 @@ export default function PriceRangeSlider({ min, max, value, onChange }) {
           onBlur={handleMinBlur}
           min={min}
           max={maxValue - 1000}
-          className="w-24 px-2 py-1 border border-primary-200 rounded focus:outline-none focus:ring-1 focus:ring-brand-brown"
+          className="w-24 px-0 py-1.5 bg-transparent font-mono text-xs focus:outline-none"
+          style={{
+            borderBottom: '1px solid var(--color-border)',
+            color: 'var(--color-text-primary)',
+          }}
         />
-        <span className="text-primary-400">to</span>
+        <span className="text-[0.625rem] tracking-wider uppercase" style={{ color: 'var(--color-text-secondary)' }}>to</span>
         <input
           type="number"
           value={maxValue}
@@ -96,7 +104,11 @@ export default function PriceRangeSlider({ min, max, value, onChange }) {
           onBlur={handleMaxBlur}
           min={minValue + 1000}
           max={max}
-          className="w-24 px-2 py-1 border border-primary-200 rounded focus:outline-none focus:ring-1 focus:ring-brand-brown"
+          className="w-24 px-0 py-1.5 bg-transparent font-mono text-xs focus:outline-none"
+          style={{
+            borderBottom: '1px solid var(--color-border)',
+            color: 'var(--color-text-primary)',
+          }}
         />
       </div>
     </div>

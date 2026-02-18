@@ -335,11 +335,11 @@ function ProductsContent() {
 
               {/* Category Filter */}
               <div className="mb-8">
-                <h4 className="text-[11px] font-semibold text-[color:var(--color-heading)] mb-4 uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>Categories</h4>
+                <h4 className="text-[11px] font-semibold text-[color:var(--color-heading)] mb-4 uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>Categories</h4>
                 <div className="space-y-3">
                   <label className="flex items-center gap-3 cursor-pointer group">
-                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${!selectedCategory ? 'bg-brand-brown border-brand-brown' : 'border-primary-300 group-hover:border-brand-brown'}`}>
-                      {!selectedCategory && <div className="w-2.5 h-2.5 bg-white rounded-sm" />}
+                    <div className={`w-4 h-4 border flex items-center justify-center transition-colors ${!selectedCategory ? 'bg-[var(--color-accent)] border-[var(--color-accent)]' : 'border-[var(--color-border)] group-hover:border-[var(--color-accent)]'}`}>
+                      {!selectedCategory && <div className="w-2 h-2 bg-white" />}
                     </div>
                     <input
                       type="radio"
@@ -348,12 +348,12 @@ function ProductsContent() {
                       onChange={() => updateFilters('category', '')}
                       className="hidden"
                     />
-                    <span className={`text-sm transition-colors ${!selectedCategory ? 'text-primary-900 font-medium' : 'text-primary-600 group-hover:text-primary-900'}`}>All Products</span>
+                    <span className={`text-sm transition-colors ${!selectedCategory ? 'font-medium' : ''}`} style={{ color: !selectedCategory ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>All Products</span>
                   </label>
                   {categories.map((category) => (
                     <label key={category._id} className="flex items-center gap-3 cursor-pointer group">
-                      <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${selectedCategory === category.slug ? 'bg-brand-brown border-brand-brown' : 'border-primary-300 group-hover:border-brand-brown'}`}>
-                        {selectedCategory === category.slug && <div className="w-2.5 h-2.5 bg-white rounded-sm" />}
+                      <div className={`w-4 h-4 border flex items-center justify-center transition-colors ${selectedCategory === category.slug ? 'bg-[var(--color-accent)] border-[var(--color-accent)]' : 'border-[var(--color-border)] group-hover:border-[var(--color-accent)]'}`}>
+                        {selectedCategory === category.slug && <div className="w-2 h-2 bg-white" />}
                       </div>
                       <input
                         type="radio"
@@ -362,7 +362,7 @@ function ProductsContent() {
                         onChange={() => updateFilters('category', category.slug)}
                         className="hidden"
                       />
-                      <span className={`text-sm transition-colors ${selectedCategory === category.slug ? 'text-primary-900 font-medium' : 'text-primary-600 group-hover:text-primary-900'}`}>{category.name}</span>
+                      <span className={`text-sm transition-colors ${selectedCategory === category.slug ? 'font-medium' : ''}`} style={{ color: selectedCategory === category.slug ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>{category.name}</span>
                     </label>
                   ))}
                 </div>
@@ -384,12 +384,12 @@ function ProductsContent() {
               {/* Material Filter */}
               {materials.length > 0 && (
                 <div className="mb-8">
-                  <h4 className="text-[11px] font-semibold text-[color:var(--color-heading)] mb-4 uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>Material</h4>
+                  <h4 className="text-[11px] font-semibold text-[color:var(--color-heading)] mb-4 uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>Material</h4>
                   <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
                     {materials.map((material) => (
                       <label key={material} className="flex items-center gap-3 cursor-pointer group">
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${selectedMaterials.includes(material) ? 'bg-brand-brown border-brand-brown' : 'border-primary-300 group-hover:border-brand-brown'}`}>
-                          {selectedMaterials.includes(material) && <FiX className="w-3 h-3 text-white" />}
+                        <div className={`w-4 h-4 border flex items-center justify-center transition-colors ${selectedMaterials.includes(material) ? 'bg-[var(--color-accent)] border-[var(--color-accent)]' : 'border-[var(--color-border)] group-hover:border-[var(--color-accent)]'}`}>
+                          {selectedMaterials.includes(material) && <FiX className="w-2.5 h-2.5 text-white" />}
                         </div>
                         <input
                           type="checkbox"
@@ -397,7 +397,7 @@ function ProductsContent() {
                           onChange={() => handleMaterialToggle(material)}
                           className="hidden"
                         />
-                        <span className="text-sm text-primary-700 group-hover:text-primary-900">{material}</span>
+                        <span className="text-sm" style={{ color: selectedMaterials.includes(material) ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>{material}</span>
                       </label>
                     ))}
                   </div>
@@ -407,7 +407,7 @@ function ProductsContent() {
               {/* Color Filter */}
               {colors.length > 0 && (
                 <div className="mb-8">
-                  <h4 className="text-[11px] font-semibold text-[color:var(--color-heading)] mb-4 uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>Color</h4>
+                  <h4 className="text-[11px] font-semibold text-[color:var(--color-heading)] mb-4 uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>Color</h4>
                   <div className="flex flex-wrap gap-2">
                     {colors.map((color) => (
                       <label key={color} className="cursor-pointer group relative">
@@ -418,9 +418,13 @@ function ProductsContent() {
                           className="hidden"
                         />
                         <div
-                          className={`w-8 h-8 rounded-full border transition-all ${selectedColors.includes(color) ? 'ring-2 ring-brand-brown ring-offset-2 scale-110 border-transparent' : 'border-primary-200 hover:border-brand-brown hover:scale-105'}`}
+                          className="w-7 h-7 rounded-full transition-all duration-150"
                           style={{
                             backgroundColor: color,
+                            border: selectedColors.includes(color) ? '2px solid var(--color-accent)' : '1px solid var(--color-border)',
+                            outline: selectedColors.includes(color) ? '2px solid var(--color-accent)' : 'none',
+                            outlineOffset: '2px',
+                            transform: selectedColors.includes(color) ? 'scale(1.1)' : 'scale(1)',
                           }}
                           title={getColorName(color)}
                         />
@@ -438,7 +442,7 @@ function ProductsContent() {
               {/* Size Filter */}
               {sizes.length > 0 && (
                 <div>
-                  <h4 className="text-[11px] font-semibold text-[color:var(--color-heading)] mb-4 uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-dm-mono, monospace)" }}>Size</h4>
+                  <h4 className="text-[11px] font-semibold text-[color:var(--color-heading)] mb-4 uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>Size</h4>
                   <div className="grid grid-cols-4 gap-2">
                     {sizes.map((size) => (
                       <label key={size} className="cursor-pointer">
@@ -448,7 +452,14 @@ function ProductsContent() {
                           onChange={() => handleSizeToggle(size)}
                           className="hidden"
                         />
-                        <div className={`text-sm py-2 rounded text-center border transition-all ${selectedSizes.includes(size) ? 'bg-brand-brown text-white border-brand-brown font-medium' : 'bg-white text-primary-700 border-primary-200 hover:border-brand-brown'}`}>
+                        <div
+                          className="w-10 h-10 flex items-center justify-center text-xs font-mono transition-all duration-150"
+                          style={{
+                            border: selectedSizes.includes(size) ? '2px solid var(--color-accent)' : '1px solid var(--color-border)',
+                            backgroundColor: selectedSizes.includes(size) ? 'var(--color-accent)' : 'transparent',
+                            color: selectedSizes.includes(size) ? '#fff' : 'var(--color-text-secondary)',
+                          }}
+                        >
                           {size}
                         </div>
                       </label>
@@ -461,50 +472,55 @@ function ProductsContent() {
 
           {/* Mobile Filter Modal */}
           {isFilterOpen && (
-            <div className="lg:hidden fixed inset-0 bg-black/50 z-50 animate-fade-in backdrop-blur-sm">
-              <div className="absolute right-0 top-0 bottom-0 w-80 bg-white p-6 overflow-y-auto animate-slide-in shadow-2xl">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="font-semibold text-lg text-primary-900">Filters</h3>
-                  <button onClick={() => setIsFilterOpen(false)} className="p-2 hover:bg-primary-50 rounded-full transition-colors">
-                    <FiX className="w-6 h-6" />
-                  </button>
-                </div>
+            <div className="lg:hidden fixed inset-0 bg-black/40 z-50 backdrop-blur-sm">
+              <div className="absolute right-0 top-0 bottom-0 w-80 overflow-y-auto" style={{ backgroundColor: 'var(--color-background)' }}>
+                <div className="p-6">
+                  <div className="flex justify-between items-center mb-6 pb-4" style={{ borderBottom: '1px solid var(--color-border)' }}>
+                    <h3 className="label-upper text-xs" style={{ color: 'var(--color-text-secondary)' }}>Filters</h3>
+                    <button onClick={() => setIsFilterOpen(false)} className="p-2 transition-opacity hover:opacity-60">
+                      <FiX className="w-5 h-5" style={{ color: 'var(--color-text-primary)' }} />
+                    </button>
+                  </div>
 
-                {/* Same filter content as desktop (simplified for mobile) */}
-                {/* ... Mobile filter implementation (reusing logic) ... */}
-                {/* Mobile Color Filter Example */}
-                {/* (Ideally, refactor Sidebar content into a component to reuse, but for now copying structure) */}
-
-                <div className="space-y-8 pb-20">
-                  <div>
-                    <h4 className="font-medium mb-3">Categories</h4>
-                    <div className="space-y-2">
-                      <label className="flex items-center gap-2 p-2 rounded hover:bg-primary-50">
-                        <input type="radio" name="mob-cat" checked={!selectedCategory} onChange={() => updateFilters('category', '')} className="text-brand-brown focus:ring-brand-brown" />
-                        <span>All</span>
-                      </label>
-                      {categories.map(c => (
-                        <label key={c._id} className="flex items-center gap-2 p-2 rounded hover:bg-primary-50">
-                          <input type="radio" name="mob-cat" checked={selectedCategory === c.slug} onChange={() => updateFilters('category', c.slug)} className="text-brand-brown focus:ring-brand-brown" />
-                          <span>{c.name}</span>
+                  <div className="space-y-8 pb-24">
+                    <div>
+                      <h4 className="label-upper text-[0.625rem] mb-3" style={{ color: 'var(--color-text-secondary)' }}>Categories</h4>
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-3 py-1.5 cursor-pointer">
+                          <div className={`w-4 h-4 border flex items-center justify-center transition-colors ${!selectedCategory ? 'bg-[var(--color-accent)] border-[var(--color-accent)]' : 'border-[var(--color-border)]'}`}>
+                            {!selectedCategory && <div className="w-2 h-2 bg-white" />}
+                          </div>
+                          <input type="radio" name="mob-cat" checked={!selectedCategory} onChange={() => updateFilters('category', '')} className="hidden" />
+                          <span className="text-sm" style={{ color: !selectedCategory ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>All</span>
                         </label>
-                      ))}
+                        {categories.map(c => (
+                          <label key={c._id} className="flex items-center gap-3 py-1.5 cursor-pointer">
+                            <div className={`w-4 h-4 border flex items-center justify-center transition-colors ${selectedCategory === c.slug ? 'bg-[var(--color-accent)] border-[var(--color-accent)]' : 'border-[var(--color-border)]'}`}>
+                              {selectedCategory === c.slug && <div className="w-2 h-2 bg-white" />}
+                            </div>
+                            <input type="radio" name="mob-cat" checked={selectedCategory === c.slug} onChange={() => updateFilters('category', c.slug)} className="hidden" />
+                            <span className="text-sm" style={{ color: selectedCategory === c.slug ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>{c.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="label-upper text-[0.625rem] mb-3" style={{ color: 'var(--color-text-secondary)' }}>Price</h4>
+                      <PriceRangeSlider min={priceRange.min} max={priceRange.max} value={selectedPriceRange} onChange={handlePriceChange} />
                     </div>
                   </div>
-
-                  <div>
-                    <h4 className="font-medium mb-3">Price</h4>
-                    <PriceRangeSlider min={priceRange.min} max={priceRange.max} value={selectedPriceRange} onChange={handlePriceChange} />
-                  </div>
-
-                  {/* ... other filters ... */}
                 </div>
 
-                <div className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t flex gap-4">
-                  <button onClick={clearFilters} className="flex-1 btn btn-secondary text-sm">
+                <div className="absolute bottom-0 left-0 right-0 p-4 flex gap-4" style={{ backgroundColor: 'var(--color-background)', borderTop: '1px solid var(--color-border)' }}>
+                  <button
+                    onClick={clearFilters}
+                    className="flex-1 py-2.5 text-xs tracking-[0.1em] uppercase transition-opacity hover:opacity-60"
+                    style={{ color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)' }}
+                  >
                     Clear
                   </button>
-                  <button onClick={() => setIsFilterOpen(false)} className="flex-1 btn btn-primary text-sm">
+                  <button onClick={() => setIsFilterOpen(false)} className="flex-1 btn-editorial text-xs py-2.5">
                     View Results
                   </button>
                 </div>

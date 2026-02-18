@@ -9,6 +9,7 @@ import {
     FiTrash2
 } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
+import { formatPrice } from '@/utils/helpers';
 
 export default function ProductTable({
     products,
@@ -132,7 +133,7 @@ export default function ProductTable({
                                 <td className="px-6 py-4 text-primary-700 font-medium">
                                     {product.brand || '-'}
                                 </td>
-                                <td className="px-6 py-4 text-primary-900 font-semibold">₹{product.price?.toLocaleString()}</td>
+                                <td className="px-6 py-4 text-primary-900 font-semibold">{formatPrice(product.price ?? 0)}</td>
                                 <td className="px-6 py-4">
                                     <span className={`text-sm font-medium ${product.stock <= 10 ? 'text-red-600' : 'text-green-600'}`}>
                                         {product.stock} units

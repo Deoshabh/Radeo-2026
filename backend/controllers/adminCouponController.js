@@ -1,4 +1,5 @@
 const Coupon = require("../models/Coupon");
+const CurrencyUtils = require("../utils/currencyUtils");
 
 // @desc    Get all coupons
 // @route   GET /api/v1/admin/coupons
@@ -233,7 +234,7 @@ exports.validateCoupon = async (req, res) => {
     // Check minimum order value
     if (cartTotal < coupon.minOrder) {
       return res.status(400).json({
-        message: `Minimum order value of ₹${coupon.minOrder} required to use this coupon`,
+        message: `Minimum order value of ${CurrencyUtils.format(coupon.minOrder)} required to use this coupon`,
       });
     }
 

@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { FiArrowLeft, FiMail, FiPhone } from 'react-icons/fi';
+import { FiMail, FiPhone } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
 import EmailAuth from '@/components/auth/EmailAuth';
 import PhoneAuth from '@/components/auth/PhoneAuth';
@@ -166,94 +167,147 @@ export default function FirebaseLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-brand-cream/20 to-primary-100 pt-6">
-      <div className="container-custom py-12">
-        <div className="max-w-md mx-auto">
-          {/* Back Button */}
-          <Link href="/" className="inline-flex items-center gap-2 text-primary-600 hover:text-brand-brown mb-8">
-            <FiArrowLeft />
-            Back to Home
+    <div className="min-h-screen flex" style={{ background: '#F7F5F1' }}>
+      {/* ═══ LEFT — Brand Image Panel ═══ */}
+      <div className="hidden lg:flex lg:w-[48%] relative overflow-hidden">
+        <Image
+          src="https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?w=1200&h=1600&fit=crop&q=80"
+          alt="Radeo handcrafted leather"
+          fill
+          className="object-cover"
+          priority
+        />
+        {/* Dark overlay */}
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(26,23,20,0.35) 0%, rgba(26,23,20,0.72) 100%)' }} />
+        {/* Brand content */}
+        <div className="absolute inset-0 flex flex-col justify-between p-12">
+          <Link href="/" style={{ fontFamily: "var(--font-playfair, 'Cormorant Garamond', serif)", fontSize: '1.6rem', fontWeight: 400, letterSpacing: '0.18em', color: '#F0EBE1', textDecoration: 'none' }}>
+            RADEO
           </Link>
+          <div>
+            <p style={{ fontFamily: "var(--font-playfair, 'Cormorant Garamond', serif)", fontStyle: 'italic', fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', lineHeight: 1.5, color: '#E8E0D0', maxWidth: '380px' }}>
+              &ldquo;Where tradition meets the modern step.&rdquo;
+            </p>
+            <div className="mt-6" style={{ width: '40px', height: '1px', background: '#B8973A' }} />
+          </div>
+        </div>
+      </div>
 
-          {/* Main Card */}
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            {/* Auth Method Tabs */}
-            <div className="grid grid-cols-2 border-b border-primary-200">
-              <button
-                onClick={() => setAuthMethod('email')}
-                className={`
-                  py-4 px-6 font-medium text-sm transition-all flex items-center justify-center gap-2
-                  ${authMethod === 'email'
-                    ? 'bg-brand-brown text-white'
-                    : 'bg-primary-50 text-primary-600 hover:bg-primary-100'
-                  }
-                `}
-              >
-                <FiMail className="w-4 h-4" />
-                Email
-              </button>
-              <button
-                onClick={() => setAuthMethod('phone')}
-                className={`
-                  py-4 px-6 font-medium text-sm transition-all flex items-center justify-center gap-2
-                  ${authMethod === 'phone'
-                    ? 'bg-brand-brown text-white'
-                    : 'bg-primary-50 text-primary-600 hover:bg-primary-100'
-                  }
-                `}
-              >
-                <FiPhone className="w-4 h-4" />
-                Phone
-              </button>
-            </div>
+      {/* ═══ RIGHT — Form Panel ═══ */}
+      <div className="flex-1 flex items-center justify-center px-6 py-12 lg:px-16">
+        <div className="w-full max-w-[420px]">
+          {/* Mobile brand */}
+          <div className="lg:hidden mb-10 text-center">
+            <Link href="/" style={{ fontFamily: "var(--font-playfair, 'Cormorant Garamond', serif)", fontSize: '1.6rem', fontWeight: 400, letterSpacing: '0.18em', color: '#1A1714', textDecoration: 'none' }}>
+              RADEO
+            </Link>
+          </div>
 
-            {/* Auth Components */}
-            <div className="p-8">
-              {authMethod === 'email' ? (
-                <EmailAuth onSuccess={handleFirebaseSuccess} mode="login" />
-              ) : (
-                <PhoneAuth onSuccess={handleFirebaseSuccess} />
+          {/* Welcome text */}
+          <div className="mb-8">
+            <p className="mb-2 uppercase" style={{ fontFamily: "var(--font-inter, 'DM Sans', sans-serif)", fontSize: '11px', letterSpacing: '0.25em', color: '#8A7E74' }}>
+              Welcome back
+            </p>
+            <h1 style={{ fontFamily: "var(--font-playfair, 'Cormorant Garamond', serif)", fontSize: 'clamp(1.8rem, 3vw, 2.4rem)', fontWeight: 400, lineHeight: 1.1, color: '#1A1714' }}>
+              Sign in to your account
+            </h1>
+          </div>
+
+          {/* ── Underline Tab Switcher ── */}
+          <div className="flex gap-8 mb-8" style={{ borderBottom: '1px solid #E5E2DC' }}>
+            <button
+              onClick={() => setAuthMethod('email')}
+              className="relative pb-3 flex items-center gap-2 transition-colors"
+              style={{
+                fontFamily: "var(--font-inter, 'DM Sans', sans-serif)",
+                fontSize: '13px',
+                fontWeight: 500,
+                letterSpacing: '0.05em',
+                color: authMethod === 'email' ? '#1A1714' : '#8A7E74',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <FiMail className="w-4 h-4" />
+              Email
+              {authMethod === 'email' && (
+                <span className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ background: '#B8973A', transition: 'all 200ms ease' }} />
               )}
+            </button>
+            <button
+              onClick={() => setAuthMethod('phone')}
+              className="relative pb-3 flex items-center gap-2 transition-colors"
+              style={{
+                fontFamily: "var(--font-inter, 'DM Sans', sans-serif)",
+                fontSize: '13px',
+                fontWeight: 500,
+                letterSpacing: '0.05em',
+                color: authMethod === 'phone' ? '#1A1714' : '#8A7E74',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <FiPhone className="w-4 h-4" />
+              Phone
+              {authMethod === 'phone' && (
+                <span className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ background: '#B8973A', transition: 'all 200ms ease' }} />
+              )}
+            </button>
+          </div>
 
-              {/* Divider */}
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-primary-200"></div>
-                </div>
-                <div className="relative flex justify-center text-xs">
-                  <span className="px-2 bg-white text-primary-500">OR</span>
-                </div>
-              </div>
+          {/* ── Auth Form Content ── */}
+          {authMethod === 'email' ? (
+            <EmailAuth onSuccess={handleFirebaseSuccess} mode="login" />
+          ) : (
+            <PhoneAuth onSuccess={handleFirebaseSuccess} />
+          )}
 
-              {/* Google Sign-In Button */}
-              <button
-                onClick={handleGoogleSignIn}
-                disabled={googleLoading || syncingBackend}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 border-2 border-primary-200 rounded-lg hover:bg-primary-50 hover:border-primary-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {syncingBackend ? (
-                  <div className="w-5 h-5 border-2 border-primary-300 border-t-brand-brown rounded-full animate-spin" />
-                ) : (
-                  <FcGoogle className="w-5 h-5" />
-                )}
-                <span className="font-medium text-primary-900">
-                  {syncingBackend ? 'Connecting...' : googleLoading ? 'Opening Google...' : 'Continue with Google'}
-                </span>
-              </button>
+          {/* ── Divider ── */}
+          <div className="relative my-8">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full" style={{ height: '1px', background: '#E5E2DC' }} />
+            </div>
+            <div className="relative flex justify-center">
+              <span className="px-4" style={{ background: '#F7F5F1', fontFamily: "var(--font-inter, 'DM Sans', sans-serif)", fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#8A7E74' }}>or</span>
             </div>
           </div>
 
-          {/* Footer Info */}
-          <div className="mt-8 text-center">
-            <p className="text-xs text-primary-500">
+          {/* ── Google Sign-In Button ── */}
+          <button
+            onClick={handleGoogleSignIn}
+            disabled={googleLoading || syncingBackend}
+            className="w-full flex items-center justify-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              height: '48px',
+              border: '1px solid #D4CFC9',
+              background: 'transparent',
+              cursor: 'pointer',
+              fontFamily: "var(--font-inter, 'DM Sans', sans-serif)",
+              fontSize: '14px',
+              color: '#1A1714',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#B8973A'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#D4CFC9'; }}
+          >
+            {syncingBackend ? (
+              <div className="w-5 h-5 border-2 border-[#D4CFC9] border-t-[#B8973A] rounded-full animate-spin" />
+            ) : (
+              <FcGoogle className="w-5 h-5" />
+            )}
+            <span>
+              {syncingBackend ? 'Connecting...' : googleLoading ? 'Opening Google...' : 'Continue with Google'}
+            </span>
+          </button>
+
+          {/* ── Footer ── */}
+          <div className="mt-10 text-center">
+            <p style={{ fontFamily: "var(--font-inter, 'DM Sans', sans-serif)", fontSize: '12px', color: '#8A7E74', lineHeight: 1.6 }}>
               By continuing, you agree to our{' '}
-              <Link href="/terms" className="text-brand-brown hover:underline">
-                Terms of Service
-              </Link>{' '}
+              <Link href="/terms" style={{ color: '#B8973A', textDecoration: 'none' }}>Terms of Service</Link>{' '}
               and{' '}
-              <Link href="/privacy" className="text-brand-brown hover:underline">
-                Privacy Policy
-              </Link>
+              <Link href="/privacy" style={{ color: '#B8973A', textDecoration: 'none' }}>Privacy Policy</Link>
             </p>
           </div>
         </div>

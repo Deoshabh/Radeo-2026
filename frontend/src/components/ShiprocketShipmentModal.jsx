@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { adminAPI } from '@/utils/api';
 import toast from 'react-hot-toast';
 import { FiX, FiTruck, FiPackage, FiMapPin, FiDollarSign } from 'react-icons/fi';
+import { formatPrice } from '@/utils/helpers';
 
 export default function ShiprocketShipmentModal({ order, isOpen, onClose, onSuccess }) {
   const [loading, setLoading] = useState(false);
@@ -367,11 +368,11 @@ export default function ShiprocketShipmentModal({ order, isOpen, onClose, onSucc
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold text-blue-600">
-                            ₹{courier.freight_charge}
+                            {formatPrice(courier.freight_charge ?? 0)}
                           </p>
                           {courier.cod_charges > 0 && (
                             <p className="text-xs text-gray-500">
-                              + ₹{courier.cod_charges} COD
+                              + {formatPrice(courier.cod_charges)} COD
                             </p>
                           )}
                         </div>

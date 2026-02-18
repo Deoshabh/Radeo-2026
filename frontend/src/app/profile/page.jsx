@@ -135,8 +135,8 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-900"></div>
+      <div className="min-h-screen flex items-center justify-center bg-[color:var(--color-background)]">
+        <div className="spinner"></div>
       </div>
     );
   }
@@ -146,62 +146,68 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-primary-50">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12 max-w-4xl">
+    <div className="min-h-screen bg-[color:var(--color-background)]">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20 max-w-3xl">
+
+        {/* Page heading */}
+        <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-medium text-primary-900 mb-12 tracking-tight">
+          My Profile
+        </h1>
+
         {/* Profile Information */}
-        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-4 sm:mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3">
-            <h1 className="text-xl sm:text-2xl font-bold text-primary-900">My Profile</h1>
+        <div className="mb-12">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="label-upper text-primary-400">Personal Details</h2>
             {!isEditing && (
               <button
                 onClick={() => setIsEditing(true)}
-                className="flex items-center gap-2 text-brand-brown hover:text-[color:var(--color-muted)]"
+                className="label-upper text-[color:var(--color-accent)] hover:text-[color:var(--color-accent-hover)] transition-colors duration-150 flex items-center gap-2"
               >
-                <FiEdit2 /> Edit Profile
+                <FiEdit2 className="w-3.5 h-3.5" /> Edit
               </button>
             )}
           </div>
 
           <form onSubmit={handleProfileUpdate}>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-primary-700 mb-2">Name</label>
+            <div className="space-y-6">
+              <div className="group">
+                <label className="label-upper block mb-2 text-primary-400">Name</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   disabled={!isEditing}
-                  className="w-full px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900 disabled:bg-primary-50 disabled:cursor-not-allowed"
+                  className="input-underline w-full"
                   required
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-primary-700 mb-2">Email</label>
+              <div className="group">
+                <label className="label-upper block mb-2 text-primary-400">Email</label>
                 <input
                   type="email"
                   value={formData.email}
                   disabled
-                  className="w-full px-4 py-2 border border-primary-200 rounded-lg bg-primary-50 cursor-not-allowed"
+                  className="input-underline w-full opacity-50"
                 />
-                <p className="text-xs text-primary-600 mt-1">Email cannot be changed</p>
+                <p className="text-xs text-primary-400 mt-2 italic">Email cannot be changed</p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-primary-700 mb-2">Phone</label>
+              <div className="group">
+                <label className="label-upper block mb-2 text-primary-400">Phone</label>
                 <input
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   disabled={!isEditing}
-                  className="w-full px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900 disabled:bg-primary-50 disabled:cursor-not-allowed"
+                  className="input-underline w-full"
                 />
               </div>
 
               {isEditing && (
-                <div className="flex gap-3 pt-4">
+                <div className="flex gap-4 pt-6">
                   <button type="submit" className="btn btn-primary flex items-center gap-2">
-                    <FiSave /> Save Changes
+                    <FiSave className="w-4 h-4" /> Save
                   </button>
                   <button
                     type="button"
@@ -215,7 +221,7 @@ export default function ProfilePage() {
                     }}
                     className="btn btn-secondary flex items-center gap-2"
                   >
-                    <FiX /> Cancel
+                    <FiX className="w-4 h-4" /> Cancel
                   </button>
                 </div>
               )}
@@ -223,107 +229,135 @@ export default function ProfilePage() {
           </form>
         </div>
 
+        <hr className="divider mb-12" />
+
         {/* Change Password - Only for Firebase Auth users (not OAuth) who can change password */}
         {['password', 'local'].includes(user?.authProvider) && (
-          <div className="mb-6">
-            <ChangePassword />
-          </div>
+          <>
+            <div className="mb-12">
+              <ChangePassword />
+            </div>
+            <hr className="divider mb-12" />
+          </>
         )}
 
         {/* Addresses */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-primary-900">Saved Addresses</h2>
+        <div>
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="label-upper text-primary-400">Saved Addresses</h2>
             <button
               onClick={() => {
                 setShowAddressForm(true);
                 setEditingAddressId(null);
                 resetAddressForm();
               }}
-              className="flex items-center gap-2 text-brand-brown hover:text-[color:var(--color-muted)]"
+              className="label-upper text-[color:var(--color-accent)] hover:text-[color:var(--color-accent-hover)] transition-colors duration-150 flex items-center gap-2"
             >
-              <FiPlus /> Add New Address
+              <FiPlus className="w-3.5 h-3.5" /> Add New
             </button>
           </div>
 
           {/* Address Form */}
           {showAddressForm && (
-            <form onSubmit={handleAddressSubmit} className="mb-6 p-4 border border-primary-200 rounded-lg bg-primary-50">
-              <h3 className="font-semibold text-primary-900 mb-4">
-                {editingAddressId ? 'Edit Address' : 'Add New Address'}
+            <form onSubmit={handleAddressSubmit} className="mb-8 p-6 border border-[color:var(--color-border)] bg-white">
+              <h3 className="font-serif text-lg font-medium text-primary-900 mb-6">
+                {editingAddressId ? 'Edit Address' : 'New Address'}
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  placeholder="Full Name"
-                  value={addressForm.fullName}
-                  onChange={(e) => setAddressForm({ ...addressForm, fullName: e.target.value })}
-                  className="px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
-                  required
-                />
-                <input
-                  type="tel"
-                  placeholder="Phone"
-                  value={addressForm.phone}
-                  onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
-                  className="px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="Address Line 1"
-                  value={addressForm.addressLine1}
-                  onChange={(e) => setAddressForm({ ...addressForm, addressLine1: e.target.value })}
-                  className="md:col-span-2 px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="Address Line 2 (Optional)"
-                  value={addressForm.addressLine2}
-                  onChange={(e) => setAddressForm({ ...addressForm, addressLine2: e.target.value })}
-                  className="md:col-span-2 px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
-                />
-                <input
-                  type="text"
-                  placeholder="City"
-                  value={addressForm.city}
-                  onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
-                  className="px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="State"
-                  value={addressForm.state}
-                  onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
-                  className="px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="Pin Code"
-                  value={addressForm.postalCode}
-                  onChange={(e) => setAddressForm({ ...addressForm, postalCode: e.target.value })}
-                  className="px-4 py-2 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-900"
-                  required
-                  maxLength="6"
-                  pattern="[0-9]{6}"
-                  title="Please enter a valid 6-digit PIN code"
-                />
-                <label className="flex items-center gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
+                <div>
+                  <label className="label-upper block mb-2 text-primary-400">Full Name</label>
                   <input
-                    type="checkbox"
-                    checked={addressForm.isDefault}
-                    onChange={(e) => setAddressForm({ ...addressForm, isDefault: e.target.checked })}
-                    className="w-4 h-4"
+                    type="text"
+                    value={addressForm.fullName}
+                    onChange={(e) => setAddressForm({ ...addressForm, fullName: e.target.value })}
+                    className="input-underline w-full"
+                    required
                   />
-                  <span className="text-sm text-primary-700">Set as default address</span>
-                </label>
+                </div>
+                <div>
+                  <label className="label-upper block mb-2 text-primary-400">Phone</label>
+                  <input
+                    type="tel"
+                    value={addressForm.phone}
+                    onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
+                    className="input-underline w-full"
+                    required
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="label-upper block mb-2 text-primary-400">Address Line 1</label>
+                  <input
+                    type="text"
+                    value={addressForm.addressLine1}
+                    onChange={(e) => setAddressForm({ ...addressForm, addressLine1: e.target.value })}
+                    className="input-underline w-full"
+                    required
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="label-upper block mb-2 text-primary-400">Address Line 2 (Optional)</label>
+                  <input
+                    type="text"
+                    value={addressForm.addressLine2}
+                    onChange={(e) => setAddressForm({ ...addressForm, addressLine2: e.target.value })}
+                    className="input-underline w-full"
+                  />
+                </div>
+                <div>
+                  <label className="label-upper block mb-2 text-primary-400">City</label>
+                  <input
+                    type="text"
+                    value={addressForm.city}
+                    onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                    className="input-underline w-full"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="label-upper block mb-2 text-primary-400">State</label>
+                  <input
+                    type="text"
+                    value={addressForm.state}
+                    onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
+                    className="input-underline w-full"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="label-upper block mb-2 text-primary-400">Pin Code</label>
+                  <input
+                    type="text"
+                    value={addressForm.postalCode}
+                    onChange={(e) => setAddressForm({ ...addressForm, postalCode: e.target.value })}
+                    className="input-underline w-full"
+                    required
+                    maxLength="6"
+                    pattern="[0-9]{6}"
+                    title="Please enter a valid 6-digit PIN code"
+                  />
+                </div>
+                <div className="flex items-end pb-3">
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <div className={`w-5 h-5 border flex items-center justify-center transition-all duration-150 ${addressForm.isDefault ? 'bg-[color:var(--color-accent)] border-[color:var(--color-accent)]' : 'border-primary-300 group-hover:border-[color:var(--color-accent)]'}`}>
+                      {addressForm.isDefault && (
+                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={addressForm.isDefault}
+                      onChange={(e) => setAddressForm({ ...addressForm, isDefault: e.target.checked })}
+                      className="hidden"
+                    />
+                    <span className="text-sm text-primary-600">Set as default</span>
+                  </label>
+                </div>
               </div>
-              <div className="flex gap-3 mt-4">
+              <div className="flex gap-4 mt-8">
                 <button type="submit" className="btn btn-primary">
-                  {editingAddressId ? 'Update' : 'Add'} Address
+                  {editingAddressId ? 'Update' : 'Save'} Address
                 </button>
                 <button
                   type="button"
@@ -343,40 +377,49 @@ export default function ProfilePage() {
           {/* Address List */}
           <div className="space-y-4">
             {addresses.length === 0 ? (
-              <p className="text-center text-primary-600 py-8">No addresses saved yet</p>
+              <div className="py-12 text-center border border-dashed border-primary-200">
+                <FiMapPin className="w-8 h-8 text-primary-300 mx-auto mb-3" />
+                <p className="text-primary-500 text-sm">No addresses saved yet</p>
+              </div>
             ) : (
               addresses.map((address) => (
-                <div key={address._id} className="border border-primary-200 rounded-lg p-4 hover:border-primary-400 transition-colors">
+                <div
+                  key={address._id}
+                  className={`group relative border transition-all duration-150 p-5 ${
+                    address.isDefault
+                      ? 'border-l-[3px] border-l-[color:var(--color-accent)] border-t-[color:var(--color-border)] border-r-[color:var(--color-border)] border-b-[color:var(--color-border)] bg-[color:var(--color-warm-bg)]'
+                      : 'border-[color:var(--color-border)] hover:border-primary-300'
+                  }`}
+                >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <FiMapPin className="text-brand-brown" />
-                        <span className="font-semibold text-primary-900">{address.fullName}</span>
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="font-serif text-lg font-medium text-primary-900">{address.fullName}</span>
                         {address.isDefault && (
-                          <span className="px-2 py-1 text-xs bg-brand-brown text-white rounded">Default</span>
+                          <span className="label-upper text-[10px] text-[color:var(--color-accent)]">Default</span>
                         )}
                       </div>
-                      <p className="text-primary-700">{address.addressLine1}</p>
-                      {address.addressLine2 && <p className="text-primary-700">{address.addressLine2}</p>}
-                      <p className="text-primary-700">
-                        {address.city}, {address.state} - {address.postalCode}
+                      <p className="text-primary-600 text-sm leading-relaxed">{address.addressLine1}</p>
+                      {address.addressLine2 && <p className="text-primary-600 text-sm">{address.addressLine2}</p>}
+                      <p className="text-primary-600 text-sm">
+                        {address.city}, {address.state} — {address.postalCode}
                       </p>
-                      <p className="text-primary-600 text-sm mt-1">Phone: {address.phone}</p>
+                      <p className="text-primary-400 text-xs mt-2 font-mono">{address.phone}</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                       <button
                         onClick={() => handleEditAddress(address)}
-                        className="p-2 text-primary-600 hover:text-brand-brown transition-colors"
+                        className="p-2 text-primary-400 hover:text-[color:var(--color-accent)] transition-colors duration-150"
                         title="Edit"
                       >
-                        <FiEdit2 />
+                        <FiEdit2 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteAddress(address._id)}
-                        className="p-2 text-red-600 hover:text-red-700 transition-colors"
+                        className="p-2 text-primary-400 hover:text-red-500 transition-colors duration-150"
                         title="Delete"
                       >
-                        <FiTrash2 />
+                        <FiTrash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>

@@ -1,4 +1,4 @@
-import { Plus_Jakarta_Sans, Lora, Libre_Baskerville, Space_Mono } from 'next/font/google';
+import { Plus_Jakarta_Sans, Lora, Libre_Baskerville, Space_Mono, Cormorant_Garamond, DM_Sans } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from '@/context/AuthContext';
@@ -12,15 +12,28 @@ import AnnouncementBar from '@/components/AnnouncementBar';
 import MaintenanceModeGate from '@/components/MaintenanceModeGate';
 import { generateMetadata as generateSEOMetadata } from '@/utils/seo';
 
-const jakarta = Plus_Jakarta_Sans({
+const dmSans = DM_Sans({
   subsets: ['latin'],
   variable: '--font-inter',
   display: 'swap',
 });
 
+const cormorant = Cormorant_Garamond({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-playfair',
+  display: 'swap',
+});
+
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  variable: '--font-jakarta',
+  display: 'swap',
+});
+
 const lora = Lora({
   subsets: ['latin'],
-  variable: '--font-playfair',
+  variable: '--font-lora',
   display: 'swap',
 });
 
@@ -57,7 +70,7 @@ import QueryProvider from '@/providers/QueryProvider';
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${jakarta.variable} ${lora.variable} ${baskerville.variable} ${spaceMono.variable}`}>
+    <html lang="en" className={`${dmSans.variable} ${cormorant.variable} ${jakarta.variable} ${lora.variable} ${baskerville.variable} ${spaceMono.variable}`}>
       <head>
         <link rel="preconnect" href="https://api.radeo.in" />
         <script src={`https://www.google.com/recaptcha/enterprise.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`} async defer></script>
