@@ -112,49 +112,36 @@ export default function ProductCard({ product, priority = false }) {
             </div>
           )}
 
-          {/* Wishlist */}
+          {/* Wishlist — ghost circle, visible on card hover */}
           <button
             onClick={handleToggleWishlist}
             aria-label={isProductInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
-            className={`absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-full backdrop-blur-sm transition-all duration-300 ${
+            className={`absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-all duration-200 ${
               isProductInWishlist
-                ? 'bg-red-500 text-white shadow-lg shadow-red-200'
-                : 'bg-white/80 text-[color:var(--color-heading)] hover:bg-white hover:shadow-md'
-            }`}
+                ? 'bg-red-500 text-white opacity-100'
+                : 'bg-white/80 text-[#1A1714] opacity-0 group-hover:opacity-100'
+            } hover:scale-110`}
           >
-            <FiHeart className={`w-4 h-4 ${isProductInWishlist ? 'fill-current' : ''}`} />
+            <FiHeart className={`w-3.5 h-3.5 ${isProductInWishlist ? 'fill-current' : ''}`} />
           </button>
 
-          {/* Quick actions on hover */}
-          <div className="hidden sm:flex absolute bottom-0 left-0 right-0 gap-0 opacity-0 translate-y-full group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-400">
+          {/* ADD TO CART — slides up on card hover */}
+          <div className="hidden sm:block absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-200 ease-out">
             {product.inStock ? (
-              <>
-                <button
-                  onClick={handleAddToCart}
-                  aria-label="Add to cart"
-                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-[color:var(--color-heading)]/90 backdrop-blur-sm text-[color:var(--color-subtle-bg)] text-[10px] font-medium uppercase tracking-[0.15em] hover:bg-[color:var(--color-heading)] transition-colors"
-                  style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}
-                >
-                  <FiShoppingCart className="w-3.5 h-3.5" />
-                  Add to Cart
-                </button>
-                <button
-                  onClick={async (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const result = await handleAddToCart(e);
-                    if (result !== false) router.push('/cart');
-                  }}
-                  aria-label="Buy now"
-                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-[color:var(--color-accent)]/90 backdrop-blur-sm text-white text-[10px] font-medium uppercase tracking-[0.15em] hover:bg-[color:var(--color-accent)] transition-colors"
-                  style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}
-                >
-                  Buy Now
-                </button>
-              </>
+              <button
+                onClick={handleAddToCart}
+                aria-label="Add to cart"
+                className="w-full flex items-center justify-center gap-2 bg-[#1A1714] text-[#F0EBE1] text-[12px] font-medium uppercase tracking-[0.15em] hover:bg-[#B8973A] transition-colors duration-150"
+                style={{ height: '44px', fontFamily: "var(--font-dm-mono, 'DM Sans', sans-serif)" }}
+              >
+                <FiShoppingCart className="w-3.5 h-3.5" style={{ fontSize: '14px' }} />
+                ADD TO CART
+              </button>
             ) : (
-              <div className="flex-1 py-3 text-center bg-[color:var(--color-border-light)]/90 text-[color:var(--color-body)] text-[10px] font-medium uppercase tracking-[0.15em]"
-                style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>
+              <div
+                className="w-full flex items-center justify-center bg-[#4A4540] text-[#A09A94] text-[12px] font-medium uppercase tracking-[0.15em]"
+                style={{ height: '44px', fontFamily: "var(--font-dm-mono, 'DM Sans', sans-serif)" }}
+              >
                 Out of Stock
               </div>
             )}
@@ -239,15 +226,17 @@ export default function ProductCard({ product, priority = false }) {
           {product.inStock ? (
             <button
               onClick={handleAddToCart}
-              className="w-full py-2.5 bg-[color:var(--color-heading)] text-[color:var(--color-subtle-bg)] text-[10px] font-medium uppercase tracking-[0.15em] hover:bg-[color:var(--color-muted)] transition-colors"
-              style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}
+              className="w-full flex items-center justify-center gap-2 bg-[#1A1714] text-[#F0EBE1] text-[12px] font-medium uppercase tracking-[0.15em] hover:bg-[#B8973A] transition-colors duration-150"
+              style={{ height: '44px', fontFamily: "var(--font-dm-mono, 'DM Sans', sans-serif)" }}
             >
-              <FiShoppingCart className="w-3.5 h-3.5 inline mr-1.5" />
-              Add to Cart
+              <FiShoppingCart className="w-3.5 h-3.5" style={{ fontSize: '14px' }} />
+              ADD TO CART
             </button>
           ) : (
-            <div className="w-full py-2.5 bg-[color:var(--color-border-light)] text-[color:var(--color-body)] text-[10px] font-medium uppercase tracking-[0.15em] text-center"
-              style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>
+            <div
+              className="w-full flex items-center justify-center bg-[#4A4540] text-[#A09A94] text-[12px] font-medium uppercase tracking-[0.15em]"
+              style={{ height: '44px', fontFamily: "var(--font-dm-mono, 'DM Sans', sans-serif)" }}
+            >
               Out of Stock
             </div>
           )}
