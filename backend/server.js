@@ -155,7 +155,7 @@ const corsOptions = {
 };
 
 // Layer 1: Explicit OPTIONS preflight handler (runs FIRST, before any middleware)
-app.options('*', cors(corsOptions));
+app.options('{*path}', cors(corsOptions));
 
 // Layer 2: CORS middleware on all requests
 app.use(cors(corsOptions));
