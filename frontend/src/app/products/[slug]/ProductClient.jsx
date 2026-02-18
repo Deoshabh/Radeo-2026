@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
@@ -37,6 +37,8 @@ export default function ProductClient({ product }) {
 
     const [selectedImage, setSelectedImage] = useState(0);
     const [activeTab, setActiveTab] = useState('description');
+    const [loadedImages, setLoadedImages] = useState({});
+    const preloadedRef = useRef(new Set());
 
     // Filter images based on selected color
     const filteredImages = useMemo(() => {
@@ -66,6 +68,27 @@ export default function ProductClient({ product }) {
     useEffect(() => {
         setSelectedImage(0);
     }, [selectedColor]);
+
+    // Preload all gallery images on mount / color change for instant switching
+    useEffect(() => {
+        filteredImages.forEach((image) => {
+            const src = image?.url || image || '/placeholder.svg';
+            if (preloadedRef.current.has(src)) return;
+            preloadedRef.current.add(src);
+            const img = new window.Image();
+            img.src = src;
+            img.onload = () => {
+                setLoadedImages(prev => ({ ...prev, [src]: true }));
+            };
+        });
+    }, [filteredImages]);
+
+    const handleImageLoad = useCallback((src) => {
+        setLoadedImages(prev => {
+            if (prev[src]) return prev;
+            return { ...prev, [src]: true };
+        });
+    }, []);
 
     if (!product) {
         return null;
@@ -132,30 +155,83 @@ export default function ProductClient({ product }) {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
                         {/* Image Gallery */}
                         <div className="space-y-4">
-                            {/* Main Image */}
+                            {/* Main Image — all images stacked, opacity-swap cross-fade */}
                             <div className="relative aspect-square bg-white overflow-hidden group border border-[#e8e0d0]">
-                                <Image
-                                    src={filteredImages[selectedImage]?.url || filteredImages[selectedImage] || '/placeholder.svg'}
-                                    alt={product.name}
-                                    fill
-                                    sizes="(max-width: 1024px) 100vw, 50vw"
-                                    className="object-contain transition-transform duration-500 hover:scale-110 cursor-zoom-in"
-                                    priority
-                                />
+                                {filteredImages.map((image, idx) => {
+                                    const src = image?.url || image || '/placeholder.svg';
+                                    const isActive = selectedImage === idx;
+                                    const isLoaded = loadedImages[src];
+                                    return (
+                                        <div
+                                            key={src + idx}
+                                            aria-hidden={!isActive}
+                                            style={{
+                                                position: 'absolute',
+                                                inset: 0,
+                                                opacity: isActive ? 1 : 0,
+                                                transition: 'opacity 200ms ease-in-out',
+                                                zIndex: isActive ? 2 : 1,
+                                                pointerEvents: isActive ? 'auto' : 'none',
+                                            }}
+                                        >
+                                            {/* Blur placeholder — visible until image loads */}
+                                            <div
+                                                style={{
+                                                    position: 'absolute',
+                                                    inset: 0,
+                                                    zIndex: 3,
+                                                    background: '#f2ede4',
+                                                    opacity: isLoaded ? 0 : 1,
+                                                    transition: 'opacity 300ms ease-out',
+                                                    pointerEvents: 'none',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        width: '100%',
+                                                        height: '100%',
+                                                        backgroundImage: `url(${src})`,
+                                                        backgroundSize: 'cover',
+                                                        backgroundPosition: 'center',
+                                                        filter: 'blur(20px)',
+                                                        transform: 'scale(1.1)',
+                                                        opacity: 0.5,
+                                                    }}
+                                                />
+                                            </div>
+                                            <Image
+                                                src={src}
+                                                alt={`${product.name}${filteredImages.length > 1 ? ` — view ${idx + 1}` : ''}`}
+                                                fill
+                                                sizes="(max-width: 1024px) 100vw, 50vw"
+                                                className="object-contain cursor-zoom-in"
+                                                priority={idx === 0}
+                                                loading={idx === 0 ? 'eager' : 'lazy'}
+                                                fetchPriority={idx === 0 ? 'high' : 'auto'}
+                                                onLoad={() => handleImageLoad(src)}
+                                            />
+                                        </div>
+                                    );
+                                })}
 
-                                {/* Navigation Arrows */}
+                                {/* Navigation Arrows — z-index above image layers */}
                                 {filteredImages.length > 1 && (
                                     <>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); prevImage(); }}
-                                            className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white text-[#2a1a0a] p-2.5 opacity-0 group-hover:opacity-100 transition-all duration-200 z-10 border border-[#e8e0d0]"
+                                            className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white text-[#2a1a0a] p-2.5 opacity-0 group-hover:opacity-100 transition-all duration-200 border border-[#e8e0d0]"
+                                            style={{ zIndex: 10 }}
                                             aria-label="Previous image"
                                         >
                                             <FiChevronLeft className="w-5 h-5" />
                                         </button>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); nextImage(); }}
-                                            className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white text-[#2a1a0a] p-2.5 opacity-0 group-hover:opacity-100 transition-all duration-200 z-10 border border-[#e8e0d0]"
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white text-[#2a1a0a] p-2.5 opacity-0 group-hover:opacity-100 transition-all duration-200 border border-[#e8e0d0]"
+                                            style={{ zIndex: 10 }}
                                             aria-label="Next image"
                                         >
                                             <FiChevronRight className="w-5 h-5" />
@@ -182,25 +258,32 @@ export default function ProductClient({ product }) {
                                 </div>
                             )}
 
-                            {/* Thumbnail Images */}
+                            {/* Thumbnail Strip — click for instant preloaded switch */}
                             {filteredImages.length > 1 && (
                                 <div className="grid grid-cols-4 gap-4">
-                                    {filteredImages.map((image, idx) => (
-                                        <button
-                                            key={idx}
-                                            onClick={() => setSelectedImage(idx)}
-                                            className={`relative aspect-square bg-white overflow-hidden border-2 transition-all ${selectedImage === idx ? 'border-[#c9a96e]' : 'border-transparent hover:border-[#e8e0d0]'
+                                    {filteredImages.map((image, idx) => {
+                                        const src = image?.url || image || '/placeholder.svg';
+                                        return (
+                                            <button
+                                                key={src + idx}
+                                                onClick={() => setSelectedImage(idx)}
+                                                className={`relative aspect-square bg-white overflow-hidden border-2 transition-all ${
+                                                    selectedImage === idx
+                                                        ? 'border-[#c9a96e] ring-1 ring-[#c9a96e]/30'
+                                                        : 'border-transparent hover:border-[#e8e0d0]'
                                                 }`}
-                                        >
-                                            <Image
-                                                src={image?.url || image || '/placeholder.svg'}
-                                                alt={`${product.name} ${idx + 1}`}
-                                                fill
-                                                sizes="(max-width: 1024px) 25vw, 12vw"
-                                                className="object-contain"
-                                            />
-                                        </button>
-                                    ))}
+                                            >
+                                                <Image
+                                                    src={src}
+                                                    alt={`${product.name} — thumbnail ${idx + 1}`}
+                                                    fill
+                                                    sizes="(max-width: 1024px) 25vw, 12vw"
+                                                    className="object-contain"
+                                                    loading="lazy"
+                                                />
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
