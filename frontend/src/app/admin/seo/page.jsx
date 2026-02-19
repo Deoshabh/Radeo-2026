@@ -1170,7 +1170,7 @@ export default function AdminSeoPage() {
           </div>
 
           {/* Global Settings */}
-          <div className="bg-white rounded-xl border border-primary-200 p-5 mb-8">
+          {seoSettings && <div className="bg-white rounded-xl border border-primary-200 p-5 mb-8">
             <h2 className="text-lg font-bold text-primary-900 mb-4 flex items-center gap-2">
               <FiGlobe className="w-5 h-5 text-brand-brown" />
               Global SEO Settings
@@ -1236,7 +1236,7 @@ export default function AdminSeoPage() {
                 />
               </div>
             </div>
-          </div>
+          </div>}
 
           {/* Per-Page SEO */}
           <div ref={pageSectionRef} className="mb-4">
@@ -1321,10 +1321,10 @@ export default function AdminSeoPage() {
                 <PageSeoCard
                   key={config.key}
                   config={config}
-                  data={seoSettings.pages[config.key] || {}}
-                  globalData={seoSettings.global}
+                  data={seoSettings?.pages?.[config.key] || {}}
+                  globalData={seoSettings?.global || {}}
                   onChange={handlePageChange}
-                  siteUrl={seoSettings.global.siteUrl}
+                  siteUrl={seoSettings?.global?.siteUrl || ''}
                   forceExpanded={focusedPageKey === config.key || expandAll}
                   cardRef={(el) => { pageCardRefs.current[config.key] = el; }}
                 />

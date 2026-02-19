@@ -99,6 +99,7 @@ export default function AdminOrdersDashboard() {
   // ── Mutation hooks ──────────────────────────────────────────────
   const trackMut = useTrackShipment();
   const syncMut = useShiprocketSync();
+  const syncingShiprocket = syncMut.isPending;
   const bulkCreateMut = useBulkCreateShipments();
   const bulkStatusMut = useBulkUpdateOrderStatus();
 

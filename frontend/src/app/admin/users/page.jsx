@@ -43,7 +43,7 @@ function SegmentBadge({ count, color }) {
 export default function AdminUsersPage() {
   const router = useRouter();
   const { user, isAuthenticated, loading } = useAuth();
-  const { data: usersData, isLoading: loadingUsers } = useUsers();
+  const { data: usersData, isLoading: loadingUsers, refetch: fetchUsers } = useUsers();
   const users = usersData?.users || [];
   const updateRoleMut = useUpdateUserRole();
   const toggleBlockMut = useToggleUserBlock();

@@ -179,7 +179,7 @@ function FilterForm({ filter, onSave, onCancel }) {
 
 export default function FiltersPage() {
   const queryClient = useQueryClient();
-  const { data: filtersRaw, isLoading: loading } = useFilters();
+  const { data: filtersRaw, isLoading: loading, refetch: fetchFilters } = useFilters();
   const filters = filtersRaw?.filters || filtersRaw || [];
   const deleteFilterMut = useDeleteFilter();
   const toggleFilterMut = useToggleFilterStatus();
