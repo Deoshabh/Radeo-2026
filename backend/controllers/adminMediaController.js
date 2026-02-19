@@ -13,8 +13,6 @@ const { generateVariants, getImageMetadata } = require('../utils/imageOptimizer'
 exports.getUploadUrl = async (req, res) => {
   try {
     const { fileName, fileType, productSlug } = req.body;
-    
-    log.info("Values:" , req.body); // Debug log
 
     // Validate input
     if (!fileName || !fileType) {
@@ -58,7 +56,7 @@ exports.getUploadUrl = async (req, res) => {
     log.error("Error generating upload URL:", error);
     res.status(500).json({
       success: false,
-      message: error.message || "Failed to generate upload URL",
+      message: "Failed to generate upload URL",
     });
   }
 };
@@ -88,7 +86,7 @@ exports.deleteMedia = async (req, res) => {
     log.error("Error deleting media:", error);
     res.status(500).json({
       success: false,
-      message: error.message || "Failed to delete media",
+      message: "Failed to delete media",
     });
   }
 };
@@ -159,7 +157,7 @@ exports.uploadFrames = async (req, res) => {
     log.error("Error uploading frames:", error);
     res.status(500).json({
       success: false,
-      message: error.message || "Failed to upload frames",
+      message: "Failed to upload frames",
     });
   }
 };
@@ -225,7 +223,7 @@ exports.getFrameManifest = async (req, res) => {
     log.error("Error fetching frame manifest:", error);
     res.status(500).json({
       success: false,
-      message: error.message || "Failed to fetch frame manifest",
+      message: "Failed to fetch frame manifest",
     });
   }
 };
@@ -299,7 +297,7 @@ exports.optimizeAndUpload = async (req, res) => {
     log.error("Error optimizing image:", error);
     res.status(500).json({
       success: false,
-      message: error.message || "Failed to optimize image",
+      message: "Failed to optimize image",
     });
   }
 };
@@ -328,7 +326,7 @@ exports.getMetadata = async (req, res) => {
     log.error("Error reading image metadata:", error);
     res.status(500).json({
       success: false,
-      message: error.message || "Failed to get image metadata",
+      message: "Failed to get image metadata",
     });
   }
 };

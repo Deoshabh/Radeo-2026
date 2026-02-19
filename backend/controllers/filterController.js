@@ -10,7 +10,7 @@ exports.getFilters = async (req, res) => {
 
     res.json(filters);
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -24,7 +24,7 @@ exports.getAllFilters = async (req, res) => {
 
     res.json(filters);
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -33,6 +33,16 @@ exports.createFilter = async (req, res) => {
   try {
     const { type, name, value, displayOrder, isActive, minPrice, maxPrice } =
       req.body;
+
+    // Validate filter type
+    const ALLOWED_TYPES = ['color', 'size', 'brand', 'price', 'material', 'category'];
+    if (!type || !ALLOWED_TYPES.includes(type)) {
+      return res.status(400).json({ message: `Invalid filter type. Allowed: ${ALLOWED_TYPES.join(', ')}` });
+    }
+
+    if (!name || !value) {
+      return res.status(400).json({ message: "Filter name and value are required" });
+    }
 
     // Check if filter already exists
     const existingFilter = await Filter.findOne({ type, value });
@@ -55,7 +65,7 @@ exports.createFilter = async (req, res) => {
     await filter.save();
     res.status(201).json(filter);
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -95,7 +105,7 @@ exports.updateFilter = async (req, res) => {
     await filter.save();
     res.json(filter);
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -111,7 +121,7 @@ exports.deleteFilter = async (req, res) => {
 
     res.json({ message: "Filter deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -124,15 +134,18 @@ exports.reorderFilters = async (req, res) => {
       return res.status(400).json({ message: "Filters must be an array" });
     }
 
-    // Update each filter's display order
-    const updatePromises = filters.map(({ id, displayOrder }) =>
-      Filter.findByIdAndUpdate(id, { displayOrder }, { new: true })
+    // Update each filter's display order using bulkWrite for efficiency
+    await Filter.bulkWrite(
+      filters.map(({ id, displayOrder }) => ({
+        updateOne: {
+          filter: { _id: id },
+          update: { $set: { displayOrder } },
+        },
+      }))
     );
-
-    await Promise.all(updatePromises);
 
     res.json({ message: "Filters reordered successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ message: "Server error" });
   }
 };

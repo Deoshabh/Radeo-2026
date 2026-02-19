@@ -38,4 +38,6 @@ const cartSchema = new mongoose.Schema(
   }
 );
 
+cartSchema.index({ updatedAt: 1 });
+
 module.exports = mongoose.model("Cart", cartSchema);

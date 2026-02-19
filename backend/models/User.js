@@ -88,4 +88,7 @@ const userSchema = new mongoose.Schema(
   },
 );
 
+userSchema.index({ role: 1 });
+userSchema.index({ isBlocked: 1 });
+
 module.exports = mongoose.model("User", userSchema);

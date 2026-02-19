@@ -1,4 +1,4 @@
-﻿const Review = require('../models/Review');
+const Review = require('../models/Review');
 const Product = require('../models/Product');
 const sharp = require('sharp');
 const crypto = require('crypto');
@@ -101,7 +101,7 @@ exports.createReview = async (req, res) => {
 
   } catch (error) {
     log.error('Create Review Error:', error);
-    res.status(500).json({ message: 'Failed to submit review', error: error.message });
+    res.status(500).json({ message: 'Failed to submit review' });
   }
 };
 
@@ -138,7 +138,7 @@ exports.getProductReviews = async (req, res) => {
     });
   } catch (error) {
     log.error('Get Product Reviews Error:', error);
-    res.status(500).json({ message: 'Failed to fetch reviews', error: error.message });
+    res.status(500).json({ message: 'Failed to fetch reviews' });
   }
 };
 
@@ -152,7 +152,7 @@ exports.getMyReviews = async (req, res) => {
     res.json(reviews);
   } catch (error) {
     log.error('Get My Reviews Error:', error);
-    res.status(500).json({ message: 'Failed to fetch your reviews', error: error.message });
+    res.status(500).json({ message: 'Failed to fetch your reviews' });
   }
 };
 
@@ -195,7 +195,7 @@ exports.updateReview = async (req, res) => {
     res.json({ message: 'Review updated successfully', review });
   } catch (error) {
     log.error('Update Review Error:', error);
-    res.status(500).json({ message: 'Failed to update review', error: error.message });
+    res.status(500).json({ message: 'Failed to update review' });
   }
 };
 
@@ -220,7 +220,7 @@ exports.deleteReview = async (req, res) => {
     res.json({ message: 'Review deleted successfully' });
   } catch (error) {
     log.error('Delete Review Error:', error);
-    res.status(500).json({ message: 'Failed to delete review', error: error.message });
+    res.status(500).json({ message: 'Failed to delete review' });
   }
 };
 
@@ -252,7 +252,7 @@ exports.markReviewHelpful = async (req, res) => {
     res.json({ message: 'Marked as helpful', helpfulVotes: review.helpfulVotes });
   } catch (error) {
     log.error('Mark Helpful Error:', error);
-    res.status(500).json({ message: 'Failed to mark review as helpful', error: error.message });
+    res.status(500).json({ message: 'Failed to mark review as helpful' });
   }
 };
 
@@ -276,6 +276,6 @@ exports.uploadReviewPhotos = async (req, res) => {
     });
   } catch (error) {
     log.error('Upload Photos Error:', error);
-    res.status(500).json({ message: 'Failed to upload photos', error: error.message });
+    res.status(500).json({ message: 'Failed to upload photos' });
   }
 };

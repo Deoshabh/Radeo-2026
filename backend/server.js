@@ -145,6 +145,9 @@ const corsOptions = {
 
     // Check for allowed origins
     if (allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === 'development') {
+        log.warn('CORS: Development mode — allowing all origins. Do NOT deploy with NODE_ENV=development.');
+      }
       return callback(null, true);
     }
 

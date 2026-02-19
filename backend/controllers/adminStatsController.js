@@ -406,7 +406,6 @@ exports.getDependenciesHealth = async (_req, res) => {
   } catch (error) {
     health.dependencies.mongodb = {
       status: "error",
-      message: error.message,
     };
     health.status = "DEGRADED";
   }
@@ -429,7 +428,6 @@ exports.getDependenciesHealth = async (_req, res) => {
     health.dependencies.redis = {
       status: "error",
       connection: redis.status,
-      message: error.message,
     };
     health.status = "DEGRADED";
   }
@@ -443,7 +441,6 @@ exports.getDependenciesHealth = async (_req, res) => {
   } catch (error) {
     health.dependencies.storage = {
       status: "error",
-      message: error.message,
     };
     health.status = "DEGRADED";
   }
@@ -459,8 +456,6 @@ exports.getDependenciesHealth = async (_req, res) => {
   } catch (error) {
     health.dependencies.shiprocket = {
       status: "error",
-      code: error.code,
-      message: error.message,
     };
     health.status = "DEGRADED";
   }

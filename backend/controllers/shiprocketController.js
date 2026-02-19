@@ -11,10 +11,10 @@ const {
 
 const sendShiprocketError = (res, error, fallbackMessage) => {
   const statusCode = error.statusCode || error.response?.status || 500;
+  log.error("Shiprocket error:", { message: error.message, code: error.code, details: error.details });
   return res.status(statusCode).json({
     success: false,
-    message: error.message || fallbackMessage,
-    error: error.details || error.response?.data || error.message,
+    message: fallbackMessage || "Shipping service error",
     code: error.code,
   });
 };
@@ -775,7 +775,7 @@ exports.handleWebhook = async (req, res) => {
     // Always return 200 to avoid webhook retries
     res.status(200).json({
       success: false,
-      message: error.message,
+      message: "Webhook processing failed",
     });
   }
 };

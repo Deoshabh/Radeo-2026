@@ -250,7 +250,7 @@ exports.uploadMedia = async (req, res) => {
     res.status(201).json({ success: true, media });
   } catch (error) {
     log.error("Upload media error:", error);
-    res.status(500).json({ message: "Server error: " + error.message });
+    res.status(500).json({ message: "Failed to upload media" });
   }
 };
 

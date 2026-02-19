@@ -121,7 +121,7 @@ exports.handleRazorpayWebhook = async (req, res) => {
     });
 
     webhookLog.status = "failed";
-    webhookLog.error = error.message;
+    webhookLog.error = (error.message || "").slice(0, 500);
     await webhookLog.save().catch(() => {});
 
     // Still respond 200 to prevent Razorpay retry storms

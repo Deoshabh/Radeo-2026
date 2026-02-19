@@ -506,8 +506,10 @@ exports.forgotPassword = async (req, res, next) => {
     const resetToken = crypto.randomBytes(32).toString("hex");
     const resetTokenHash = await bcrypt.hash(resetToken, 10);
 
+    const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000; // 1 hour
+
     user.resetPasswordToken = resetTokenHash;
-    user.resetPasswordExpires = Date.now() + 3600000;
+    user.resetPasswordExpires = Date.now() + PASSWORD_RESET_TTL_MS;
     await user.save();
 
     if (process.env.NODE_ENV !== "production") {

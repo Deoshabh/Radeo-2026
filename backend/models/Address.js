@@ -81,4 +81,6 @@ addressSchema.pre("save", async function () {
   }
 });
 
+addressSchema.index({ user: 1 });
+
 module.exports = mongoose.model("Address", addressSchema);

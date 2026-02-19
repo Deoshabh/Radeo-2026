@@ -423,7 +423,7 @@ exports.bulkUpdateStatus = async (req, res) => {
       } catch (error) {
         results.failed.push({
           orderId,
-          reason: error.message,
+          reason: "Failed to update status",
         });
       }
     }
@@ -514,7 +514,7 @@ exports.bulkCreateShipments = async (req, res) => {
       } catch (error) {
         results.failed.push({
           orderId,
-          reason: error.message,
+          reason: "Failed to prepare shipment",
         });
       }
     }
@@ -574,7 +574,7 @@ exports.bulkPrintLabels = async (req, res) => {
           labelUrl: order.shipping.label_url,
         });
       } catch (error) {
-        failed.push({ orderId, reason: error.message });
+        failed.push({ orderId, reason: "Failed to generate label" });
       }
     }
 

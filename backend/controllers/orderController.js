@@ -339,7 +339,7 @@ exports.createOrder = async (req, res) => {
 
     // Stock-related errors from transaction
     if (error.message && error.message.includes("Insufficient stock")) {
-      return res.status(400).json({ message: error.message });
+      return res.status(400).json({ message: "One or more items are out of stock" });
     }
 
     // Return useful validation messages instead of generic 500

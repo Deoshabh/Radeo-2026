@@ -319,7 +319,6 @@ exports.handleShiprocketWebhook = async (req, res) => {
     res.status(200).json({
       success: false,
       message: "Webhook processing failed",
-      error: error.message,
     });
   }
 };
@@ -355,7 +354,7 @@ exports.getWebhookLogs = async (req, res) => {
     log.error("Get webhook logs error:", error);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Failed to fetch webhook logs",
     });
   }
 };
@@ -406,7 +405,7 @@ exports.retryWebhook = async (req, res) => {
     log.error("Retry webhook error:", error);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Failed to retry webhook",
     });
   }
 };

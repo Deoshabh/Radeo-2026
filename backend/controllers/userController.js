@@ -15,7 +15,7 @@ exports.getProfile = async (req, res) => {
     log.error("Get profile error:", error);
     res
       .status(500)
-      .json({ message: "Failed to fetch profile", error: error.message });
+      .json({ message: "Failed to fetch profile" });
   }
 };
 
@@ -23,6 +23,17 @@ exports.getProfile = async (req, res) => {
 exports.updateProfile = async (req, res) => {
   try {
     const { name, email, phone } = req.body;
+
+    // Validate email format if provided
+    if (email && !/^\S+@\S+\.\S+$/.test(email)) {
+      return res.status(400).json({ message: "Invalid email format" });
+    }
+
+    // Validate phone format if provided (10-digit Indian number)
+    if (phone && !/^[0-9]{10}$/.test(phone)) {
+      return res.status(400).json({ message: "Invalid phone number format" });
+    }
+
     const user = await User.findById(req.user.id);
 
     if (!user) {
@@ -57,7 +68,7 @@ exports.updateProfile = async (req, res) => {
     log.error("Update profile error:", error);
     res
       .status(500)
-      .json({ message: "Failed to update profile", error: error.message });
+      .json({ message: "Failed to update profile" });
   }
 };
 
@@ -75,7 +86,7 @@ exports.getAddresses = async (req, res) => {
     log.error("Get addresses error:", error);
     res
       .status(500)
-      .json({ message: "Failed to fetch addresses", error: error.message });
+      .json({ message: "Failed to fetch addresses" });
   }
 };
 
@@ -123,7 +134,7 @@ exports.addAddress = async (req, res) => {
     log.error("Add address error:", error);
     res
       .status(500)
-      .json({ message: "Failed to add address", error: error.message });
+      .json({ message: "Failed to add address" });
   }
 };
 
@@ -153,7 +164,7 @@ exports.updateAddress = async (req, res) => {
     log.error("Update address error:", error);
     res
       .status(500)
-      .json({ message: "Failed to update address", error: error.message });
+      .json({ message: "Failed to update address" });
   }
 };
 
@@ -184,7 +195,7 @@ exports.deleteAddress = async (req, res) => {
     log.error("Delete address error:", error);
     res
       .status(500)
-      .json({ message: "Failed to delete address", error: error.message });
+      .json({ message: "Failed to delete address" });
   }
 };
 
@@ -211,6 +222,6 @@ exports.setDefaultAddress = async (req, res) => {
     log.error("Set default address error:", error);
     res
       .status(500)
-      .json({ message: "Failed to set default address", error: error.message });
+      .json({ message: "Failed to set default address" });
   }
 };
