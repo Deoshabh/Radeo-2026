@@ -74,9 +74,9 @@ export default function RootLayout({ children }) {
       <head>
         <link rel="preconnect" href="https://api.radeo.in" />
         <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-        <div id="turnstile-container" style={{ display: 'none' }} />
       </head>
       <body className="antialiased">
+        <div id="turnstile-container" style={{ display: 'none' }} />
         <ErrorBoundary>
           <QueryProvider>
             <AuthProvider>

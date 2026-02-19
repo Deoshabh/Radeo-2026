@@ -99,11 +99,11 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://checkout.razorpay.com https://apis.google.com https://*.firebaseio.com",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://checkout.razorpay.com https://apis.google.com https://*.firebaseio.com https://challenges.cloudflare.com https://static.cloudflareinsights.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https://cdn.radeo.in https://minio.radeo.in https://images.unsplash.com https://*.googleusercontent.com",
               "font-src 'self' https://fonts.gstatic.com",
-              "connect-src 'self' https://api.radeo.in https://cdn.radeo.in https://*.firebaseio.com https://*.googleapis.com https://checkout.razorpay.com wss://*.radeo.in https://api.honeybadger.io",
+              "connect-src 'self' https://api.radeo.in https://cdn.radeo.in https://*.firebaseio.com https://*.googleapis.com https://checkout.razorpay.com wss://*.radeo.in https://api.honeybadger.io https://challenges.cloudflare.com",
               "frame-src https://checkout.razorpay.com https://*.firebaseapp.com",
               "object-src 'none'",
               "base-uri 'self'",
