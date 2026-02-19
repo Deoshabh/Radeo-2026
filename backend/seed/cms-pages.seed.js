@@ -6,7 +6,7 @@
  * Returns, Privacy, and Terms pages from the admin panel.
  *
  * Usage:  node seed/cms-pages.seed.js
- * Env:    MONGODB_URI (or defaults to localhost)
+ * Env:    MONGO_URI or MONGODB_URI (falls back to localhost)
  */
 const mongoose = require('mongoose');
 const path = require('path');
@@ -15,7 +15,7 @@ require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const ContentPage = require('../models/ContentPage');
 const User = require('../models/User');
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/radeo';
+const MONGODB_URI = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/radeo';
 
 const DEFAULT_PAGES = [
   {
