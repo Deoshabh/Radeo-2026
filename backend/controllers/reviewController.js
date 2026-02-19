@@ -228,15 +228,26 @@ exports.deleteReview = async (req, res) => {
 exports.markReviewHelpful = async (req, res) => {
   try {
     const { id } = req.params;
-    const review = await Review.findByIdAndUpdate(
-      id,
-      { $inc: { helpfulVotes: 1 } },
-      { new: true }
-    );
+    const userId = req.user._id;
 
-    if (!review) {
+    // Check if user already voted
+    const existingReview = await Review.findById(id);
+    if (!existingReview) {
       return res.status(404).json({ message: 'Review not found' });
     }
+
+    if (existingReview.helpfulBy?.includes(userId)) {
+      return res.status(400).json({ message: 'You have already marked this review as helpful' });
+    }
+
+    const review = await Review.findByIdAndUpdate(
+      id,
+      {
+        $inc: { helpfulVotes: 1 },
+        $addToSet: { helpfulBy: userId },
+      },
+      { new: true }
+    );
 
     res.json({ message: 'Marked as helpful', helpfulVotes: review.helpfulVotes });
   } catch (error) {

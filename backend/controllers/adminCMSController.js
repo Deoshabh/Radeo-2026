@@ -192,6 +192,26 @@ exports.uploadMedia = async (req, res) => {
     const { category, type, altText, caption, credit } = req.body;
     const file = req.file;
     const ext = path.extname(file.originalname).toLowerCase();
+
+    // File type whitelist validation
+    const allowedMimeTypes = [
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/avif',
+      'video/mp4', 'video/webm', 'video/quicktime',
+      'application/pdf',
+    ];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      return res.status(400).json({
+        message: `File type '${file.mimetype}' is not allowed. Accepted: images, videos (mp4/webm/mov), and PDF.`,
+      });
+    }
+
+    // Max file size: 50MB for videos, 10MB for others
+    const maxSize = file.mimetype.startsWith('video/') ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      return res.status(400).json({
+        message: `File too large. Max ${file.mimetype.startsWith('video/') ? '50MB' : '10MB'} for this file type.`,
+      });
+    }
     
     // Generate unique key
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);

@@ -20,6 +20,7 @@ const userSchema = new mongoose.Schema(
     passwordHash: {
       type: String,
       required: false, // Optional for Firebase users
+      select: false, // Never return password hash in queries by default
     },
 
     // Firebase Authentication fields

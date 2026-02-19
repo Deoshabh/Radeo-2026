@@ -40,6 +40,10 @@ const reviewSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  helpfulBy: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
   
   // Moderation Fields
   status: {

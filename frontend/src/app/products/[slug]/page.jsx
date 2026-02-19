@@ -1,9 +1,10 @@
+import { cache } from 'react';
 import { notFound } from 'next/navigation';
 import ProductClient from './ProductClient';
 import { generateProductMetadata } from '@/utils/seo';
 import { getApiUrl } from '@/utils/getApiUrl';
 
-async function getProduct(slug) {
+const getProduct = cache(async function getProduct(slug) {
   try {
     const res = await fetch(`${getApiUrl()}/products/${slug}`, {
       next: { revalidate: 60 }, // Revalidate every 60 seconds (SSG/ISR)
@@ -22,7 +23,7 @@ async function getProduct(slug) {
     console.error('[ProductSSR] Fetch Error:', error);
     return null;
   }
-}
+});
 
 export async function generateMetadata({ params }) {
   const product = await getProduct(params.slug);

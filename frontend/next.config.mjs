@@ -2,6 +2,7 @@ import { setupHoneybadger } from '@honeybadger-io/nextjs';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   poweredByHeader: false,
   compress: true,
 

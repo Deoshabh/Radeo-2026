@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const rateLimit = require("express-rate-limit");
 const {
   getProductReviews,
   createReview,
@@ -14,6 +15,22 @@ const {
   uploadReviewPhotos: uploadMiddleware,
 } = require("../middleware/uploadReviewPhotos");
 
+const reviewCreateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10,
+  message: { message: "Too many reviews submitted, please try again later" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const helpfulLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30,
+  message: { message: "Too many helpful votes, please try again later" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Public routes
 // @route   GET /api/v1/products/:productId/reviews
 router.get("/products/:productId/reviews", getProductReviews);
@@ -22,6 +39,7 @@ router.get("/products/:productId/reviews", getProductReviews);
 // @route   POST /api/v1/products/:productId/reviews (with photo upload support)
 router.post(
   "/products/:productId/reviews",
+  reviewCreateLimiter,
   authenticate,
   uploadMiddleware.array("photos", 2), // Max 2 photos
   createReview,
@@ -42,7 +60,7 @@ router.patch(
 router.delete("/reviews/:id", authenticate, deleteReview);
 
 // @route   POST /api/v1/reviews/:id/helpful
-router.post("/reviews/:id/helpful", authenticate, markReviewHelpful);
+router.post("/reviews/:id/helpful", helpfulLimiter, authenticate, markReviewHelpful);
 
 // @route   POST /api/v1/reviews/upload-photos (deprecated)
 router.post("/reviews/upload-photos", authenticate, uploadReviewPhotos);

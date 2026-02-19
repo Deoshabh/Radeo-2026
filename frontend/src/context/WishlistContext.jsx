@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { wishlistAPI } from '@/utils/api';
 import { useAuth } from './AuthContext';
 import toast from 'react-hot-toast';
@@ -20,7 +20,7 @@ export const WishlistProvider = ({ children }) => {
     }
   }, [isAuthenticated]);
 
-  const fetchWishlist = async () => {
+  const fetchWishlist = useCallback(async () => {
     try {
       setLoading(true);
       const response = await wishlistAPI.get();
@@ -31,9 +31,9 @@ export const WishlistProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const addToWishlist = async (productId) => {
+  const addToWishlist = useCallback(async (productId) => {
     try {
       const response = await wishlistAPI.add(productId);
       // Backend returns wishlist object directly: {_id, user, products: [...]}
@@ -45,9 +45,9 @@ export const WishlistProvider = ({ children }) => {
       toast.error(message);
       return { success: false, error: message };
     }
-  };
+  }, []);
 
-  const removeFromWishlist = async (productId) => {
+  const removeFromWishlist = useCallback(async (productId) => {
     try {
       const response = await wishlistAPI.remove(productId);
       // Backend returns wishlist object directly: {_id, user, products: [...]}
@@ -59,29 +59,31 @@ export const WishlistProvider = ({ children }) => {
       toast.error(message);
       return { success: false, error: message };
     }
-  };
+  }, []);
 
-  const isInWishlist = (productId) => {
+  const isInWishlist = useCallback((productId) => {
     return wishlist.some(item => item._id === productId);
-  };
+  }, [wishlist]);
 
-  const toggleWishlist = async (productId) => {
+  const toggleWishlist = useCallback(async (productId) => {
     if (isInWishlist(productId)) {
       return await removeFromWishlist(productId);
     } else {
       return await addToWishlist(productId);
     }
-  };
+  }, [isInWishlist, removeFromWishlist, addToWishlist]);
 
-  const value = {
+  const wishlistCount = useMemo(() => wishlist.length, [wishlist]);
+
+  const value = useMemo(() => ({
     wishlist,
     loading,
     addToWishlist,
     removeFromWishlist,
     toggleWishlist,
     isInWishlist,
-    wishlistCount: wishlist.length,
-  };
+    wishlistCount,
+  }), [wishlist, loading, addToWishlist, removeFromWishlist, toggleWishlist, isInWishlist, wishlistCount]);
 
   return <WishlistContext.Provider value={value}>{children}</WishlistContext.Provider>;
 };

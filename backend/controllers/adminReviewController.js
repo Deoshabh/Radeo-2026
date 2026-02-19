@@ -2,6 +2,7 @@ const { log } = require('../utils/logger');
 const Review = require("../models/Review");
 const Product = require("../models/Product");
 const User = require("../models/User");
+const { deleteObjects } = require("../utils/minio");
 
 // @desc    Get all reviews with filters (admin)
 // @route   GET /api/v1/admin/reviews
@@ -252,6 +253,29 @@ exports.bulkDeleteReviews = async (req, res) => {
       return res.status(400).json({
         message: "reviewIds must be a non-empty array",
       });
+    }
+
+    // Fetch reviews to find associated photos for MinIO cleanup
+    const reviewsWithPhotos = await Review.find({
+      _id: { $in: reviewIds },
+      'images.0': { $exists: true },
+    }).select('images');
+
+    // Collect all MinIO keys to delete
+    const keysToDelete = [];
+    for (const review of reviewsWithPhotos) {
+      for (const img of review.images || []) {
+        if (img.publicId) keysToDelete.push(img.publicId);
+      }
+    }
+
+    // Delete photos from MinIO (best effort, don't block review deletion)
+    if (keysToDelete.length > 0) {
+      try {
+        await deleteObjects(keysToDelete);
+      } catch (err) {
+        log.error("Failed to delete review photos from MinIO:", err);
+      }
     }
 
     const result = await Review.deleteMany({ _id: { $in: reviewIds } });
