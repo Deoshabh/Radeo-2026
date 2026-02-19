@@ -114,7 +114,7 @@ function ProductFormContent() {
         gstPercentage: product.gstPercentage || '',
         averageDeliveryCost: product.averageDeliveryCost || '',
         comparePrice: product.comparePrice || '',
-        category: product.category || '',
+        category: product.category?._id || product.category || '',
         brand: product.brand || '',
         sku: product.sku || '',
         stock: product.stock || '',
@@ -729,7 +729,7 @@ function ProductFormContent() {
                   >
                     <option value="">Select Category</option>
                     {categories.map(cat => (
-                      <option key={cat._id} value={cat.slug}>{cat.name}</option>
+                      <option key={cat._id} value={cat._id}>{cat.name}</option>
                     ))}
                   </select>
                 </div>

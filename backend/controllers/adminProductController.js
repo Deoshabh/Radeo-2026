@@ -367,6 +367,16 @@ exports.createProduct = async (req, res) => {
       }
     }
 
+    // Resolve category: accept ObjectId or slug string
+    let resolvedCategory = category;
+    if (category && !mongoose.Types.ObjectId.isValid(category)) {
+      const cat = await Category.findOne({ slug: category.toLowerCase() }).select('_id').lean();
+      if (!cat) {
+        return res.status(400).json({ message: `Category "${category}" not found` });
+      }
+      resolvedCategory = cat._id;
+    }
+
     // Create product
     const product = await Product.create({
       name,
@@ -375,7 +385,7 @@ exports.createProduct = async (req, res) => {
       specifications: specifications || "",
       materialAndCare: materialAndCare || "",
       shippingAndReturns: shippingAndReturns || "",
-      category,
+      category: resolvedCategory,
       price,
       comparePrice,
       brand,
@@ -485,7 +495,19 @@ exports.updateProduct = async (req, res) => {
     if (name) product.name = name;
     if (slug) product.slug = slug;
     if (description) product.description = description;
-    if (category) product.category = category;
+    if (category) {
+      // Resolve category: accept ObjectId or slug string
+      if (mongoose.Types.ObjectId.isValid(category)) {
+        product.category = category;
+      } else {
+        const cat = await Category.findOne({ slug: category.toLowerCase() }).select('_id').lean();
+        if (cat) {
+          product.category = cat._id;
+        } else {
+          return res.status(400).json({ message: `Category "${category}" not found` });
+        }
+      }
+    }
     if (price) product.price = price;
     if (comparePrice !== undefined) product.comparePrice = comparePrice;
     if (brand !== undefined) product.brand = brand;

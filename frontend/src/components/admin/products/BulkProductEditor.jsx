@@ -30,7 +30,12 @@ export default function BulkProductEditor() {
         if (edits[product._id] && edits[product._id][field] !== undefined) {
             return edits[product._id][field];
         }
-        return product[field];
+        const val = product[field];
+        // Handle populated category (object with name/slug)
+        if (field === 'category' && val && typeof val === 'object') {
+            return val.name || val.slug || val._id || '';
+        }
+        return val;
     };
 
     const handleSave = async () => {
