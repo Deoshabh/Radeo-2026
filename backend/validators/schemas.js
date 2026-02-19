@@ -46,6 +46,47 @@ const refreshTokenSchema = z.object({
  */
 
 // Create product schema
+// Shared sub-schemas matching actual Product model
+const productImageSchema = z.object({
+  url: z.string(),
+  key: z.string(),
+  isPrimary: z.boolean().optional(),
+  order: z.number().optional(),
+  color: z.string().optional(),
+}).passthrough();
+
+const productSizeSchema = z.object({
+  size: z.string(),
+  stock: z.number().int().min(0),
+}).passthrough();
+
+const productVideoSchema = z.object({
+  url: z.string().optional(),
+  key: z.string().optional(),
+  duration: z.number().max(30).optional(),
+}).passthrough().optional().nullable();
+
+const productSpecificationsSchema = z.object({
+  material: z.string().optional(),
+  sole: z.string().optional(),
+  construction: z.string().optional(),
+  madeIn: z.string().optional(),
+}).passthrough().optional();
+
+const productImage360Schema = z.object({
+  url: z.string(),
+  key: z.string(),
+  order: z.number().optional(),
+}).passthrough();
+
+const productHotspot360Schema = z.object({
+  id: z.string(),
+  frame: z.number(),
+  x: z.number().min(0).max(100),
+  y: z.number().min(0).max(100),
+  label: z.string().optional(),
+}).passthrough();
+
 const createProductSchema = z.object({
   body: z.object({
     name: z.string().min(3, "Product name must be at least 3 characters"),
@@ -54,30 +95,29 @@ const createProductSchema = z.object({
       .string()
       .min(10, "Description must be at least 10 characters"),
     price: z.number().min(0, "Price must be positive"),
-    compareAtPrice: z.number().min(0).optional(),
-    costPerItem: z.number().min(0).optional(),
+    comparePrice: z.number().min(0).optional(),
+    gstPercentage: z.number().min(0).max(100).optional(),
+    averageDeliveryCost: z.number().min(0).optional(),
     category: z.string().min(1, "Category is required"),
     brand: z.string().optional(),
     sku: z.string().optional(),
-    barcode: z.string().optional(),
-    trackQuantity: z.boolean().optional(),
-    quantity: z.number().int().min(0).optional(),
-    images: z.array(z.string().url()).min(1, "At least one image is required"),
-    colors: z
-      .array(
-        z.object({
-          name: z.string(),
-          hex: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
-        }),
-      )
-      .optional(),
-    sizes: z.array(z.string()).optional(),
-    isFeatured: z.boolean().optional(),
+    stock: z.number().int().min(0).optional(),
+    images: z.array(productImageSchema).min(1, "At least one image is required"),
+    images360: z.array(productImage360Schema).optional(),
+    hotspots360: z.array(productHotspot360Schema).optional(),
+    video: productVideoSchema,
+    colors: z.array(z.string()).optional(),
+    sizes: z.array(productSizeSchema).optional(),
+    featured: z.boolean().optional(),
     isActive: z.boolean().optional(),
     tags: z.array(z.string()).optional(),
+    specifications: productSpecificationsSchema,
+    careInstructions: z.array(z.string()).optional(),
+    materialAndCare: z.string().optional(),
+    shippingAndReturns: z.string().optional(),
     metaTitle: z.string().optional(),
     metaDescription: z.string().optional(),
-  }),
+  }).passthrough(),
 });
 
 // Update product schema (all fields optional except id in params)
@@ -90,30 +130,29 @@ const updateProductSchema = z.object({
     slug: z.string().min(3).optional(),
     description: z.string().min(10).optional(),
     price: z.number().min(0).optional(),
-    compareAtPrice: z.number().min(0).optional(),
-    costPerItem: z.number().min(0).optional(),
+    comparePrice: z.number().min(0).optional(),
+    gstPercentage: z.number().min(0).max(100).optional(),
+    averageDeliveryCost: z.number().min(0).optional(),
     category: z.string().optional(),
     brand: z.string().optional(),
     sku: z.string().optional(),
-    barcode: z.string().optional(),
-    trackQuantity: z.boolean().optional(),
-    quantity: z.number().int().min(0).optional(),
-    images: z.array(z.string().url()).optional(),
-    colors: z
-      .array(
-        z.object({
-          name: z.string(),
-          hex: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
-        }),
-      )
-      .optional(),
-    sizes: z.array(z.string()).optional(),
-    isFeatured: z.boolean().optional(),
+    stock: z.number().int().min(0).optional(),
+    images: z.array(productImageSchema).optional(),
+    images360: z.array(productImage360Schema).optional(),
+    hotspots360: z.array(productHotspot360Schema).optional(),
+    video: productVideoSchema,
+    colors: z.array(z.string()).optional(),
+    sizes: z.array(productSizeSchema).optional(),
+    featured: z.boolean().optional(),
     isActive: z.boolean().optional(),
     tags: z.array(z.string()).optional(),
+    specifications: productSpecificationsSchema,
+    careInstructions: z.array(z.string()).optional(),
+    materialAndCare: z.string().optional(),
+    shippingAndReturns: z.string().optional(),
     metaTitle: z.string().optional(),
     metaDescription: z.string().optional(),
-  }),
+  }).passthrough(),
 });
 
 // Get product by ID schema

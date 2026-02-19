@@ -22,7 +22,7 @@ export default function SalesCategoryPieChart({ data }) {
         <div className="bg-white rounded-xl border border-gray-100 p-5">
             <h3 className="text-sm font-semibold text-gray-800 mb-4">Sales by Category</h3>
             <div className="h-[260px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <PieChart>
                     <Pie
                         data={chartData}
