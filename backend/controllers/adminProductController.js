@@ -5,6 +5,8 @@ const Category = require("../models/Category");
 const StockMovement = require("../models/StockMovement");
 const { invalidateCache } = require("../utils/cache");
 
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 // @desc    Get all products (admin view)
 // @route   GET /api/admin/products
 // @access  Private/Admin
@@ -24,7 +26,7 @@ exports.getAllProducts = async (req, res) => {
 
     const filter = {};
     if (search) {
-      filter.name = { $regex: search, $options: "i" };
+      filter.name = { $regex: escapeRegex(search), $options: "i" };
     }
 
     if (category && category !== 'all') {

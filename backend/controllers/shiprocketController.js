@@ -1,6 +1,10 @@
 const Order = require("../models/Order");
+const Product = require("../models/Product");
+const StockMovement = require("../models/StockMovement");
+const mongoose = require("mongoose");
 const shiprocketService = require("../utils/shiprocket");
 const { log } = require("../utils/logger");
+const { invalidateCache } = require("../utils/cache");
 const {
   reconcileActiveShipments,
 } = require("../services/shiprocketReconciliationService");
@@ -66,12 +70,8 @@ const toShiprocketRupees = (amount) => {
     return 0;
   }
 
-  // Some historical records are stored in paise/cents (x100), while newer ones are in rupees.
-  // Convert only when value strongly looks like paise/cents.
-  if (Number.isInteger(value) && value >= 10000 && value % 100 === 0) {
-    return value / 100;
-  }
-
+  // All prices are stored in rupees in our database.
+  // Return as-is without any paise/rupees conversion heuristic.
   return value;
 };
 
@@ -356,14 +356,64 @@ exports.cancelShipment = async (req, res) => {
       order.shipping.awb_code,
     ]);
 
-    // Update order status
-    order.status = "cancelled";
-    order.shipping.current_status = "Cancelled";
-    await order.save();
+    // Restore stock inside a transaction
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        for (const item of order.items) {
+          if (!item.product || !item.quantity) continue;
+
+          if (item.size) {
+            await Product.updateOne(
+              { _id: item.product, "sizes.size": item.size },
+              {
+                $inc: {
+                  "sizes.$.stock": item.quantity,
+                  stock: item.quantity,
+                },
+              },
+              { session },
+            );
+          } else {
+            await Product.updateOne(
+              { _id: item.product },
+              { $inc: { stock: item.quantity } },
+              { session },
+            );
+          }
+        }
+
+        order.status = "cancelled";
+        order.shipping.current_status = "Cancelled";
+        await order.save({ session });
+      });
+    } finally {
+      session.endSession();
+    }
+
+    await invalidateCache("products:*");
+
+    // Log stock movements (fire-and-forget)
+    setImmediate(() => {
+      const movements = order.items
+        .filter((item) => item.product && item.quantity)
+        .map((item) => ({
+          product: item.product,
+          type: "shipment_cancelled",
+          quantity: item.quantity,
+          size: item.size || null,
+          orderId: order._id,
+          orderCode: order.orderId,
+          note: "Shiprocket shipment cancelled — stock restored",
+        }));
+      StockMovement.insertMany(movements).catch((err) =>
+        log.error("Failed to log stock movements (shipment_cancel)", err),
+      );
+    });
 
     res.json({
       success: true,
-      message: "Shipment cancelled successfully",
+      message: "Shipment cancelled and stock restored successfully",
       data: result,
     });
   } catch (error) {

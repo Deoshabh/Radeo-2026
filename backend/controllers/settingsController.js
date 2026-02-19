@@ -1,6 +1,7 @@
 const SiteSettings = require('../models/SiteSettings');
 const SettingAuditLog = require('../models/SettingAuditLog');
 const {
+  SITE_SETTINGS_DEFAULTS,
   PUBLIC_SETTING_KEYS,
   isKnownSettingKey,
   getPublicSettingValue,

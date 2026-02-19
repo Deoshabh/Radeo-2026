@@ -319,7 +319,7 @@ async function startServer() {
     }
 
     const PORT = process.env.PORT || 5000;
-    app.listen(PORT, "0.0.0.0", () => {
+    const server = app.listen(PORT, "0.0.0.0", () => {
       log.success(`Server running on port ${PORT}`);
       log.info("CORS allowed origins", { origins: allowedOrigins });
       startShiprocketReconciliationWorker();
@@ -333,6 +333,37 @@ async function startServer() {
         log.warn("Cleanup jobs registration failed (node-cron may not be installed)", e.message);
       }
     });
+
+    // Graceful shutdown handler
+    const gracefulShutdown = async (signal) => {
+      log.info(`${signal} received — shutting down gracefully`);
+      server.close(async () => {
+        try {
+          await mongoose.connection.close();
+          log.info("MongoDB connection closed");
+        } catch (e) {
+          log.error("Error closing MongoDB", e.message);
+        }
+        try {
+          const { cacheClient, tokenClient } = require("./config/redis");
+          if (cacheClient?.isOpen) await cacheClient.disconnect();
+          if (tokenClient?.isOpen) await tokenClient.disconnect();
+          log.info("Redis connections closed");
+        } catch (e) {
+          log.error("Error closing Redis", e.message);
+        }
+        log.info("All connections closed — exiting");
+        process.exit(0);
+      });
+      // Force exit after 10 seconds if graceful shutdown hangs
+      setTimeout(() => {
+        log.error("Graceful shutdown timed out — forcing exit");
+        process.exit(1);
+      }, 10_000);
+    };
+
+    process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+    process.on("SIGINT", () => gracefulShutdown("SIGINT"));
   } catch (err) {
     log.error("Fatal startup error", err);
     process.exit(1);

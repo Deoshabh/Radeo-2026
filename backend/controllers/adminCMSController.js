@@ -86,8 +86,17 @@ exports.updatePage = async (req, res) => {
       return res.status(404).json({ message: "Page not found" });
     }
 
-    // Update fields
-    Object.assign(page, req.body);
+    // Update only allowed fields (prevent mass assignment)
+    const allowedFields = [
+      'title', 'slug', 'content', 'sections', 'status',
+      'seo', 'template', 'featuredImage', 'category',
+      'tags', 'isPublished', 'publishedAt', 'order',
+    ];
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        page[field] = req.body[field];
+      }
+    }
     page.updatedBy = req.user.id;
 
     await page.save();

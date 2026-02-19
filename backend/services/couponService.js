@@ -21,10 +21,11 @@ class CouponService {
 
             const inputCode = code.toUpperCase().trim();
             const prefix = inputCode.slice(0, 3);
+            const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
             // Prefix query to narrow candidates, then timing-safe compare
             const candidates = await Coupon.find({
-                code: { $regex: `^${prefix}`, $options: 'i' },
+                code: { $regex: `^${escapedPrefix}`, $options: 'i' },
             }).lean();
 
             let coupon = null;

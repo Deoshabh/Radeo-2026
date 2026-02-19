@@ -58,12 +58,13 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (isAuthenticated && !cartLoading) {
       fetchAddresses();
-      if (cartCount === 0) {
+      // Only redirect if cart has been loaded (not null/undefined) and is truly empty
+      if (cart !== null && cart !== undefined && cartCount === 0) {
         toast.error('Your cart is empty');
         router.push('/cart');
       }
     }
-  }, [isAuthenticated, cartLoading, cartCount, router]);
+  }, [isAuthenticated, cartLoading, cart, cartCount, router]);
 
   const handleAddAddress = async (e) => {
     e.preventDefault();

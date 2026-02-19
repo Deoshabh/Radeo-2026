@@ -1,10 +1,11 @@
 import { notFound } from 'next/navigation';
 import ProductClient from './ProductClient';
 import { generateProductMetadata } from '@/utils/seo';
+import { getApiUrl } from '@/utils/getApiUrl';
 
 async function getProduct(slug) {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${slug}`, {
+    const res = await fetch(`${getApiUrl()}/products/${slug}`, {
       next: { revalidate: 60 }, // Revalidate every 60 seconds (SSG/ISR)
     });
 

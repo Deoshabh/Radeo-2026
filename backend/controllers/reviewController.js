@@ -72,7 +72,7 @@ exports.createReview = async (req, res) => {
       title,
       comment,
       images,
-      status: moderation.action === 'flag' ? 'pending' : 'pending',
+      status: moderation.action === 'flag' ? 'pending' : 'approved',
       ai_tags: {
         moderation_score: moderation.score,
         moderation_flags: moderation.flags,

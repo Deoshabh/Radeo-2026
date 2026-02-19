@@ -165,6 +165,21 @@ async function handlePaymentCaptured(entity, webhookLog) {
     return;
   }
 
+  // Verify payment amount matches order total (Razorpay sends paise)
+  const paidAmountPaise = entity.amount;
+  const expectedPaise = Math.round((order.totalAmount || order.total || 0) * 100);
+  if (paidAmountPaise && expectedPaise && paidAmountPaise < expectedPaise) {
+    webhookLog.status = "failed";
+    webhookLog.error = `Payment amount mismatch: paid ${paidAmountPaise} paise, expected ${expectedPaise} paise`;
+    await webhookLog.save();
+    log.error("Razorpay webhook: amount mismatch", {
+      orderId: order.orderId,
+      paid: paidAmountPaise,
+      expected: expectedPaise,
+    });
+    return;
+  }
+
   order.payment.status = "paid";
   order.payment.transactionId = razorpayPaymentId;
   order.status = order.status === "pending_payment" ? "confirmed" : order.status;
@@ -305,17 +320,69 @@ async function handleRefundProcessed(entity, webhookLog) {
 
   webhookLog.orderId = order._id;
 
-  order.payment.status = "refunded";
-  order.payment.refundId = entity.id;
-  await order.save();
+  // Restore stock for each item on refund
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      for (const item of order.items) {
+        if (!item.product || !item.quantity) continue;
+
+        if (item.size) {
+          await Product.updateOne(
+            { _id: item.product, "sizes.size": item.size },
+            {
+              $inc: {
+                "sizes.$.stock": item.quantity,
+                stock: item.quantity,
+              },
+            },
+            { session },
+          );
+        } else {
+          await Product.updateOne(
+            { _id: item.product },
+            { $inc: { stock: item.quantity } },
+            { session },
+          );
+        }
+      }
+
+      order.payment.status = "refunded";
+      order.payment.refundId = entity.id;
+      order.status = "cancelled";
+      await order.save({ session });
+    });
+  } finally {
+    session.endSession();
+  }
+
+  await invalidateCache("products:*");
+
+  // Log stock movements (fire-and-forget)
+  setImmediate(() => {
+    const movements = order.items
+      .filter((item) => item.product && item.quantity)
+      .map((item) => ({
+        product: item.product,
+        type: "refund",
+        quantity: item.quantity,
+        size: item.size || null,
+        orderId: order._id,
+        orderCode: order.orderId,
+        note: "Razorpay refund processed — stock restored",
+      }));
+    StockMovement.insertMany(movements).catch((err) =>
+      log.error("Failed to log stock movements (refund)", err),
+    );
+  });
 
   webhookLog.status = "processed";
-  webhookLog.result = `Order ${order.orderId} refunded`;
+  webhookLog.result = `Order ${order.orderId} refunded, stock restored`;
   webhookLog.processedAt = new Date();
   await webhookLog.save();
 
   emitOrderUpdate(order._id.toString(), {
-    status: order.status,
+    status: "cancelled",
     paymentStatus: "refunded",
   }).catch((err) => log.error("Soketi emit failed (refund.processed)", err));
 }

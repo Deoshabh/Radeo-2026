@@ -147,6 +147,18 @@ exports.register = async (req, res, next) => {
         .json({ message: "Name, email, and password are required" });
     }
 
+    // Enforce password strength: min 8 chars, 1 uppercase, 1 lowercase, 1 digit
+    if (
+      password.length < 8 ||
+      !/[A-Z]/.test(password) ||
+      !/[a-z]/.test(password) ||
+      !/[0-9]/.test(password)
+    ) {
+      return res.status(400).json({
+        message: "Password must be at least 8 characters with uppercase, lowercase, and a number",
+      });
+    }
+
     const exists = await User.findOne({ email });
     if (exists) {
       return res.status(400).json({ message: "User already exists" });
@@ -645,7 +657,7 @@ exports.firebaseLogin = async (req, res, next) => {
 
     if (!user && decodedToken.email) {
       user = await User.findOne({
-        email: { $regex: `^${decodedToken.email}$`, $options: "i" },
+        email: decodedToken.email.toLowerCase(),
       });
 
       if (user && !user.firebaseUid) {

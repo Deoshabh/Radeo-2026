@@ -33,9 +33,10 @@ exports.getAllReviews = async (req, res) => {
 
     // Search in title and comment
     if (search) {
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       filter.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { comment: { $regex: search, $options: "i" } },
+        { title: { $regex: escapedSearch, $options: "i" } },
+        { comment: { $regex: escapedSearch, $options: "i" } },
       ];
     }
 

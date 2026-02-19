@@ -204,6 +204,20 @@ exports.updateUserRole = async (req, res) => {
       });
     }
 
+    // Prevent demoting the last admin
+    if (role === "customer") {
+      const targetUser = await User.findById(id);
+      if (targetUser && targetUser.role === "admin") {
+        const adminCount = await User.countDocuments({ role: "admin" });
+        if (adminCount <= 1) {
+          return res.status(400).json({
+            success: false,
+            message: "Cannot demote the last admin. Create another admin first.",
+          });
+        }
+      }
+    }
+
     // Check if promoting to admin
     if (role === "admin") {
       const adminCount = await User.countDocuments({ role: "admin" });
@@ -430,10 +444,13 @@ exports.createAdmin = async (req, res) => {
       });
     }
 
-    if (password.length < 6) {
+    if (password.length < 8 ||
+        !/[A-Z]/.test(password) ||
+        !/[a-z]/.test(password) ||
+        !/[0-9]/.test(password)) {
       return res.status(400).json({
         success: false,
-        message: "Password must be at least 6 characters",
+        message: "Password must be at least 8 characters with uppercase, lowercase, and a number",
       });
     }
 

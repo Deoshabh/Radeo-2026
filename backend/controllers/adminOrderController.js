@@ -1,6 +1,8 @@
+const mongoose = require("mongoose");
 const Order = require("../models/Order");
 const User = require("../models/User");
 const Product = require("../models/Product");
+const StockMovement = require("../models/StockMovement");
 const { analyzeOrderRisks } = require("../utils/riskDetection");
 const { invalidateCache } = require("../utils/cache");
 const { log } = require("../utils/logger");
@@ -156,28 +158,66 @@ exports.updateOrderStatus = async (req, res) => {
       });
     }
 
-    // Restore stock if cancelling
+    // Restore stock if cancelling (inside a transaction)
     if (status === "cancelled" && order.status !== "cancelled") {
-      for (const item of order.items) {
-        if (item.product && item.quantity && item.size) {
-          await Product.updateOne(
-            { _id: item.product, "sizes.size": item.size },
-            {
-              $inc: {
-                "sizes.$.stock": item.quantity,
-                stock: item.quantity,
-              },
+      const session = await mongoose.startSession();
+      try {
+        await session.withTransaction(async () => {
+          for (const item of order.items) {
+            if (!item.product || !item.quantity) continue;
+
+            if (item.size) {
+              await Product.updateOne(
+                { _id: item.product, "sizes.size": item.size },
+                {
+                  $inc: {
+                    "sizes.$.stock": item.quantity,
+                    stock: item.quantity,
+                  },
+                },
+                { session },
+              );
+            } else {
+              await Product.updateOne(
+                { _id: item.product },
+                { $inc: { stock: item.quantity } },
+                { session },
+              );
             }
-          );
-        }
+          }
+
+          order.status = status;
+          await order.save({ session });
+        });
+      } finally {
+        session.endSession();
       }
+
       // Invalidate cache
       await invalidateCache("products:*");
-    }
 
-    // Update status
-    order.status = status;
-    await order.save();
+      // Log stock movements (fire-and-forget)
+      setImmediate(() => {
+        const movements = order.items
+          .filter((item) => item.product && item.quantity)
+          .map((item) => ({
+            product: item.product,
+            type: "admin_cancellation",
+            quantity: item.quantity,
+            size: item.size || null,
+            orderId: order._id,
+            orderCode: order.orderId,
+            note: "Admin cancelled order — stock restored",
+          }));
+        StockMovement.insertMany(movements).catch((err) =>
+          log.error("Failed to log stock movements (admin_cancel)", err),
+        );
+      });
+    } else {
+      // Non-cancellation status update
+      order.status = status;
+      await order.save();
+    }
 
     res.json({
       success: true,
@@ -342,23 +382,42 @@ exports.bulkUpdateStatus = async (req, res) => {
         }
 
         if (status === "cancelled" && order.status !== "cancelled") {
-          for (const item of order.items) {
-            if (item.product && item.quantity && item.size) {
-              await Product.updateOne(
-                { _id: item.product, "sizes.size": item.size },
-                {
-                  $inc: {
-                    "sizes.$.stock": item.quantity,
-                    stock: item.quantity,
-                  },
-                }
-              );
-            }
-          }
-        }
+          const session = await mongoose.startSession();
+          try {
+            await session.withTransaction(async () => {
+              for (const item of order.items) {
+                if (!item.product || !item.quantity) continue;
 
-        order.status = status;
-        await order.save();
+                if (item.size) {
+                  await Product.updateOne(
+                    { _id: item.product, "sizes.size": item.size },
+                    {
+                      $inc: {
+                        "sizes.$.stock": item.quantity,
+                        stock: item.quantity,
+                      },
+                    },
+                    { session },
+                  );
+                } else {
+                  await Product.updateOne(
+                    { _id: item.product },
+                    { $inc: { stock: item.quantity } },
+                    { session },
+                  );
+                }
+              }
+
+              order.status = status;
+              await order.save({ session });
+            });
+          } finally {
+            session.endSession();
+          }
+        } else {
+          order.status = status;
+          await order.save();
+        }
 
         results.success.push(orderId);
       } catch (error) {

@@ -19,6 +19,7 @@ export const formatCurrency = (amount) => {
  * Format price with Indian notation (alias for formatCurrency)
  */
 export const formatPrice = (value) => {
+  if (value == null || isNaN(value)) return '₹0';
   if (value < 0) {
     return `₹${value.toLocaleString("en-IN")}`;
   }

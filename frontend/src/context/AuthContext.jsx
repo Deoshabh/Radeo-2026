@@ -72,7 +72,7 @@ export const AuthProvider = ({ children }) => {
             const data = await syncWithBackend(firebaseUser, token);
             if (isMounted.current) {
               if (data.accessToken) {
-                Cookies.set('accessToken', data.accessToken, { expires: 1 });
+                Cookies.set('accessToken', data.accessToken, { expires: 1, secure: true, sameSite: 'Strict', path: '/' });
               }
               setUser(data.user);
             }
@@ -118,7 +118,7 @@ export const AuthProvider = ({ children }) => {
       if (!firebaseUser) return { success: false, error: 'Firebase login failed' };
 
       const data = await syncWithBackend(firebaseUser, token);
-      Cookies.set('accessToken', data.accessToken, { expires: 1 });
+      Cookies.set('accessToken', data.accessToken, { expires: 1, secure: true, sameSite: 'Strict', path: '/' });
       setUser(data.user);
       setLoading(false);
       return { success: true };
@@ -138,7 +138,7 @@ export const AuthProvider = ({ children }) => {
       if (!firebaseUser) return { success: false, error: 'Firebase registration failed' };
 
       const data = await syncWithBackend(firebaseUser, token);
-      Cookies.set('accessToken', data.accessToken, { expires: 1 });
+      Cookies.set('accessToken', data.accessToken, { expires: 1, secure: true, sameSite: 'Strict', path: '/' });
       setUser(data.user);
       setLoading(false);
       return { success: true };
