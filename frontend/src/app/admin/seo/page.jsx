@@ -718,8 +718,12 @@ export default function AdminSeoPage() {
   const expandedCardsRef = useRef(new Set());
 
   // Initialize local form state when server data arrives
+  // Only populate on first load — skip if user is actively editing
+  const initializedRef = useRef(false);
   useEffect(() => {
     if (!rawSeoData) return;
+    // Skip re-init if user has unsaved edits (prevents collapse on background refetch)
+    if (initializedRef.current && hasChanges) return;
     const data = rawSeoData?.seoSettings || {};
     const merged = {
       global: { ...DEFAULTS.global, ...(data.global || {}) },
@@ -731,8 +735,11 @@ export default function AdminSeoPage() {
       }
     }
     setSeoSettings(merged);
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+    }
     setHasChanges(false);
-  }, [rawSeoData]);
+  }, [rawSeoData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = () => {
     if (!hasChanges || updateSeoMut.isPending) return;

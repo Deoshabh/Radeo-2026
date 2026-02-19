@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import { FiMail, FiMapPin, FiPhone, FiArrowRight, FiClock } from 'react-icons/fi';
 import { contactAPI } from '@/utils/api';
 import { useSiteSettings } from '@/context/SiteSettingsContext';
-import { useRecaptcha, RECAPTCHA_ACTIONS } from '@/utils/recaptcha';
+import { useRecaptcha, RECAPTCHA_ACTIONS } from '@/utils/turnstile';
 
 const MAX_MESSAGE_LENGTH = 1000;
 

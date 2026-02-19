@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { FiCheck } from 'react-icons/fi';
 import { loginWithEmail, registerWithEmail, resetPassword, resendVerificationEmail } from '@/utils/firebaseAuth';
 import { useAuth } from '@/context/AuthContext';
-import { useRecaptcha, RECAPTCHA_ACTIONS } from '@/utils/recaptcha';
+import { useRecaptcha, RECAPTCHA_ACTIONS } from '@/utils/turnstile';
 import toast from 'react-hot-toast';
 
 /**

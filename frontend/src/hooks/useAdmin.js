@@ -425,6 +425,8 @@ export const useSeoSettings = () =>
     queryKey: adminKeys.seo(),
     queryFn: async () => { const { data } = await adminAPI.getSeoSettings(); return data; },
     staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+    refetchInterval: false,
   });
 
 export const useUpdateSeoSettings = () => {

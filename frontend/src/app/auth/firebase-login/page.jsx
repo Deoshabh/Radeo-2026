@@ -11,7 +11,7 @@ import PhoneAuth from '@/components/auth/PhoneAuth';
 import { authAPI, getFriendlyError } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
 import { loginWithGoogle } from '@/utils/firebaseAuth';
-import { useRecaptcha, RECAPTCHA_ACTIONS } from '@/utils/recaptcha';
+import { useRecaptcha, RECAPTCHA_ACTIONS } from '@/utils/turnstile';
 import toast from 'react-hot-toast';
 import Cookies from 'js-cookie';
 
