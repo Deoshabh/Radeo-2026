@@ -739,7 +739,6 @@ export default function AdminOrdersDashboard() {
           </div>
         </div>
         )}
-      </div>
       {selectedOrder && (
         <ShiprocketShipmentModal
           order={selectedOrder}
