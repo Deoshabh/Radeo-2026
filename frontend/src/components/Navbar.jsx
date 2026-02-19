@@ -164,7 +164,7 @@ export default function Navbar() {
   return (
     <nav
       ref={navRef}
-      className={`${stickyHeader ? 'fixed' : 'absolute'} top-0 left-0 right-0 z-50 transition-all duration-500 ${
+      className={`${stickyHeader ? 'fixed' : 'absolute'} top-0 left-0 right-0 z-40 transition-all duration-500 ${
         isTransparentHeader
           ? isScrolled ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-transparent'
           : isScrolled ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-white/80 backdrop-blur-sm'
@@ -214,7 +214,7 @@ export default function Navbar() {
               {isCategoriesOpen && (
                 <div
                   ref={categoriesDropdownRef}
-                  className="absolute top-full left-0 w-72 pt-2"
+                  className="absolute top-full left-0 w-72 pt-2 z-[45]"
                 >
                   <div className="bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden">
                   <Link
@@ -332,7 +332,7 @@ export default function Navbar() {
                   {user?.name?.charAt(0).toUpperCase()}
                 </button>
                 {isUserMenuOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-52 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden">
+                  <div className="absolute top-full right-0 mt-2 w-52 z-[45] bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden">
                     <div className="px-4 py-3 border-b border-gray-100 bg-[color:var(--color-page-bg)]">
                       <p className="font-semibold text-[color:var(--color-heading)] text-sm">{user?.name}</p>
                       <p className="text-xs text-[color:var(--color-body)] mt-0.5">{user?.email}</p>
@@ -378,7 +378,7 @@ export default function Navbar() {
 
       {/* â”€â”€ Search bar (slides down on desktop) â”€â”€ */}
       {isSearchBarVisible && (
-        <div ref={searchRef} className="hidden lg:block border-t border-gray-100 bg-white/95 backdrop-blur-md">
+        <div ref={searchRef} className="relative z-40 hidden lg:block border-t border-gray-100 bg-white/95 backdrop-blur-md">
           <div className="max-w-[600px] mx-auto px-6 py-4">
             <form onSubmit={handleSearch} className="relative">
               <input
@@ -396,7 +396,7 @@ export default function Navbar() {
 
             {/* Results dropdown */}
             {isSearchOpen && searchResults.length > 0 && (
-              <div className="mt-2 bg-white rounded-lg shadow-xl border border-gray-100 max-h-80 overflow-y-auto">
+              <div className="absolute left-0 right-0 z-50 mt-2 bg-white rounded-lg shadow-xl border border-gray-100 max-h-80 overflow-y-auto" style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}>
                 {searchResults.map(product => (
                   <Link
                     key={product._id}
