@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, lazy, Suspense } from 'react';
 import {
   useCmsPages, useCmsMedia, useCmsMenus, useOrphanedMedia,
   useCreateCmsPage, useUpdateCmsPage, useDeleteCmsPage, usePublishCmsPage,
@@ -9,8 +9,10 @@ import {
 import toast from 'react-hot-toast';
 import {
   FiFileText, FiImage, FiMenu, FiPlus, FiEdit2, FiTrash2,
-  FiRefreshCw, FiSearch, FiSend, FiX
+  FiRefreshCw, FiSearch, FiSend, FiX, FiLayout, FiSettings
 } from 'react-icons/fi';
+
+const BlockTreeEditor = lazy(() => import('@/components/admin/cms/BlockTreeEditor'));
 
 const STATUS_COLORS = {
   draft: 'bg-yellow-100 text-yellow-700',
@@ -29,6 +31,7 @@ const TAB_CONFIG = [
 function PageEditorModal({ page, onClose }) {
   const createPageMut = useCreateCmsPage();
   const updatePageMut = useUpdateCmsPage();
+  const [editorTab, setEditorTab] = useState('settings');
   const [form, setForm] = useState({
     title: page?.title || '',
     slug: page?.slug || '',
@@ -39,6 +42,7 @@ function PageEditorModal({ page, onClose }) {
     metaTitle: page?.metaTitle || '',
     metaDescription: page?.metaDescription || '',
     noIndex: page?.noIndex || false,
+    blocks: page?.blocks || [],
   });
 
   const saving = createPageMut.isPending || updatePageMut.isPending;
@@ -64,13 +68,33 @@ function PageEditorModal({ page, onClose }) {
     }
   };
 
+  const isBlocksTab = editorTab === 'blocks';
+
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className={`bg-white rounded-xl shadow-2xl w-full max-h-[90vh] overflow-y-auto transition-all ${isBlocksTab ? 'max-w-5xl' : 'max-w-2xl'}`}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-primary-100">
-          <h3 className="font-bold text-primary-900 text-lg">{page?._id ? 'Edit Page' : 'New Page'}</h3>
+          <div className="flex items-center gap-4">
+            <h3 className="font-bold text-primary-900 text-lg">{page?._id ? 'Edit Page' : 'New Page'}</h3>
+            {page?._id && (
+              <div className="flex bg-primary-50 rounded-lg p-0.5">
+                <button type="button" onClick={() => setEditorTab('settings')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${editorTab === 'settings' ? 'bg-white shadow-sm text-primary-900' : 'text-primary-500 hover:text-primary-700'}`}>
+                  <FiSettings className="w-3.5 h-3.5" /> Settings
+                </button>
+                <button type="button" onClick={() => setEditorTab('blocks')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${editorTab === 'blocks' ? 'bg-white shadow-sm text-primary-900' : 'text-primary-500 hover:text-primary-700'}`}>
+                  <FiLayout className="w-3.5 h-3.5" /> Content Blocks
+                  {form.blocks.length > 0 && <span className="text-[10px] bg-primary-200 text-primary-700 px-1.5 rounded-full">{form.blocks.length}</span>}
+                </button>
+              </div>
+            )}
+          </div>
           <button onClick={onClose} className="p-2 hover:bg-primary-100 rounded-lg"><FiX className="w-5 h-5" /></button>
         </div>
+
+        {/* Settings Tab */}
+        {editorTab === 'settings' && (
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
@@ -142,6 +166,39 @@ function PageEditorModal({ page, onClose }) {
             <button type="button" onClick={onClose} className="px-4 py-2 border border-primary-200 rounded-lg text-sm">Cancel</button>
           </div>
         </form>
+        )}
+
+        {/* Blocks Tab */}
+        {editorTab === 'blocks' && (
+          <div className="p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-semibold text-primary-800">Page Content Blocks</h4>
+                <p className="text-xs text-primary-400 mt-0.5">Drag and drop blocks to build your page layout</p>
+              </div>
+              <button
+                onClick={handleSubmit}
+                disabled={saving}
+                className="px-5 py-2 bg-primary-900 text-white rounded-lg text-sm font-medium hover:bg-primary-800 disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save Page'}
+              </button>
+            </div>
+            <Suspense fallback={
+              <div className="flex items-center justify-center py-20">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-8 h-8 border-2 border-primary-200 border-t-primary-700 rounded-full animate-spin" />
+                  <span className="text-xs text-primary-400">Loading block editor...</span>
+                </div>
+              </div>
+            }>
+              <BlockTreeEditor
+                value={form.blocks}
+                onChange={(blocks) => setForm(f => ({ ...f, blocks }))}
+              />
+            </Suspense>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -320,7 +377,23 @@ export default function CMSPage() {
               {pagesLoading ? (
                 <div className="flex justify-center py-16"><FiRefreshCw className="w-6 h-6 animate-spin text-primary-400" /></div>
               ) : pages.length === 0 ? (
-                <p className="text-center text-primary-400 py-12">No pages found</p>
+                <div className="text-center py-12 px-6">
+                  <FiFileText className="w-10 h-10 text-primary-200 mx-auto mb-3" />
+                  <p className="text-primary-500 font-medium mb-1">No pages found</p>
+                  <p className="text-xs text-primary-400 mb-4 max-w-md mx-auto">
+                    Create your site pages here to manage content for About, FAQ, Shipping, Returns, Privacy, Terms and more.
+                    Or run the seed script to auto-create default pages.
+                  </p>
+                  <div className="flex items-center justify-center gap-3">
+                    <button onClick={() => { setEditingPage(null); setShowPageEditor(true); }}
+                      className="flex items-center gap-2 px-4 py-2 bg-primary-900 text-white rounded-lg text-sm font-medium hover:bg-primary-800">
+                      <FiPlus className="w-4 h-4" /> Create First Page
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-primary-300 mt-4">
+                    Tip: Run <code className="bg-primary-50 px-1 py-0.5 rounded">node seed/cms-pages.seed.js</code> in the backend to auto-create About, FAQ, Shipping, Returns, Privacy &amp; Terms pages.
+                  </p>
+                </div>
               ) : (
                 <table className="w-full text-sm">
                   <thead>
@@ -328,6 +401,7 @@ export default function CMSPage() {
                       <th className="px-5 py-3 font-semibold text-primary-700">Title</th>
                       <th className="px-5 py-3 font-semibold text-primary-700">Path</th>
                       <th className="px-5 py-3 font-semibold text-primary-700">Category</th>
+                      <th className="px-5 py-3 font-semibold text-primary-700">Blocks</th>
                       <th className="px-5 py-3 font-semibold text-primary-700">Status</th>
                       <th className="px-5 py-3 font-semibold text-primary-700">Updated</th>
                       <th className="px-5 py-3 font-semibold text-primary-700 text-right">Actions</th>
@@ -342,6 +416,11 @@ export default function CMSPage() {
                         </td>
                         <td className="px-5 py-3 font-mono text-xs text-primary-500">{page.path}</td>
                         <td className="px-5 py-3 capitalize text-primary-600">{page.category}</td>
+                        <td className="px-5 py-3">
+                          <span className={`text-xs font-mono ${page.blocks?.length > 0 ? 'text-primary-700' : 'text-primary-300'}`}>
+                            {page.blocks?.length || 0}
+                          </span>
+                        </td>
                         <td className="px-5 py-3">
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[page.status] || STATUS_COLORS.draft}`}>{page.status}</span>
                         </td>

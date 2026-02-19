@@ -270,12 +270,34 @@ export function SiteSettingsProvider({ children }) {
     root.style.setProperty('--color-accent', theme.accentColor || activeSecondaryColor || '#c9a96e');
     root.style.setProperty('--color-accent-hover', theme.accentHoverColor || primaryScale[600] || '#a07840');
     root.style.setProperty('--color-page-bg', activeBackgroundColor || '#faf8f4');
-    root.style.setProperty('--color-card-bg', activeMode === 'dark' ? '#1f2937' : '#ffffff');
+    root.style.setProperty('--color-card-bg', activeMode === 'dark' ? '#1f2937' : (theme.cardBgColor || '#ffffff'));
     root.style.setProperty('--color-subtle-bg', theme.subtleBgColor || secondaryScale[50] || '#f2ede4');
     root.style.setProperty('--color-border-light', theme.borderColor || secondaryScale[200] || '#e8e0d0');
     root.style.setProperty('--color-heading', activeTextColor || '#2a1a0a');
     root.style.setProperty('--color-body', theme.bodyTextColor || theme.accentColor || '#8a7460');
     root.style.setProperty('--color-muted', theme.mutedTextColor || primaryScale[400] || '#5c3d1e');
+
+    // Navbar colors
+    root.style.setProperty('--color-navbar-bg', theme.navbarBgColor || '#ffffff');
+    root.style.setProperty('--color-navbar-text', theme.navbarTextColor || activeTextColor || '#1c1917');
+
+    // Footer colors
+    root.style.setProperty('--color-footer-bg', theme.footerBgColor || '#1A1714');
+    root.style.setProperty('--color-footer-text', theme.footerTextColor || '#F0EBE1');
+    root.style.setProperty('--color-footer-accent', theme.footerAccentColor || '#B8973A');
+    root.style.setProperty('--color-footer-muted', theme.footerMutedColor || '#6B6560');
+    root.style.setProperty('--color-footer-border', theme.footerBorderColor || '#3A3530');
+
+    // Button colors
+    root.style.setProperty('--color-button-primary-bg', theme.buttonPrimaryBg || '#1A1714');
+    root.style.setProperty('--color-button-primary-text', theme.buttonPrimaryText || '#F0EBE1');
+    root.style.setProperty('--color-button-primary-hover', theme.buttonPrimaryHover || '#B8973A');
+
+    // Status / semantic colors
+    root.style.setProperty('--color-success', theme.successColor || '#16a34a');
+    root.style.setProperty('--color-error', theme.errorColor || '#dc2626');
+    root.style.setProperty('--color-warning', theme.warningColor || '#d97706');
+    root.style.setProperty('--color-info', theme.infoColor || '#2563eb');
 
     root.style.setProperty('--color-primary-50', primaryScale[50]);
     root.style.setProperty('--color-primary-100', primaryScale[100]);

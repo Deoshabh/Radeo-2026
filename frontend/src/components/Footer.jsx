@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   FiFacebook,
   FiTwitter,
@@ -20,18 +20,63 @@ const SOCIAL_ICON_MAP = {
   instagram: FiInstagram,
 };
 
-/* ── Design tokens ── */
-const FOOTER_BG = '#1A1714';
-const FOOTER_CREAM = '#F0EBE1';
-const FOOTER_GOLD = '#B8973A';
-const FOOTER_MUTED = '#6B6560';
-const FOOTER_COL_HEADER = '#9A8E84';
-const FOOTER_BORDER = '#3A3530';
-const FOOTER_LEGAL_BORDER = '#2A2520';
-const FOOTER_LEGAL_TEXT = '#4A4540';
+/* ── Design tokens (now sourced from CSS variables set by theme admin) ── */
+const getFooterVar = (name, fallback) => typeof window !== 'undefined'
+  ? getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
+  : fallback;
+
+// Static fallback constants (used in SSR and as defaults)
+const FOOTER_BG_DEFAULT = '#1A1714';
+const FOOTER_CREAM_DEFAULT = '#F0EBE1';
+const FOOTER_GOLD_DEFAULT = '#B8973A';
+const FOOTER_MUTED_DEFAULT = '#6B6560';
+const FOOTER_COL_HEADER_DEFAULT = '#9A8E84';
+const FOOTER_BORDER_DEFAULT = '#3A3530';
+const FOOTER_LEGAL_BORDER_DEFAULT = '#2A2520';
+const FOOTER_LEGAL_TEXT_DEFAULT = '#4A4540';
+
+// CSS-variable-backed getters (fall back to hardcoded constants)
+const useFooterColors = () => {
+  const [colors, setColors] = useState({
+    bg: FOOTER_BG_DEFAULT,
+    cream: FOOTER_CREAM_DEFAULT,
+    gold: FOOTER_GOLD_DEFAULT,
+    muted: FOOTER_MUTED_DEFAULT,
+    colHeader: FOOTER_COL_HEADER_DEFAULT,
+    border: FOOTER_BORDER_DEFAULT,
+    legalBorder: FOOTER_LEGAL_BORDER_DEFAULT,
+    legalText: FOOTER_LEGAL_TEXT_DEFAULT,
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const get = (varName, fallback) => getComputedStyle(root).getPropertyValue(varName).trim() || fallback;
+    setColors({
+      bg: get('--color-footer-bg', FOOTER_BG_DEFAULT),
+      cream: get('--color-footer-text', FOOTER_CREAM_DEFAULT),
+      gold: get('--color-footer-accent', FOOTER_GOLD_DEFAULT),
+      muted: get('--color-footer-muted', FOOTER_MUTED_DEFAULT),
+      colHeader: get('--color-footer-muted', FOOTER_COL_HEADER_DEFAULT),
+      border: get('--color-footer-border', FOOTER_BORDER_DEFAULT),
+      legalBorder: get('--color-footer-border', FOOTER_LEGAL_BORDER_DEFAULT),
+      legalText: get('--color-footer-muted', FOOTER_LEGAL_TEXT_DEFAULT),
+    });
+  }, []);
+
+  return colors;
+};
 
 export default function Footer() {
   const { settings } = useSiteSettings();
+  const footerColors = useFooterColors();
+  const FOOTER_BG = footerColors.bg;
+  const FOOTER_CREAM = footerColors.cream;
+  const FOOTER_GOLD = footerColors.gold;
+  const FOOTER_MUTED = footerColors.muted;
+  const FOOTER_COL_HEADER = footerColors.colHeader;
+  const FOOTER_BORDER = footerColors.border;
+  const FOOTER_LEGAL_BORDER = footerColors.legalBorder;
+  const FOOTER_LEGAL_TEXT = footerColors.legalText;
   const currentYear = new Date().getFullYear();
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterStatus, setNewsletterStatus] = useState('idle');

@@ -166,9 +166,17 @@ export default function Navbar() {
       ref={navRef}
       className={`${stickyHeader ? 'fixed' : 'absolute'} top-0 left-0 right-0 z-40 transition-all duration-500 ${
         isTransparentHeader
-          ? isScrolled ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-transparent'
-          : isScrolled ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-white/80 backdrop-blur-sm'
+          ? isScrolled ? 'backdrop-blur-md shadow-sm' : 'bg-transparent'
+          : isScrolled ? 'backdrop-blur-md shadow-sm' : 'backdrop-blur-sm'
       }`}
+      style={
+        isTransparentHeader && !isScrolled ? {} : {
+          backgroundColor: isScrolled
+            ? 'color-mix(in srgb, var(--color-navbar-bg, #ffffff) 95%, transparent)'
+            : 'color-mix(in srgb, var(--color-navbar-bg, #ffffff) 80%, transparent)',
+          color: 'var(--color-navbar-text, #1c1917)',
+        }
+      }
     >
       <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
         <div className="flex items-center justify-between h-[72px]">

@@ -131,16 +131,18 @@ export default function ProductCard({ product, priority = false }) {
               <button
                 onClick={handleAddToCart}
                 aria-label="Add to cart"
-                className="w-full flex items-center justify-center gap-2 bg-[#1A1714] text-[#F0EBE1] text-[12px] font-medium uppercase tracking-[0.15em] hover:bg-[#B8973A] transition-colors duration-150"
-                style={{ height: '44px', fontFamily: "var(--font-dm-mono, 'DM Sans', sans-serif)" }}
+                className="w-full flex items-center justify-center gap-2 text-[12px] font-medium uppercase tracking-[0.15em] transition-colors duration-150"
+                style={{ height: '44px', fontFamily: "var(--font-dm-mono, 'DM Sans', sans-serif)", backgroundColor: 'var(--color-button-primary-bg, #1A1714)', color: 'var(--color-button-primary-text, #F0EBE1)' }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-button-primary-hover, #B8973A)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-button-primary-bg, #1A1714)'; }}
               >
                 <FiShoppingCart className="w-3.5 h-3.5" style={{ fontSize: '14px' }} />
                 ADD TO CART
               </button>
             ) : (
               <div
-                className="w-full flex items-center justify-center bg-[#4A4540] text-[#A09A94] text-[12px] font-medium uppercase tracking-[0.15em]"
-                style={{ height: '44px', fontFamily: "var(--font-dm-mono, 'DM Sans', sans-serif)" }}
+                className="w-full flex items-center justify-center text-[12px] font-medium uppercase tracking-[0.15em] opacity-60"
+                style={{ height: '44px', fontFamily: "var(--font-dm-mono, 'DM Sans', sans-serif)", backgroundColor: 'var(--color-button-primary-bg, #4A4540)', color: 'var(--color-button-primary-text, #A09A94)' }}
               >
                 Out of Stock
               </div>
@@ -226,15 +228,17 @@ export default function ProductCard({ product, priority = false }) {
           {product.inStock ? (
             <button
               onClick={handleAddToCart}
-              className="w-full flex items-center justify-center gap-2 bg-[#1A1714] text-[#F0EBE1] text-[12px] font-medium uppercase tracking-[0.15em] hover:bg-[#B8973A] transition-colors duration-150"
-              style={{ height: '44px', fontFamily: "var(--font-dm-mono, 'DM Sans', sans-serif)" }}
+              className="w-full flex items-center justify-center gap-2 text-[12px] font-medium uppercase tracking-[0.15em] transition-colors duration-150"
+              style={{ height: '44px', fontFamily: "var(--font-dm-mono, 'DM Sans', sans-serif)", backgroundColor: 'var(--color-button-primary-bg, #1A1714)', color: 'var(--color-button-primary-text, #F0EBE1)' }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-button-primary-hover, #B8973A)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-button-primary-bg, #1A1714)'; }}
             >
               <FiShoppingCart className="w-3.5 h-3.5" style={{ fontSize: '14px' }} />
               ADD TO CART
             </button>
           ) : (
             <div
-              className="w-full flex items-center justify-center bg-[#4A4540] text-[#A09A94] text-[12px] font-medium uppercase tracking-[0.15em]"
+              className="w-full flex items-center justify-center text-[12px] font-medium uppercase tracking-[0.15em] opacity-60"
               style={{ height: '44px', fontFamily: "var(--font-dm-mono, 'DM Sans', sans-serif)" }}
             >
               Out of Stock

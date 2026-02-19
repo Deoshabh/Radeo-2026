@@ -30,6 +30,26 @@ module.exports = {
           light: "var(--color-gold-light)",
           hover: "var(--color-accent-hover)",
         },
+        navbar: {
+          bg: "var(--color-navbar-bg)",
+          text: "var(--color-navbar-text)",
+        },
+        footer: {
+          bg: "var(--color-footer-bg)",
+          text: "var(--color-footer-text)",
+          accent: "var(--color-footer-accent)",
+          muted: "var(--color-footer-muted)",
+          border: "var(--color-footer-border)",
+        },
+        btn: {
+          primary: "var(--color-button-primary-bg)",
+          "primary-text": "var(--color-button-primary-text)",
+          "primary-hover": "var(--color-button-primary-hover)",
+        },
+        success: "var(--color-success)",
+        error: "var(--color-error)",
+        warning: "var(--color-warning)",
+        info: "var(--color-info)",
       },
       fontFamily: {
         sans: ["var(--font-inter)", "'DM Sans'", "system-ui", "sans-serif"],
