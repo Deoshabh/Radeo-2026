@@ -36,7 +36,7 @@ const orderSchema = new mongoose.Schema(
     subtotal: Number,
     shippingCost: { type: Number, default: 0 },
     discount: { type: Number, default: 0 },
-    totalAmount: { type: Number, required: true, min: 0 }
+    totalAmount: { type: Number, required: true, min: 0 },
 
     coupon: {
       code: String,
