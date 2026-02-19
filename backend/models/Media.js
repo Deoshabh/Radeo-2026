@@ -153,7 +153,7 @@ mediaSchema.virtual("dimensions").get(function () {
 });
 
 // Pre-save hook to calculate aspect ratio for images
-mediaSchema.pre("save", function (next) {
+mediaSchema.pre("save", function () {
   if (this.isImage && this.width && this.height && this.height > 0) {
     this.aspectRatio = this.width / this.height;
   }
@@ -172,8 +172,6 @@ mediaSchema.pre("save", function (next) {
       this.cdnUrl = this.storageUrl;
     }
   }
-  
-  next();
 });
 
 // Method to increment usage count

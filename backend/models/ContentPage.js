@@ -183,11 +183,10 @@ contentPageSchema.virtual("isPublished").get(function () {
 });
 
 // Pre-save hook to generate cache key
-contentPageSchema.pre("save", function (next) {
+contentPageSchema.pre("save", function () {
   if (this.isModified("blocks") || this.isModified("status") || this.isModified("title")) {
     this.cacheKey = `cms:page:${this.slug}:v${this.version}:${Date.now()}`;
   }
-  next();
 });
 
 // Static method to find published pages

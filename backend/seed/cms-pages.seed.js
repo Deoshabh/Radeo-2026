@@ -130,11 +130,24 @@ async function seed() {
     await mongoose.connect(MONGODB_URI);
     console.log('Connected to MongoDB');
 
-    // Find an admin user to set as createdBy
-    const admin = await User.findOne({ role: 'admin' });
-    if (!admin) {
-      console.error('No admin user found. Please create an admin user first.');
-      process.exit(1);
+    // Find an admin user to set as createdBy (fall back to any user)
+    let owner = await User.findOne({ role: 'admin' });
+    if (!owner) {
+      owner = await User.findOne(); // any user
+    }
+
+    // If no users exist at all, create a system user for seeding
+    if (!owner) {
+      console.log('  ℹ️  No users found — creating system admin for seeding...');
+      owner = await User.create({
+        name: 'System Admin',
+        email: 'admin@radeo.in',
+        password: 'ChangeMe123!',   // should be changed after first login
+        role: 'admin',
+        emailVerified: true,
+        authProvider: 'local',
+      });
+      console.log(`  ✅ Created system admin (${owner.email}) — change the password after first login`);
     }
 
     let created = 0;
@@ -150,8 +163,8 @@ async function seed() {
 
       await ContentPage.create({
         ...pageData,
-        createdBy: admin._id,
-        updatedBy: admin._id,
+        createdBy: owner._id,
+        updatedBy: owner._id,
         publishAt: new Date(),
         version: 1,
       });
