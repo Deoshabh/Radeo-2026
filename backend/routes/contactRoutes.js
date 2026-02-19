@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
-const { verifyRecaptcha } = require('../middleware/recaptcha');
+const { verifyTurnstile } = require('../middleware/turnstile');
 const { submitContactMessage } = require('../controllers/contactController');
 
 const contactLimiter = rateLimit({
@@ -13,6 +13,6 @@ const contactLimiter = rateLimit({
 });
 
 // @route   POST /api/v1/contact
-router.post('/', contactLimiter, verifyRecaptcha('CONTACT_FORM', 0.5, true), submitContactMessage);
+router.post('/', contactLimiter, verifyTurnstile('contact_form', { optional: true }), submitContactMessage);
 
 module.exports = router;

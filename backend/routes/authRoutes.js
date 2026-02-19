@@ -3,7 +3,7 @@ const router = express.Router();
 const rateLimit = require("express-rate-limit");
 const { authenticate } = require("../middleware/auth");
 const { validateRequest } = require("../middleware/validateRequest");
-const { verifyRecaptcha } = require("../middleware/recaptcha");
+const { verifyTurnstile } = require("../middleware/turnstile");
 const { registerSchema, loginSchema } = require("../validators/schemas");
 
 const {
@@ -41,14 +41,14 @@ const tokenLimiter = rateLimit({
 router.post(
   "/register",
   authLimiter,
-  verifyRecaptcha("REGISTER", 0.5, true),
+  verifyTurnstile("register", { optional: true }),
   validateRequest(registerSchema),
   register,
 );
 router.post(
   "/login",
   authLimiter,
-  verifyRecaptcha("LOGIN", 0.5, true),
+  verifyTurnstile("login", { optional: true }),
   validateRequest(loginSchema),
   login,
 );
@@ -57,14 +57,14 @@ router.post("/logout", logout);
 router.post(
   "/forgot-password",
   authLimiter,
-  verifyRecaptcha("FORGOT_PASSWORD", 0.5, true),
+  verifyTurnstile("forgot_password", { optional: true }),
   forgotPassword,
 );
 router.post("/reset-password", authLimiter, resetPassword);
 router.post(
   "/firebase-login",
   tokenLimiter,
-  verifyRecaptcha("LOGIN", 0.5, true),
+  verifyTurnstile("login", { optional: true }),
   firebaseLogin,
 );
 

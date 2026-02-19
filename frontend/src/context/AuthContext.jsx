@@ -101,7 +101,7 @@ export const AuthProvider = ({ children }) => {
       if (isMounted.current && loading) {
         setLoading(false);
       }
-    }, 8000);
+    }, 4000);
 
     return () => {
       isMounted.current = false;

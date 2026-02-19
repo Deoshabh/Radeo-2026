@@ -40,7 +40,7 @@ export default function FirebaseLoginPage() {
   const handleFirebaseSuccess = async (result) => {
     const toastId = 'firebase-sync';
     try {
-      const { user, token } = result;
+      const { user, token, recaptchaToken: prefetchedToken } = result;
 
       if (!user?.email && !user?.phoneNumber) {
         toast.error("Unable to retrieve your account info. Please try again.");
@@ -56,12 +56,15 @@ export default function FirebaseLoginPage() {
       setSyncingBackend(true);
       toast.loading('Signing you in...', { id: toastId });
 
-      // Get reCAPTCHA token
-      let recaptchaToken;
-      try {
-        recaptchaToken = await getToken(RECAPTCHA_ACTIONS.LOGIN);
-      } catch {
-        // reCAPTCHA is non-critical, continue without it
+      // Use pre-fetched token if available (EmailAuth fetches it in parallel),
+      // otherwise fetch now (Google/Phone sign-in paths)
+      let recaptchaToken = prefetchedToken;
+      if (!recaptchaToken) {
+        try {
+          recaptchaToken = await getToken(RECAPTCHA_ACTIONS.LOGIN);
+        } catch {
+          // Turnstile is non-critical, continue without it
+        }
       }
 
       const payload = {

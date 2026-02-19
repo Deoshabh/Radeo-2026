@@ -33,12 +33,15 @@ export default function EmailAuth({ onSuccess, mode: initialMode = 'login' }) {
     setLoginInProgress(true); // Prevent AuthContext from double-syncing
 
     try {
-      // Get reCAPTCHA token
-      const recaptchaToken = await getToken(RECAPTCHA_ACTIONS.LOGIN);
-
-      const result = await loginWithEmail(formData.email, formData.password, recaptchaToken);
+      // Fetch Turnstile token in PARALLEL with Firebase login to save ~2s
+      const [recaptchaToken, result] = await Promise.all([
+        getToken(RECAPTCHA_ACTIONS.LOGIN),
+        loginWithEmail(formData.email, formData.password),
+      ]);
 
       if (result.success) {
+        // Attach pre-fetched token so handleFirebaseSuccess skips a second fetch
+        result.recaptchaToken = recaptchaToken;
         if (onSuccess) {
           onSuccess(result);
           // handleFirebaseSuccess resets loginInProgress in its finally block
