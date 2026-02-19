@@ -383,9 +383,21 @@ function SocialPreview({ title, description, url, ogImage, defaultOgImage, siteU
 // ───────────────────────────────────────────────────
 // Page SEO Card
 // ───────────────────────────────────────────────────
-function PageSeoCard({ config, data, globalData, onChange, siteUrl, forceExpanded, cardRef }) {
+function PageSeoCard({ config, data, globalData, onChange, siteUrl, forceExpanded, cardRef, onToggleExpand }) {
   const [expanded, setExpanded] = useState(false);
+
+  // When forceExpanded turns on (e.g. from scrollToPage), latch local expanded state
+  useEffect(() => {
+    if (forceExpanded) setExpanded(true);
+  }, [forceExpanded]);
+
   const isExpanded = expanded || forceExpanded;
+
+  const handleToggle = () => {
+    const next = !expanded;
+    setExpanded(next);
+    onToggleExpand?.(config.key, next);
+  };
   const { score, issues, tips } = getSeoScore(data);
   const displayUrl = `${siteUrl || 'https://radeo.in'}${config.path}`;
 
@@ -417,7 +429,7 @@ function PageSeoCard({ config, data, globalData, onChange, siteUrl, forceExpande
     <div ref={cardRef} className={`bg-white border rounded-xl overflow-hidden hover:shadow-md transition-all ${forceExpanded ? 'border-brand-brown shadow-md ring-2 ring-brand-brown/20' : 'border-primary-200'}`}>
       {/* Header */}
       <button
-        onClick={() => setExpanded(!expanded)}
+        onClick={handleToggle}
         className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-primary-50/50 transition-colors"
       >
         <div className="flex items-center gap-3">
@@ -703,6 +715,7 @@ export default function AdminSeoPage() {
   const [showAuditPanel, setShowAuditPanel] = useState(false);
   const pageCardRefs = useRef({});
   const pageSectionRef = useRef(null);
+  const expandedCardsRef = useRef(new Set());
 
   // Initialize local form state when server data arrives
   useEffect(() => {
@@ -832,10 +845,15 @@ export default function AdminSeoPage() {
   const scrollToPage = (pageKey) => {
     setFocusedPageKey(pageKey);
     setSearchQuery('');
+    // Force-expand the target card so it stays open
+    if (expandedCardsRef.current) {
+      expandedCardsRef.current.add(pageKey);
+    }
     setTimeout(() => {
       pageCardRefs.current[pageKey]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 100);
-    setTimeout(() => setFocusedPageKey(null), 3500);
+    }, 150);
+    // Keep focusedPageKey highlight for a few seconds, but card stays expanded
+    setTimeout(() => setFocusedPageKey(null), 4000);
   };
 
   const handleCardClick = (filter) => {
@@ -853,9 +871,15 @@ export default function AdminSeoPage() {
   const runAudit = () => {
     auditMut.mutate(undefined, {
       onSuccess: (response) => {
-        setAuditResults(response.data);
+        const result = response?.data || response;
+        setAuditResults(result);
         setShowAuditPanel(true);
-        toast.success(`Audit complete — ${response.data?.summary?.totalIssues || 0} issues found`);
+        const count = result?.summary?.issuesCount ?? result?.issues?.length ?? 0;
+        toast.success(`Audit complete — ${count} issue${count !== 1 ? 's' : ''} found`);
+      },
+      onError: (err) => {
+        console.error('SEO Audit error:', err);
+        toast.error(`Audit failed: ${err?.response?.data?.message || err.message}`);
       },
     });
   };
@@ -864,8 +888,14 @@ export default function AdminSeoPage() {
   const handleAutoGenerate = (type) => {
     autoGenMut.mutate(type, {
       onSuccess: (response) => {
-        const count = response.data?.generated?.length || 0;
+        const result = response?.data || response;
+        const gen = result?.generated || {};
+        const count = (gen.products || 0) + (gen.categories || 0);
         toast.success(`Generated SEO for ${count} ${type}`);
+      },
+      onError: (err) => {
+        console.error('Auto-generate SEO error:', err);
+        toast.error(`Generate failed: ${err?.response?.data?.message || err.message}`);
       },
     });
   };
@@ -1140,7 +1170,7 @@ export default function AdminSeoPage() {
               <div className="mt-4 border-t border-primary-100 pt-4">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-semibold text-primary-800">
-                    Audit Results — {auditResults.summary?.totalIssues || 0} issues across {auditResults.summary?.totalAudited || 0} items
+                    Audit Results — {auditResults.summary?.issuesCount ?? auditResults.issues?.length ?? 0} issues across {(auditResults.summary?.scannedProducts || 0) + (auditResults.summary?.totalCategories || 0)} items
                   </h3>
                   <button onClick={() => setShowAuditPanel(false)} className="text-primary-400 hover:text-primary-600">
                     <FiX className="w-4 h-4" />
@@ -1327,6 +1357,10 @@ export default function AdminSeoPage() {
                   siteUrl={seoSettings?.global?.siteUrl || ''}
                   forceExpanded={focusedPageKey === config.key || expandAll}
                   cardRef={(el) => { pageCardRefs.current[config.key] = el; }}
+                  onToggleExpand={(key, open) => {
+                    if (open) expandedCardsRef.current.add(key);
+                    else expandedCardsRef.current.delete(key);
+                  }}
                 />
               ))}
             </div>
