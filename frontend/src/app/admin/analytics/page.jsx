@@ -84,8 +84,8 @@ export default function AnalyticsPage() {
   const fetchData = () => { refetchSummary(); refetchFunnel(); };
 
   // Prepare device chart data
-  const deviceData = summary?.devices
-    ? Object.entries(summary.devices)
+  const deviceData = (summary?.deviceBreakdown || summary?.devices)
+    ? Object.entries(summary?.deviceBreakdown || summary?.devices)
         .filter(([, v]) => v > 0)
         .map(([key, value]) => ({ name: key, value }))
     : [];
@@ -99,16 +99,15 @@ export default function AnalyticsPage() {
       }))
     : [];
 
-  // Funnel steps
-  const funnelData = funnel?.funnel || funnel;
-  const funnelSteps = funnelData?.funnel
-    ? [
-        { label: 'Product Views', ...funnelData.funnel.product_view, rate: null },
-        { label: 'Add to Cart', ...funnelData.funnel.add_to_cart, rate: funnelData.funnel.add_to_cart?.conversionFromPrevious },
-        { label: 'Begin Checkout', ...funnelData.funnel.begin_checkout, rate: funnelData.funnel.begin_checkout?.conversionFromPrevious },
-        { label: 'Purchase', ...funnelData.funnel.purchase, rate: funnelData.funnel.purchase?.conversionFromPrevious },
-      ]
-    : [];
+  // Funnel steps — backend returns array: [{step, total, uniqueUsers, conversionRate}]
+  const funnelArr = Array.isArray(funnel?.funnel) ? funnel.funnel : [];
+  const FUNNEL_LABELS = { product_view: 'Product Views', add_to_cart: 'Add to Cart', begin_checkout: 'Begin Checkout', purchase: 'Purchase' };
+  const funnelSteps = funnelArr.map((s, i) => ({
+    label: FUNNEL_LABELS[s.step] || s.step,
+    total: s.total,
+    uniqueUsers: s.uniqueUsers,
+    rate: i === 0 ? null : s.conversionRate,
+  }));
 
   return (
     <div className="min-h-screen bg-primary-50">
@@ -160,9 +159,19 @@ export default function AnalyticsPage() {
             {/* Daily Trend Chart */}
             <div className="bg-white rounded-xl border border-primary-200 p-5 mb-6">
               <h2 className="text-sm font-semibold text-primary-800 mb-4">Daily Event Trend</h2>
-              {summary?.dailyTrend?.length > 0 ? (
+              {(() => {
+                // Backend returns [{_id:{date,event}, count}] — aggregate by date for chart
+                const raw = summary?.dailyTrend || [];
+                const byDate = {};
+                raw.forEach(d => {
+                  const date = d._id?.date || d.date;
+                  if (!date) return;
+                  byDate[date] = (byDate[date] || 0) + (d.count || 0);
+                });
+                const trendData = Object.entries(byDate).sort().map(([date, count]) => ({ date, count }));
+                return trendData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={260}>
-                  <AreaChart data={summary.dailyTrend}>
+                  <AreaChart data={trendData}>
                     <defs>
                       <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
@@ -177,7 +186,8 @@ export default function AnalyticsPage() {
                 </ResponsiveContainer>
               ) : (
                 <p className="text-center text-primary-400 py-8">No trend data available</p>
-              )}
+              );
+              })()}
             </div>
 
             {/* Conversion Funnel */}
@@ -289,7 +299,7 @@ export default function AnalyticsPage() {
                       <div key={i} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-primary-50 transition-colors">
                         <div className="flex items-center gap-3 min-w-0">
                           <span className="text-xs font-medium text-primary-400 w-5">{i + 1}.</span>
-                          <span className="text-sm text-primary-800 truncate">{p.name || p.productId}</span>
+                          <span className="text-sm text-primary-800 truncate">{p.name || p._id || p.productId}</span>
                         </div>
                         <span className="text-sm font-semibold text-primary-900 flex-shrink-0">{p.views?.toLocaleString()}</span>
                       </div>
@@ -307,7 +317,7 @@ export default function AnalyticsPage() {
                   <div className="space-y-2">
                     {summary.topPages.map((p, i) => (
                       <div key={i} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-primary-50 transition-colors">
-                        <span className="text-sm text-primary-800 truncate font-mono">{p.page}</span>
+                        <span className="text-sm text-primary-800 truncate font-mono">{p._id || p.page}</span>
                         <span className="text-sm font-semibold text-primary-900 flex-shrink-0">{p.views?.toLocaleString()}</span>
                       </div>
                     ))}

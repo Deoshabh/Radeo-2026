@@ -64,14 +64,14 @@ export const useDepsHealth = () =>
 export const useAnalyticsSummary = (period) =>
   useQuery({
     queryKey: adminKeys.analytics(period),
-    queryFn: async () => { const { data } = await adminAPI.getAnalyticsSummary(period); return data; },
+    queryFn: async () => { const { data } = await adminAPI.getAnalyticsSummary(period); return data?.data ?? data; },
     staleTime: 60_000,
   });
 
 export const useAnalyticsFunnel = (period) =>
   useQuery({
     queryKey: adminKeys.funnel(period),
-    queryFn: async () => { const { data } = await adminAPI.getAnalyticsFunnel(period); return data; },
+    queryFn: async () => { const { data } = await adminAPI.getAnalyticsFunnel(period); return data?.data ?? data; },
     staleTime: 60_000,
   });
 
