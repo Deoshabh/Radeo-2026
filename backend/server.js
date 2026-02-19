@@ -225,7 +225,7 @@ app.use((req, res, next) => {
 });
 
 app.use("/api/health", require("./routes/healthRoutes")); // Health checks
-app.use("/api/metrics", require("./middleware/authenticate"), require("./middleware/admin"), metricsRouter); // Prometheus metrics (admin only)
+app.use("/api/metrics", require("./middleware/auth").authenticate, require("./middleware/admin"), metricsRouter); // Prometheus metrics (admin only)
 app.use("/api/v1/auth", authLimiter, require("./routes/authRoutes"));
 app.use("/api/v1/products", require("./routes/productRoutes"));
 app.use("/api/v1/settings", preventCaching, require("./routes/settingsRoutes"));
