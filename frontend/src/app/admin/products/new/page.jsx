@@ -13,7 +13,7 @@ import Image360Upload from '@/components/Image360Upload';
 import ProductViewer360 from '@/components/viewer/ProductViewer360';
 import toast from 'react-hot-toast';
 import { formatPrice } from '@/utils/helpers';
-import { FiPlus, FiX } from 'react-icons/fi';
+import { FiPlus, FiX, FiVideo, FiTrash2 } from 'react-icons/fi';
 
 function ProductFormContent() {
   const router = useRouter();
@@ -29,6 +29,9 @@ function ProductFormContent() {
   const [images360, setImages360] = useState([]); // New 360 images
   const [existingImages360, setExistingImages360] = useState([]); // Existing 360 images
   const [hotspots360, setHotspots360] = useState([]);
+  const [videoFile, setVideoFile] = useState(null);
+  const [videoPreview, setVideoPreview] = useState(null);
+  const [existingVideo, setExistingVideo] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const isDirty = useRef(false);
@@ -148,6 +151,11 @@ function ProductFormContent() {
       if (product.hotspots360 && Array.isArray(product.hotspots360)) {
         setHotspots360(product.hotspots360);
       }
+
+      // Set existing video
+      if (product.video?.url) {
+        setExistingVideo(product.video);
+      }
     } catch (error) {
       console.error('Failed to fetch product:', error);
       toast.error('Failed to load product data');
@@ -205,6 +213,59 @@ function ProductFormContent() {
     setExistingImages360(existing);
   };
 
+  // Video upload handler with 30-second validation
+  const handleVideoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('video/')) {
+      toast.error('Please select a valid video file (MP4 or WebM)');
+      return;
+    }
+
+    if (!['video/mp4', 'video/webm'].includes(file.type)) {
+      toast.error('Only MP4 and WebM video formats are supported');
+      return;
+    }
+
+    // Validate file size (max 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('Video file must be under 50MB');
+      return;
+    }
+
+    // Validate duration (max 30 seconds)
+    const videoEl = document.createElement('video');
+    videoEl.preload = 'metadata';
+    videoEl.onloadedmetadata = () => {
+      URL.revokeObjectURL(videoEl.src);
+      if (videoEl.duration > 30) {
+        toast.error(`Video is ${Math.round(videoEl.duration)}s — maximum is 30 seconds`);
+        return;
+      }
+      isDirty.current = true;
+      setIsFormDirty(true);
+      setVideoFile(file);
+      setVideoPreview(URL.createObjectURL(file));
+      setExistingVideo(null); // Replace existing
+    };
+    videoEl.onerror = () => {
+      toast.error('Could not read video file');
+    };
+    videoEl.src = URL.createObjectURL(file);
+  };
+
+  const handleRemoveVideo = () => {
+    isDirty.current = true;
+    setIsFormDirty(true);
+    setVideoFile(null);
+    if (videoPreview) {
+      URL.revokeObjectURL(videoPreview);
+      setVideoPreview(null);
+    }
+    setExistingVideo(null);
+  };
   const handleSizeChange = (e) => {
     const value = e.target.value;
     const newSizes = value.split(',').map(s => s.trim()).filter(Boolean);
@@ -397,6 +458,54 @@ function ProductFormContent() {
       // Combine existing and new images
       const allImages = [...existingImages, ...uploadedImages];
 
+      // Step 1.75: Upload video (if any)
+      let videoData = existingVideo || null;
+      if (videoFile) {
+        toast.loading('Uploading video...', { id: 'uploadvideo' });
+        try {
+          const { data: responseData } = await adminAPI.getUploadUrl({
+            fileName: videoFile.name,
+            fileType: videoFile.type,
+            fileSize: videoFile.size,
+            productSlug: formData.slug,
+          });
+          const uploadUrlData = responseData?.data || responseData;
+          if (!uploadUrlData?.signedUrl) throw new Error('Invalid video upload URL response');
+
+          const uploadRes = await fetch(uploadUrlData.signedUrl, {
+            method: 'PUT',
+            body: videoFile,
+            headers: { 'Content-Type': videoFile.type },
+          });
+          if (!uploadRes.ok) throw new Error(`Video upload failed: ${uploadRes.statusText}`);
+
+          // Get duration from the preview element
+          let duration = 0;
+          try {
+            const tmpVideo = document.createElement('video');
+            tmpVideo.preload = 'metadata';
+            await new Promise((resolve, reject) => {
+              tmpVideo.onloadedmetadata = resolve;
+              tmpVideo.onerror = reject;
+              tmpVideo.src = URL.createObjectURL(videoFile);
+            });
+            duration = Math.round(tmpVideo.duration);
+            URL.revokeObjectURL(tmpVideo.src);
+          } catch { /* ignore duration detection failure */ }
+
+          videoData = {
+            url: uploadUrlData.publicUrl,
+            key: uploadUrlData.key,
+            duration,
+          };
+          toast.success('Video uploaded', { id: 'uploadvideo' });
+        } catch (err) {
+          console.error('Video upload failed:', err);
+          toast.error('Failed to upload video', { id: 'uploadvideo' });
+          throw err;
+        }
+      }
+
       // Step 2: Prepare product data
       // Calculate total stock from sizeStocks
       const totalStock = formData.sizes.reduce((sum, size) => sum + (formData.sizeStocks[size] || 0), 0);
@@ -412,6 +521,7 @@ function ProductFormContent() {
         images: allImages,
         images360: allImages360,
         hotspots360,
+        video: videoData,
         featured: formData.isFeatured,
         stock: totalStock, // Use calculated total stock
       };
@@ -528,6 +638,55 @@ function ProductFormContent() {
                 <p className="text-xs text-primary-500 mt-3">Total hotspots: {hotspots360.length}</p>
               </div>
             )}
+
+            {/* Product Video (max 30 seconds) */}
+            <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+              <h2 className="text-lg font-semibold text-primary-900 mb-2 flex items-center gap-2">
+                <FiVideo className="w-5 h-5" /> Product Video
+              </h2>
+              <p className="text-sm text-primary-600 mb-4">
+                Optional short video (max 30 seconds, MP4 or WebM, up to 50MB). Shown after product images.
+              </p>
+
+              {/* Show existing or new video preview */}
+              {(existingVideo?.url || videoPreview) ? (
+                <div className="relative max-w-md">
+                  <video
+                    src={videoPreview || existingVideo?.url}
+                    controls
+                    className="w-full rounded-lg border border-primary-200"
+                    style={{ maxHeight: '280px' }}
+                  >
+                    Your browser does not support video playback.
+                  </video>
+                  <button
+                    type="button"
+                    onClick={handleRemoveVideo}
+                    className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-full shadow-md transition-colors"
+                    title="Remove video"
+                  >
+                    <FiTrash2 className="w-4 h-4" />
+                  </button>
+                  {existingVideo?.duration && (
+                    <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                      {existingVideo.duration}s
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-primary-300 rounded-lg cursor-pointer hover:border-primary-500 hover:bg-primary-50 transition-colors">
+                  <FiVideo className="w-8 h-8 text-primary-400 mb-2" />
+                  <span className="text-sm text-primary-500 font-medium">Click to upload video</span>
+                  <span className="text-xs text-primary-400 mt-1">MP4 or WebM • Max 30 seconds • Max 50MB</span>
+                  <input
+                    type="file"
+                    accept="video/mp4,video/webm"
+                    onChange={handleVideoChange}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
 
             {/* Basic Information */}
             <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">

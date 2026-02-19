@@ -7,7 +7,7 @@ import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { useAuth } from '@/context/AuthContext';
 import { getColorName } from '@/components/ColorPicker';
-import { FiHeart, FiShoppingCart, FiAward, FiTruck, FiShield, FiCheck, FiChevronLeft, FiChevronRight, FiRotateCw } from 'react-icons/fi';
+import { FiHeart, FiShoppingCart, FiAward, FiTruck, FiShield, FiCheck, FiChevronLeft, FiChevronRight, FiRotateCw, FiPlay } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import ProductMetadata from '@/components/ProductMetadata';
 import ReviewSection from '@/components/ReviewSection';
@@ -63,6 +63,20 @@ export default function ProductClient({ product }) {
         // Fallback to all images if no specific ones found
         return product.images;
     }, [product, selectedColor]);
+
+    // Build gallery items: images + optional video as last item
+    const hasVideo = product?.video?.url;
+    const galleryItems = useMemo(() => {
+        const items = filteredImages.map((img) => ({
+            type: 'image',
+            src: img?.url || img || '/placeholder.svg',
+            image: img,
+        }));
+        if (hasVideo) {
+            items.push({ type: 'video', src: product.video.url, duration: product.video.duration });
+        }
+        return items;
+    }, [filteredImages, hasVideo, product?.video]);
 
     // Reset selected image when color changes
     useEffect(() => {
@@ -140,11 +154,11 @@ export default function ProductClient({ product }) {
     const inWishlist = isInWishlist(product._id);
 
     const nextImage = () => {
-        setSelectedImage((prev) => (prev + 1) % filteredImages.length);
+        setSelectedImage((prev) => (prev + 1) % galleryItems.length);
     };
 
     const prevImage = () => {
-        setSelectedImage((prev) => (prev - 1 + filteredImages.length) % filteredImages.length);
+        setSelectedImage((prev) => (prev - 1 + galleryItems.length) % galleryItems.length);
     };
 
     return (
@@ -155,11 +169,46 @@ export default function ProductClient({ product }) {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
                         {/* Image Gallery */}
                         <div className="space-y-4">
-                            {/* Main Image — all images stacked, opacity-swap cross-fade */}
+                            {/* Main Image / Video — all items stacked, opacity-swap cross-fade */}
                             <div className="relative aspect-square bg-white overflow-hidden group border border-[#e8e0d0]">
-                                {filteredImages.map((image, idx) => {
-                                    const src = image?.url || image || '/placeholder.svg';
+                                {galleryItems.map((item, idx) => {
                                     const isActive = selectedImage === idx;
+
+                                    if (item.type === 'video') {
+                                        return (
+                                            <div
+                                                key={`video-${idx}`}
+                                                aria-hidden={!isActive}
+                                                style={{
+                                                    position: 'absolute',
+                                                    inset: 0,
+                                                    opacity: isActive ? 1 : 0,
+                                                    transition: 'opacity 200ms ease-in-out',
+                                                    zIndex: isActive ? 2 : 1,
+                                                    pointerEvents: isActive ? 'auto' : 'none',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    background: '#000',
+                                                }}
+                                            >
+                                                {isActive && (
+                                                    <video
+                                                        src={item.src}
+                                                        controls
+                                                        playsInline
+                                                        preload="metadata"
+                                                        className="w-full h-full object-contain"
+                                                        style={{ maxHeight: '100%' }}
+                                                    >
+                                                        Your browser does not support video playback.
+                                                    </video>
+                                                )}
+                                            </div>
+                                        );
+                                    }
+
+                                    const src = item.src;
                                     const isLoaded = loadedImages[src];
                                     return (
                                         <div
@@ -204,7 +253,7 @@ export default function ProductClient({ product }) {
                                             </div>
                                             <Image
                                                 src={src}
-                                                alt={`${product.name}${filteredImages.length > 1 ? ` — view ${idx + 1}` : ''}`}
+                                                alt={`${product.name}${galleryItems.length > 1 ? ` — view ${idx + 1}` : ''}`}
                                                 fill
                                                 sizes="(max-width: 1024px) 100vw, 50vw"
                                                 className="object-contain cursor-zoom-in"
@@ -218,7 +267,7 @@ export default function ProductClient({ product }) {
                                 })}
 
                                 {/* Navigation Arrows — z-index above image layers */}
-                                {filteredImages.length > 1 && (
+                                {galleryItems.length > 1 && (
                                     <>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); prevImage(); }}
@@ -259,10 +308,33 @@ export default function ProductClient({ product }) {
                             )}
 
                             {/* Thumbnail Strip — click for instant preloaded switch */}
-                            {filteredImages.length > 1 && (
+                            {galleryItems.length > 1 && (
                                 <div className="grid grid-cols-4 gap-4">
-                                    {filteredImages.map((image, idx) => {
-                                        const src = image?.url || image || '/placeholder.svg';
+                                    {galleryItems.map((item, idx) => {
+                                        if (item.type === 'video') {
+                                            return (
+                                                <button
+                                                    key={`video-thumb-${idx}`}
+                                                    onClick={() => setSelectedImage(idx)}
+                                                    className={`relative aspect-square bg-black overflow-hidden border-2 transition-all ${
+                                                        selectedImage === idx
+                                                            ? 'border-[#c9a96e] ring-1 ring-[#c9a96e]/30'
+                                                            : 'border-transparent hover:border-[#e8e0d0]'
+                                                    }`}
+                                                >
+                                                    <video
+                                                        src={item.src}
+                                                        muted
+                                                        preload="metadata"
+                                                        className="absolute inset-0 w-full h-full object-contain"
+                                                    />
+                                                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                                                        <FiPlay className="w-6 h-6 text-white drop-shadow-lg" />
+                                                    </div>
+                                                </button>
+                                            );
+                                        }
+                                        const src = item.src;
                                         return (
                                             <button
                                                 key={src + idx}

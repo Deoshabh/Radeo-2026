@@ -127,6 +127,12 @@ const productSchema = new mongoose.Schema(
         label: { type: String, default: '' },
       },
     ],
+    // Short product video (max 30 seconds)
+    video: {
+      url: { type: String },
+      key: { type: String },
+      duration: { type: Number, max: 30 }, // seconds
+    },
     isActive: {
       type: Boolean,
       default: true,

@@ -140,10 +140,13 @@ function requireInitialized() {
 async function generateSignedUploadUrl(key, contentType) {
   requireInitialized();
 
-  const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+  const allowedTypes = [
+    "image/jpeg", "image/jpg", "image/png", "image/webp",
+    "video/mp4", "video/webm",
+  ];
 
   if (!allowedTypes.includes(contentType.toLowerCase())) {
-    throw new Error("Invalid file type");
+    throw new Error("Invalid file type. Allowed: JPEG, PNG, WebP, MP4, WebM");
   }
 
   const signedUrl = await minioClient.presignedPutObject(

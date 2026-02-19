@@ -28,11 +28,12 @@ exports.getUploadUrl = async (req, res) => {
     const folder = productSlug || 'uploads';
 
     // Validate file size (if provided)
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const isVideo = fileType && fileType.startsWith('video/');
+    const maxSize = isVideo ? 50 * 1024 * 1024 : 5 * 1024 * 1024; // 50MB for video, 5MB for images
     if (req.body.fileSize && req.body.fileSize > maxSize) {
       return res.status(400).json({
         success: false,
-        message: "File size exceeds 5MB limit",
+        message: `File size exceeds ${isVideo ? '50MB' : '5MB'} limit`,
       });
     }
 

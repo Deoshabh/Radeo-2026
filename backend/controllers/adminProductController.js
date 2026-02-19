@@ -206,6 +206,7 @@ exports.createProduct = async (req, res) => {
       images,
       images360,
       hotspots360,
+      video,
       featured,
       isActive,
     } = req.body;
@@ -397,6 +398,7 @@ exports.createProduct = async (req, res) => {
       images: parsedImages,
       images360: parsedImages360,
       hotspots360: parsedHotspots360,
+      video: video || undefined,
       featured: featured || false,
       isActive: isActive !== undefined ? isActive : true,
       isOutOfStock: false, // Default to not out of stock
@@ -464,6 +466,7 @@ exports.updateProduct = async (req, res) => {
       images,
       images360,
       hotspots360,
+      video,
       featured,
       isActive,
       gstPercentage,
@@ -519,6 +522,7 @@ exports.updateProduct = async (req, res) => {
     if (images !== undefined) product.images = images;
     if (images360 !== undefined) product.images360 = images360;
     if (hotspots360 !== undefined) product.hotspots360 = hotspots360;
+    if (video !== undefined) product.video = video || null;
     if (featured !== undefined) product.featured = featured;
     if (isActive !== undefined) product.isActive = isActive;
     if (req.body.isOutOfStock !== undefined)
