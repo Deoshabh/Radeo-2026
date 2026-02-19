@@ -22,6 +22,7 @@ exports.getCart = async (req, res) => {
   try {
     let cart = await Cart.findOne({ user: req.user.id }).populate(
       "items.product",
+      "name slug price images sizes isActive discount colors",
     );
 
     if (!cart) {
@@ -113,7 +114,7 @@ exports.addToCart = async (req, res) => {
     }
 
     await cart.save();
-    await cart.populate("items.product");
+    await cart.populate("items.product", "name slug price images sizes isActive discount colors");
 
     res.json(buildCartResponse(cart));
   } catch (error) {
@@ -186,7 +187,7 @@ exports.updateCartItemQuantity = async (req, res) => {
     }
 
     await cart.save();
-    await cart.populate("items.product");
+    await cart.populate("items.product", "name slug price images sizes isActive discount colors");
 
     res.json(buildCartResponse(cart));
   } catch (error) {
@@ -224,7 +225,7 @@ exports.removeFromCart = async (req, res) => {
     );
 
     await cart.save();
-    await cart.populate("items.product");
+    await cart.populate("items.product", "name slug price images sizes isActive discount colors");
 
     res.json(buildCartResponse(cart));
   } catch (error) {
@@ -255,7 +256,7 @@ exports.clearCart = async (req, res) => {
 // GET /api/v1/cart/validate
 exports.validateCart = async (req, res) => {
   try {
-    const cart = await Cart.findOne({ user: req.user.id }).populate("items.product");
+    const cart = await Cart.findOne({ user: req.user.id }).populate("items.product", "name slug price images sizes isActive discount colors");
 
     if (!cart || !cart.items || cart.items.length === 0) {
       return res.json({ valid: true, changes: [] });

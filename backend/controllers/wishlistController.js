@@ -8,8 +8,9 @@ const { log } = require("../utils/logger");
 exports.getWishlist = async (req, res) => {
   try {
     let wishlist = await Wishlist.findOne({ user: req.user.id }).populate(
-      "products"
-    );
+      "products",
+      "name slug price images isActive discount averageRating numReviews",
+    ).lean();
 
     if (!wishlist) {
       wishlist = await Wishlist.create({ user: req.user.id, products: [] });
@@ -53,7 +54,7 @@ exports.toggleWishlistItem = async (req, res) => {
     }
 
     // Populate and return
-    await wishlist.populate("products");
+    await wishlist.populate("products", "name slug price images isActive discount averageRating numReviews");
     res.json(wishlist);
   } catch (error) {
     log.error("Toggle wishlist error:", error);

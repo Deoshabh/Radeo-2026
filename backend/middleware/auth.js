@@ -1,4 +1,8 @@
 const jwt = require("jsonwebtoken");
+const redis = require("../config/redis");
+
+/** TTL for cached user roles (seconds) */
+const USER_ROLE_CACHE_TTL = 60;
 
 /**
  * Verify JWT with rotation support.
@@ -17,6 +21,32 @@ function verifyWithRotation(token) {
     }
     throw err; // Re-throw — will be caught by caller
   }
+}
+
+/**
+ * Get user role — checks Redis cache first, falls back to DB.
+ * Returns role string or null if user not found.
+ */
+async function getUserRole(userId) {
+  const cacheKey = `user:role:${userId}`;
+  try {
+    const cached = await redis.get(cacheKey);
+    if (cached) return cached;
+  } catch {
+    // Redis down — fall through to DB
+  }
+
+  const User = require("../models/User");
+  const user = await User.findById(userId).select("role").lean();
+  if (!user) return null;
+
+  try {
+    await redis.set(cacheKey, user.role, "EX", USER_ROLE_CACHE_TTL);
+  } catch {
+    // Non-critical — cache write failure is OK
+  }
+
+  return user.role;
 }
 
 // Authenticate JWT token
@@ -46,15 +76,14 @@ exports.authenticate = async (req, res, next) => {
     const userId = decoded.userId || decoded.id;
     req.userId = userId;
 
-    // Fetch user to get role for authorization checks
-    const User = require("../models/User");
-    const user = await User.findById(userId).select("role");
+    // Fetch user role (cached in Redis for 60s)
+    const role = await getUserRole(userId);
 
-    if (!user) {
+    if (!role) {
       return res.status(401).json({ message: "User not found" });
     }
 
-    req.user = { id: userId, _id: userId, role: user.role };
+    req.user = { id: userId, _id: userId, role };
     next();
   } catch (error) {
     if (error.name === "TokenExpiredError") {
@@ -102,10 +131,9 @@ exports.optionalAuth = async (req, res, next) => {
     const decoded = verifyWithRotation(token);
     const userId = decoded.userId || decoded.id;
 
-    const User = require("../models/User");
-    const user = await User.findById(userId).select("role");
-    if (user) {
-      req.user = { id: userId, _id: userId, role: user.role };
+    const role = await getUserRole(userId);
+    if (role) {
+      req.user = { id: userId, _id: userId, role };
     }
   } catch {
     // Token invalid/expired — continue without user

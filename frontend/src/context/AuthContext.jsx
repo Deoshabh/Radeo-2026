@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { authAPI, getFriendlyError } from '@/utils/api';
 import Cookies from 'js-cookie';
 import {
@@ -110,7 +110,7 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  const login = async (credentials) => {
+  const login = useCallback(async (credentials) => {
     loginInProgress.current = true;
     try {
       const { user: firebaseUser, token } = await loginWithEmail(credentials.email, credentials.password);
@@ -128,9 +128,9 @@ export const AuthProvider = ({ children }) => {
     } finally {
       loginInProgress.current = false;
     }
-  };
+  }, []);
 
-  const register = async (userData) => {
+  const register = useCallback(async (userData) => {
     loginInProgress.current = true;
     try {
       const { user: firebaseUser, token } = await registerWithEmail(userData.email, userData.password, userData.name);
@@ -148,9 +148,9 @@ export const AuthProvider = ({ children }) => {
     } finally {
       loginInProgress.current = false;
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await logoutFirebase();
       await authAPI.logout();
@@ -160,14 +160,14 @@ export const AuthProvider = ({ children }) => {
       Cookies.remove('accessToken');
       setUser(null);
     }
-  };
+  }, []);
 
-  const updateUser = (userData) => {
+  const updateUser = useCallback((userData) => {
     setUser(userData);
     setLoading(false);
-  };
+  }, []);
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     loading,
     login,
@@ -177,7 +177,7 @@ export const AuthProvider = ({ children }) => {
     setLoginInProgress,
     isAuthenticated: !!user,
     isAdmin: user?.role === 'admin',
-  };
+  }), [user, loading, login, register, logout, updateUser, setLoginInProgress]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

@@ -23,6 +23,7 @@ exports.getAllProducts = async (req, res) => {
       material,
       ids,
       limit,
+      page,
       color,
       size,
     } = req.query;
@@ -143,7 +144,27 @@ exports.getAllProducts = async (req, res) => {
 
         // Enforce pagination with safe default limit
         const effectiveLimit = Math.min(Number(limit) || 50, 200);
-        mongooseQuery = mongooseQuery.limit(effectiveLimit);
+        const currentPage = Math.max(Number(page) || 1, 1);
+        const skip = (currentPage - 1) * effectiveLimit;
+
+        mongooseQuery = mongooseQuery.skip(skip).limit(effectiveLimit).lean();
+
+        // If page param provided, also get total count for pagination metadata
+        if (page) {
+          const [results, total] = await Promise.all([
+            mongooseQuery,
+            Product.countDocuments(query),
+          ]);
+          return {
+            products: results,
+            pagination: {
+              page: currentPage,
+              limit: effectiveLimit,
+              total,
+              pages: Math.ceil(total / effectiveLimit),
+            },
+          };
+        }
 
         const results = await mongooseQuery;
         return results;
@@ -151,7 +172,12 @@ exports.getAllProducts = async (req, res) => {
       ttl,
     );
 
-    res.json(products);
+    // Support both paginated and non-paginated responses
+    if (products && products.pagination) {
+      res.json(products);
+    } else {
+      res.json(products);
+    }
   } catch (error) {
     log.error("Get products error:", error);
     res.status(500).json({ message: "Server error" });
@@ -188,7 +214,7 @@ exports.getTopRatedProducts = async (req, res) => {
         const products = await Product.find({
           _id: { $in: sortedProductIds },
           isActive: true,
-        });
+        }).lean();
 
         const productMap = new Map(
           products.map((product) => [String(product._id), product]),
@@ -231,7 +257,8 @@ exports.searchProducts = async (req, res) => {
         })
           .select({ name: 1, slug: 1, images: 1, price: 1, category: 1, brand: 1, score: { $meta: "textScore" } })
           .sort({ score: { $meta: "textScore" } })
-          .limit(20);
+          .limit(20)
+          .lean();
 
         return results;
       },
@@ -259,7 +286,7 @@ exports.getProductBySlug = async (req, res) => {
         const foundProduct = await Product.findOne({
           slug,
           isActive: true,
-        }).populate('category', 'name slug');
+        }).populate('category', 'name slug').lean();
         return foundProduct;
       },
       900, // 15 minutes cache
@@ -327,7 +354,7 @@ exports.getMaterials = async (req, res) => {
         materialAndCare: { $exists: true, $ne: "" },
       },
       { materialAndCare: 1 },
-    );
+    ).lean();
 
     // Extract unique materials from the text
     const materialsSet = new Set();
@@ -416,7 +443,7 @@ exports.getSizes = async (req, res) => {
         sizes: { $exists: true, $ne: [] },
       },
       { sizes: 1 },
-    );
+    ).lean();
 
     // Extract unique sizes
     const sizesSet = new Set();
