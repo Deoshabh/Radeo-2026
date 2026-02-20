@@ -8,6 +8,14 @@ const { log } = require("../utils/logger");
 // Escape special regex characters to prevent ReDoS attacks
 const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+// Hydrate inStock virtual on lean query results (.lean() strips Mongoose virtuals)
+const hydrateInStock = (doc) => {
+  if (!doc) return doc;
+  if (Array.isArray(doc)) return doc.map(hydrateInStock);
+  doc.inStock = doc.stock > 0 && !doc.isOutOfStock;
+  return doc;
+};
+
 // GET /api/v1/products
 exports.getAllProducts = async (req, res) => {
   try {
@@ -172,11 +180,12 @@ exports.getAllProducts = async (req, res) => {
       ttl,
     );
 
-    // Support both paginated and non-paginated responses
+    // Hydrate inStock on lean results
     if (products && products.pagination) {
+      products.products = hydrateInStock(products.products);
       res.json(products);
     } else {
-      res.json(products);
+      res.json(hydrateInStock(products));
     }
   } catch (error) {
     log.error("Get products error:", error);
@@ -227,7 +236,7 @@ exports.getTopRatedProducts = async (req, res) => {
       1800,
     ); // Cache for 30 minutes
 
-    return res.json(sortedProducts);
+    return res.json(hydrateInStock(sortedProducts));
   } catch (error) {
     log.error("Get top-rated products error:", error);
     return res.status(500).json({ message: "Server error" });
@@ -267,7 +276,7 @@ exports.searchProducts = async (req, res) => {
 
     log.info(`ðŸ” Search for "${q}": found ${products.length} results`);
 
-    res.json(products);
+    res.json(hydrateInStock(products));
   } catch (error) {
     log.error("Search products error:", error);
     res.status(500).json({ message: "Server error" });
@@ -296,7 +305,7 @@ exports.getProductBySlug = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    res.json(product);
+    res.json(hydrateInStock(product));
   } catch (error) {
     log.error("Get product by slug error:", error);
     res.status(500).json({ message: "Server error" });
