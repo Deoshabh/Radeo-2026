@@ -419,6 +419,19 @@ export const useUpdateStock = () => {
   });
 };
 
+export const useToggleOutOfStock = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, isOutOfStock }) => adminAPI.updateProductStatus(id, { isOutOfStock }),
+    onSuccess: (_, { isOutOfStock }) => {
+      toast.success(isOutOfStock ? 'Marked as Out of Stock' : 'Marked as In Stock');
+      qc.invalidateQueries({ queryKey: ['admin', 'inventory'] });
+      qc.invalidateQueries({ queryKey: ['products'] });
+    },
+    onError: () => toast.error('Failed to update stock status'),
+  });
+};
+
 // ─── SEO ───────────────────────────────────────────────────────────
 export const useSeoSettings = () =>
   useQuery({

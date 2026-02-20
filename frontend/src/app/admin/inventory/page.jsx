@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useInventory, useStockMovements, useUpdateStock } from '@/hooks/useAdmin';
+import { useInventory, useStockMovements, useUpdateStock, useToggleOutOfStock } from '@/hooks/useAdmin';
 import { formatPrice } from '@/utils/helpers';
 import {
   FiPackage, FiAlertTriangle, FiSearch, FiRefreshCw,
   FiChevronDown, FiChevronUp, FiFilter, FiDatabase,
-  FiTrendingDown, FiEdit3, FiCheck, FiX, FiClock, FiBox
+  FiTrendingDown, FiEdit3, FiCheck, FiX, FiClock, FiBox,
+  FiToggleLeft, FiToggleRight
 } from 'react-icons/fi';
 
 const STOCK_FILTERS = [
@@ -16,7 +17,8 @@ const STOCK_FILTERS = [
   { key: 'healthy', label: 'In Stock', color: 'green' },
 ];
 
-function StockBadge({ stock }) {
+function StockBadge({ stock, isOutOfStock }) {
+  if (isOutOfStock && stock > 0) return <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700" title="Manually marked Out of Stock">Override</span>;
   if (stock <= 0) return <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">Out</span>;
   if (stock <= 10) return <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Low ({stock})</span>;
   return <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">{stock}</span>;
@@ -64,6 +66,34 @@ function InlineStockEditor({ product }) {
         <FiX className="w-3.5 h-3.5" />
       </button>
     </div>
+  );
+}
+
+function OutOfStockToggle({ product }) {
+  const toggleMut = useToggleOutOfStock();
+  const isOverride = !!product.isOutOfStock;
+
+  const handleToggle = () => {
+    toggleMut.mutate({ id: product._id, isOutOfStock: !isOverride });
+  };
+
+  return (
+    <button
+      onClick={handleToggle}
+      disabled={toggleMut.isPending}
+      title={isOverride ? 'Click to mark as In Stock' : 'Click to force Out of Stock'}
+      className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-colors border ${
+        isOverride
+          ? 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'
+          : 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
+      } ${toggleMut.isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
+    >
+      {isOverride
+        ? <FiToggleRight className="w-3.5 h-3.5" />
+        : <FiToggleLeft className="w-3.5 h-3.5" />
+      }
+      {isOverride ? 'Out of Stock' : 'In Stock'}
+    </button>
   );
 }
 
@@ -140,8 +170,8 @@ export default function InventoryPage() {
   // Computed stats
   const stats = useMemo(() => {
     const total = products.length;
-    const outOfStock = products.filter(p => p.stock <= 0).length;
-    const lowStock = products.filter(p => p.stock > 0 && p.stock <= 10).length;
+    const outOfStock = products.filter(p => p.stock <= 0 || p.isOutOfStock).length;
+    const lowStock = products.filter(p => p.stock > 0 && p.stock <= 10 && !p.isOutOfStock).length;
     const totalUnits = products.reduce((sum, p) => sum + (p.stock || 0), 0);
     const totalValue = products.reduce((sum, p) => sum + (p.stock || 0) * (p.price || 0), 0);
     return { total, outOfStock, lowStock, totalUnits, totalValue };
@@ -156,9 +186,9 @@ export default function InventoryPage() {
   const filteredProducts = useMemo(() => {
     let result = [...products];
 
-    if (stockFilter === 'out') result = result.filter(p => p.stock <= 0);
-    else if (stockFilter === 'low') result = result.filter(p => p.stock > 0 && p.stock <= 10);
-    else if (stockFilter === 'healthy') result = result.filter(p => p.stock > 10);
+    if (stockFilter === 'out') result = result.filter(p => p.stock <= 0 || p.isOutOfStock);
+    else if (stockFilter === 'low') result = result.filter(p => p.stock > 0 && p.stock <= 10 && !p.isOutOfStock);
+    else if (stockFilter === 'healthy') result = result.filter(p => p.stock > 10 && !p.isOutOfStock);
 
     if (categoryFilter !== 'all') result = result.filter(p => (p.category?.name || p.category) === categoryFilter);
 
@@ -333,7 +363,7 @@ export default function InventoryPage() {
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
                               <InlineStockEditor product={product} />
-                              <StockBadge stock={product.stock} />
+                              <StockBadge stock={product.stock} isOutOfStock={product.isOutOfStock} />
                             </div>
                           </td>
                           <td className="px-4 py-3">
@@ -358,9 +388,12 @@ export default function InventoryPage() {
                             )}
                           </td>
                           <td className="px-4 py-3">
-                            <div className="flex items-center gap-1.5">
-                              <span className={`w-2 h-2 rounded-full ${product.isActive ? 'bg-green-500' : 'bg-gray-300'}`} />
-                              <span className="text-xs text-primary-600">{product.isActive ? 'Active' : 'Inactive'}</span>
+                            <div className="flex flex-col gap-1.5">
+                              <div className="flex items-center gap-1.5">
+                                <span className={`w-2 h-2 rounded-full ${product.isActive ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                <span className="text-xs text-primary-600">{product.isActive ? 'Active' : 'Inactive'}</span>
+                              </div>
+                              <OutOfStockToggle product={product} />
                             </div>
                           </td>
                           <td className="px-4 py-3 text-center">

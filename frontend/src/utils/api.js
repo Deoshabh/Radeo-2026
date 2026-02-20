@@ -207,6 +207,7 @@ export const adminAPI = {
   toggleProductStatus: (id) => api.patch(`/admin/products/${id}/toggle`),
   toggleProductFeatured: (id) =>
     api.patch(`/admin/products/${id}/toggle-featured`),
+  updateProductStatus: (id, data) => api.patch(`/admin/products/${id}/status`, data),
   bulkDeleteProducts: (ids) => api.post("/admin/products/bulk-delete", { ids }),
   bulkUpdateProductStatus: (ids, isActive) => api.post("/admin/products/bulk-status", { ids, isActive }),
   getStockMovements: (productId, params) => api.get(`/admin/products/stock-movements/${productId}`, { params }),
