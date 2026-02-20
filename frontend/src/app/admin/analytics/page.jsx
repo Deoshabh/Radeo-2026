@@ -170,7 +170,7 @@ export default function AnalyticsPage() {
                 });
                 const trendData = Object.entries(byDate).sort().map(([date, count]) => ({ date, count }));
                 return trendData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={260}>
+                <ResponsiveContainer width="100%" height={260} minWidth={0} minHeight={0}>
                   <AreaChart data={trendData}>
                     <defs>
                       <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
@@ -225,7 +225,7 @@ export default function AnalyticsPage() {
               <div className="bg-white rounded-xl border border-primary-200 p-5">
                 <h2 className="text-sm font-semibold text-primary-800 mb-4">Events by Type</h2>
                 {eventTypeData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={240}>
+                  <ResponsiveContainer width="100%" height={240} minWidth={0} minHeight={0}>
                     <BarChart data={eventTypeData} layout="vertical" margin={{ left: 80 }}>
                       <XAxis type="number" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
                       <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={80} />
@@ -247,7 +247,7 @@ export default function AnalyticsPage() {
                 <h2 className="text-sm font-semibold text-primary-800 mb-4">Device Breakdown</h2>
                 {deviceData.length > 0 ? (
                   <div className="flex items-center gap-6">
-                    <ResponsiveContainer width="50%" height={200}>
+                    <ResponsiveContainer width="50%" height={200} minWidth={0} minHeight={0}>
                       <PieChart>
                         <Pie
                           data={deviceData}

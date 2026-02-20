@@ -68,7 +68,7 @@ export default function BulkProductEditor() {
 
     const filteredProducts = allProducts.filter(p =>
         p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.category?.toLowerCase().includes(search.toLowerCase())
+        (p.category?.name || p.category || '').toLowerCase().includes(search.toLowerCase())
     );
 
     if (loading) return <div className="p-8 text-center text-gray-500">Loading products...</div>;

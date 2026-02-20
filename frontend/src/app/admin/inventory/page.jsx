@@ -148,7 +148,7 @@ export default function InventoryPage() {
   }, [products]);
 
   const categories = useMemo(() => {
-    const cats = new Set(products.map(p => p.category).filter(Boolean));
+    const cats = new Set(products.map(p => p.category?.name || p.category).filter(Boolean));
     return ['all', ...Array.from(cats).sort()];
   }, [products]);
 
@@ -160,14 +160,14 @@ export default function InventoryPage() {
     else if (stockFilter === 'low') result = result.filter(p => p.stock > 0 && p.stock <= 10);
     else if (stockFilter === 'healthy') result = result.filter(p => p.stock > 10);
 
-    if (categoryFilter !== 'all') result = result.filter(p => p.category === categoryFilter);
+    if (categoryFilter !== 'all') result = result.filter(p => (p.category?.name || p.category) === categoryFilter);
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(p =>
         p.name?.toLowerCase().includes(q) ||
         p.sku?.toLowerCase().includes(q) ||
-        p.category?.toLowerCase().includes(q)
+        (p.category?.name || p.category || '').toLowerCase().includes(q)
       );
     }
 
@@ -328,7 +328,7 @@ export default function InventoryPage() {
                           <td className="px-4 py-3 font-mono text-xs text-primary-500">
                             {product.sku || '—'}
                           </td>
-                          <td className="px-4 py-3 capitalize text-primary-600">{product.category}</td>
+                          <td className="px-4 py-3 capitalize text-primary-600">{product.category?.name || product.category}</td>
                           <td className="px-4 py-3 font-medium">{formatPrice(product.price)}</td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">

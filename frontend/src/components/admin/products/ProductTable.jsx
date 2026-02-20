@@ -247,7 +247,7 @@ export default function ProductTable({
                                         </div>
                                         <div>
                                             <p className="font-medium text-primary-900 line-clamp-1">{product.name}</p>
-                                            <p className="text-sm text-primary-600">{product.category}</p>
+                                            <p className="text-sm text-primary-600">{product.category?.name || product.category}</p>
                                         </div>
                                     </div>
                                 </td>
