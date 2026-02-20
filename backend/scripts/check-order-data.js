@@ -18,7 +18,7 @@ async function checkOrderData() {
     }
 
     console.log("\n=== ORDER DATA STRUCTURE ===");
-    console.log("Order ID:", order.orderId);
+    console.log("Order ID:", order.displayOrderId || order.orderId);
     console.log("\n--- Shipping Address ---");
     console.log("Full object:", JSON.stringify(order.shippingAddress, null, 2));
     console.log("\n--- User Info ---");

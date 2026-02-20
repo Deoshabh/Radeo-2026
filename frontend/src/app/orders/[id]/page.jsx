@@ -146,7 +146,7 @@ export default function OrderDetailPage() {
           <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
             <div>
               <h1 className="text-2xl font-bold text-primary-900 mb-1">Order Details</h1>
-              <p className="text-primary-600">Order ID: {order.orderId}</p>
+              <p className="text-primary-600">Order ID: {order.displayOrderId || order.orderId}</p>
             </div>
             <div className="flex items-center gap-3">
               <div className={`flex items-center gap-2 px-4 py-2 rounded-full border ${getStatusColor(order.status)}`}>

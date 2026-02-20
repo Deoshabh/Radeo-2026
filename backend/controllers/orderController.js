@@ -9,13 +9,18 @@ const Razorpay = require("razorpay");
 const crypto = require("crypto");
 const { log } = require("../utils/logger");
 const { cacheClient } = require("../config/redis");
+const { generateDisplayOrderId } = require("../utils/orderIdGenerator");
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// Generate unique order ID
+/**
+ * Generates the internal technical order ID (used by Shiprocket, payment
+ * gateways, and other integrations that already store this value).
+ * NOT shown to customers — that is handled by displayOrderId.
+ */
 const generateOrderId = () => {
   const timestamp = Date.now().toString(36).toUpperCase();
   const random = Math.random().toString(36).substring(2, 7).toUpperCase();
@@ -180,6 +185,13 @@ exports.createOrder = async (req, res) => {
     const session = await mongoose.startSession();
     let order;
 
+    // Generate the human-readable display ID BEFORE the transaction.
+    // Counter.findOneAndUpdate is atomic on its own document – no need to
+    // include it in the stock-decrement transaction.  If order creation
+    // later fails the counter will have a gap that day, which is acceptable
+    // (gaps in sequential IDs are normal and not a business problem).
+    const displayOrderId = await generateDisplayOrderId();
+
     try {
       await session.withTransaction(async () => {
         // 1. Decrement stock for each item atomically
@@ -240,6 +252,7 @@ exports.createOrder = async (req, res) => {
           [
             {
               orderId: generateOrderId(),
+              displayOrderId,
               user: req.user.id,
               items: orderItems,
               subtotal,
@@ -303,7 +316,7 @@ exports.createOrder = async (req, res) => {
         quantity: -item.quantity,
         size: item.size || null,
         orderId: order._id,
-        orderCode: order.orderId,
+        orderCode: order.displayOrderId || order.orderId, // prefer human-readable ID
         performedBy: req.user.id,
       }));
       StockMovement.insertMany(movements).catch((err) =>

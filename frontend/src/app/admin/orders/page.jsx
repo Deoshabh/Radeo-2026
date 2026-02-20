@@ -488,7 +488,7 @@ export default function AdminOrdersDashboard() {
                       <td className="px-4 py-4">
                         <div>
                           <div className="font-medium text-gray-900">
-                            {order.orderId}
+                            {order.displayOrderId || order.orderId}
                           </div>
                           <div className="text-xs text-gray-500">
                             {new Date(order.createdAt).toLocaleString()}

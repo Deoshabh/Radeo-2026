@@ -62,7 +62,7 @@ function OrderCard({ order, onClick, isDragging }) {
       className={`bg-white rounded-lg border border-gray-200 p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow select-none ${isDragging ? 'shadow-xl ring-2 ring-gray-900/10' : ''}`}
     >
       <div className="flex items-start justify-between mb-2">
-        <span className="text-xs font-mono text-gray-500 truncate">#{order.orderId?.slice(-8) || order._id?.slice(-6)}</span>
+        <span className="text-xs font-mono text-gray-500 truncate">{order.displayOrderId || `#${order.orderId?.slice(-8) || order._id?.slice(-6)}`}</span>
         <span className={`text-[10px] font-semibold ${ageColor}`}>{ageHours > 0 ? `${Math.round(ageHours)}h ago` : 'Just now'}</span>
       </div>
       <p className="text-sm font-medium text-gray-900 truncate mb-1">
@@ -93,7 +93,7 @@ function OrderCard({ order, onClick, isDragging }) {
 function OverlayCard({ order }) {
   return (
     <div className="bg-white rounded-lg border-2 border-gray-900/20 p-3 shadow-2xl w-64 rotate-2">
-      <span className="text-xs font-mono text-gray-500">#{order.orderId?.slice(-8)}</span>
+      <span className="text-xs font-mono text-gray-500">{order.displayOrderId || `#${order.orderId?.slice(-8)}`}</span>
       <p className="text-sm font-medium text-gray-900 truncate mt-1">{order.shippingAddress?.fullName || order.customerName}</p>
       <span className="text-sm font-bold text-gray-900">{formatPrice(order.total || 0)}</span>
     </div>

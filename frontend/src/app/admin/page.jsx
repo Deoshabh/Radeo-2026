@@ -243,7 +243,7 @@ export default function AdminDashboard() {
                     <div key={order._id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate">{order.customerName || 'Customer'}</p>
-                        <p className="text-xs text-gray-500">#{order.orderId?.slice(-6) || order._id?.slice(-6)}</p>
+                        <p className="text-xs text-gray-500">#{order.displayOrderId || order.orderId?.slice(-6) || order._id?.slice(-6)}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-semibold text-gray-900">{formatCurrency(order.total)}</p>

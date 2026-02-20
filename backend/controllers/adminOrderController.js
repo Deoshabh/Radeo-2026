@@ -37,6 +37,7 @@ exports.getAllOrders = async (req, res) => {
       // 2. Construct OR query
       filter.$or = [
         { orderId: searchRegex },
+        { displayOrderId: searchRegex },          // new human-readable ID
         { 'shippingAddress.fullName': searchRegex },
         { 'shippingAddress.phone': searchRegex },
         { 'shipping.awb_code': searchRegex },

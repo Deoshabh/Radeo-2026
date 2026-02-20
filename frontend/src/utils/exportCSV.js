@@ -49,7 +49,7 @@ export const exportOrdersToCSV = (orders, filename = null) => {
         .join(", ") || "N/A";
 
     return [
-      order.orderId || "N/A",
+      order.displayOrderId || order.orderId || "N/A",
       order.shippingAddress?.fullName || order.user?.name || "N/A",
       order.user?.email || "N/A",
       order.shippingAddress?.phone

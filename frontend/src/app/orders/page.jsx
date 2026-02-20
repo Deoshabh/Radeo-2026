@@ -158,7 +158,7 @@ export default function OrdersPage() {
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
                       <div>
                         <p className="label-upper text-primary-400 mb-1">Order</p>
-                        <p className="font-mono text-sm font-medium text-primary-900 break-all">{order.orderId}</p>
+                        <p className="font-mono text-sm font-medium text-primary-900 break-all">{order.displayOrderId || order.orderId}</p>
                       </div>
                       <div className="hidden sm:block h-8 w-px bg-[color:var(--color-border)]"></div>
                       <div>

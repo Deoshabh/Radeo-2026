@@ -25,6 +25,22 @@ const orderSchema = new mongoose.Schema(
       required: true,
     },
 
+    /**
+     * Human-readable display ID shown to customers, staff, and on invoices.
+     * Format: ORD-YYMMDD-#### (e.g. ORD-260220-1023)
+     *
+     * - Generated atomically via the Counter collection (see utils/orderIdGenerator.js).
+     * - Resets daily; sequential within each day (starts from 1001).
+     * - `sparse: true` so legacy documents without this field are still valid.
+     * - Internal _id and orderId remain unchanged for Shiprocket / payment integrations.
+     */
+    displayOrderId: {
+      type: String,
+      unique: true,
+      sparse: true, // allows null/undefined on legacy documents without breaking uniqueness
+      index: true,
+    },
+
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -175,6 +191,7 @@ orderSchema.index({ user: 1, createdAt: -1 });
 orderSchema.index({ status: 1, createdAt: -1 });
 orderSchema.index({ "payment.status": 1 });
 orderSchema.index({ createdAt: -1 });
+// displayOrderId is declared `unique + sparse` on the field itself above;
 
 // Note: orderId is now generated in the controller
 // This hook is kept for backward compatibility in case orderId is not provided

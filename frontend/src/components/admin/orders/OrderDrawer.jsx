@@ -146,9 +146,9 @@ export default function OrderDrawer({ orderId, order: initialOrder, isOpen, onCl
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-white shrink-0">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-gray-900 truncate">{order?.orderId || 'Order'}</h2>
-              {order?.orderId && (
-                <button onClick={() => { navigator.clipboard.writeText(order.orderId); toast.success('Copied!'); }}
+              <h2 className="text-lg font-bold text-gray-900 truncate">{order?.displayOrderId || order?.orderId || 'Order'}</h2>
+              {(order?.displayOrderId || order?.orderId) && (
+                <button onClick={() => { navigator.clipboard.writeText(order.displayOrderId || order.orderId); toast.success('Copied!'); }}
                   className="p-1 text-gray-400 hover:text-gray-600"><FiCopy className="w-3.5 h-3.5" /></button>
               )}
             </div>

@@ -235,7 +235,7 @@ export default function CheckoutPage() {
           amount: amount,
           currency: currency,
           name: 'Radeo',
-          description: `Order ${order.orderId}`,
+          description: `Order ${order.displayOrderId || order.orderId}`,
           order_id: razorpayOrderId,
           handler: async (response) => {
             try {

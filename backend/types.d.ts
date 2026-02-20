@@ -283,6 +283,7 @@ export interface ITrackingEntry {
 
 export interface IOrder extends Document {
   orderId: string;
+  displayOrderId?: string; // Human-readable: ORD-YYMMDD-#### (e.g. ORD-260220-1023)
   user: ObjectId;
   items: IOrderItem[];
   subtotal?: number;
