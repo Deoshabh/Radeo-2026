@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 /* eslint-disable @next/next/no-img-element */
 
 import { useState, useEffect, useRef } from 'react';
@@ -73,7 +73,7 @@ export default function Navbar() {
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
   }, []);
-  // ── Scroll-lock when mobile menu is open ──
+  // ── Scroll-lock when mobile drawer is open ──
   useEffect(() => {
     if (isMobileMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -83,11 +83,13 @@ export default function Navbar() {
     return () => { document.body.style.overflow = ''; };
   }, [isMobileMenuOpen]);
 
-  // ── Close mobile menu on scroll ──
+  // ── Close mobile drawer on ESC key ──
   useEffect(() => {
-    const handleScroll = () => { if (isMobileMenuOpen) setIsMobileMenuOpen(false); };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isMobileMenuOpen) setIsMobileMenuOpen(false);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isMobileMenuOpen]);
   // â”€â”€ Cart bounce animation â”€â”€
   useEffect(() => {
@@ -460,126 +462,236 @@ export default function Navbar() {
       )}
 
       {/* â”€â”€ Mobile Menu â”€â”€ */}
-      {/* Backdrop */}
+      {/* ── Mobile Drawer ── */}
+      {/* Overlay */}
       <div
-        className={`lg:hidden fixed inset-0 bg-black/30 z-30 transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        className={`lg:hidden fixed inset-0 transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        style={{ zIndex: 9999, backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}
         onClick={() => setIsMobileMenuOpen(false)}
+        aria-hidden="true"
       />
-      {/* Panel */}
+      {/* Drawer Panel */}
       <div
-        className={`lg:hidden bg-white border-t border-gray-100 transition-all duration-300 ease-out overflow-hidden ${
-          isMobileMenuOpen ? 'max-h-[calc(100vh-72px)] opacity-100' : 'max-h-0 opacity-0'
-        }`}
+        className="lg:hidden fixed top-0 left-0 overflow-y-auto overscroll-contain"
+        style={{
+          zIndex: 10000,
+          height: '100dvh',
+          width: 'min(320px, 88vw)',
+          backgroundColor: '#FAFAF8',
+          transform: isMobileMenuOpen ? 'translateX(0)' : 'translateX(-100%)',
+          transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
         role="dialog"
         aria-modal="true"
         aria-label="Mobile Navigation"
       >
-          <div className="px-6 py-4 space-y-4 max-h-[calc(100vh-72px)] overflow-y-auto">
-
-            {/* Logged-in user greeting */}
-            {isAuthenticated && user && (
-              <div className="flex items-center gap-3 px-4 py-3 mb-1" style={{ borderBottom: '1px solid var(--color-border, #e5e5e5)' }}>
-                <div className="w-9 h-9 rounded-full bg-[color:var(--color-heading)] text-[color:var(--color-subtle-bg)] flex items-center justify-center text-xs font-bold flex-shrink-0"
-                  style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>
-                  {user?.name?.charAt(0).toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-[color:var(--color-heading)] truncate">{user?.name}</p>
-                  <p className="text-xs text-[color:var(--color-body)] truncate">{user?.email}</p>
-                </div>
+        {/* Drawer Header — sticky */}
+        <div
+          className="sticky top-0 flex items-center justify-between h-16"
+          style={{ padding: '0 20px', backgroundColor: '#FAFAF8', borderBottom: '1px solid #F0EDE6', zIndex: 1 }}
+        >
+          <Link href="/" onClick={() => setIsMobileMenuOpen(false)}>
+            {settings?.branding?.logo?.url ? (
+              <div className="relative" style={{ width: `${Math.min(logoWidth, 100)}px`, height: `${Math.min(logoHeight, 32)}px` }}>
+                <Image src={settings.branding.logo.url} alt={settings.branding.logo.alt || 'Radeo'} fill className="object-contain object-left" />
               </div>
+            ) : (
+              <span
+                className="text-xl font-bold tracking-[0.15em]"
+                style={{ fontFamily: "var(--font-cormorant, 'Cormorant Garamond', serif)", color: '#1A1208' }}
+              >
+                RADEO
+              </span>
             )}
+          </Link>
+          <button
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="w-9 h-9 flex items-center justify-center rounded-full transition-colors"
+            style={{ color: '#3D3530' }}
+            aria-label="Close menu"
+          >
+            <FiX className="w-5 h-5" />
+          </button>
+        </div>
 
-            {/* Mobile search */}
-            <form onSubmit={handleSearch}>
-              <div className="relative">
-                <input
-                  type="text" placeholder="Search for shoes..."
-                  value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-[color:var(--color-border-light)] text-sm text-[color:var(--color-heading)] placeholder-[color:var(--color-body)] focus:outline-none focus:border-[color:var(--color-accent)] bg-transparent"
-                />
-                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[color:var(--color-body)] w-4 h-4" />
-              </div>
-            </form>
-
-            {/* Mobile links */}
-            <div className="space-y-1">
-              {navLinks.map(link => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={`block px-4 py-3 text-sm font-medium uppercase tracking-[0.12em] transition-colors ${
-                    pathname === link.href ? 'text-[color:var(--color-heading)] bg-[color:var(--color-page-bg)]' : 'text-[color:var(--color-body)]'
-                  }`}
-                  style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}
-                >
-                  {link.label}
-                </Link>
-              ))}
-
-              {/* Mobile categories */}
-              <div className="pt-3 border-t border-gray-100">
-                <Link
-                  href="/categories"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="block px-4 py-3 text-sm font-semibold uppercase tracking-[0.12em] text-[color:var(--color-accent)]"
-                  style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}
-                >
-                  All Categories
-                </Link>
-                {categories.map(cat => (
-                  <Link
-                    key={cat._id}
-                    href={`/products?category=${cat.slug}`}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-[color:var(--color-page-bg)] transition-colors"
-                  >
-                    {cat.image?.url ? (
-                      <div className="w-9 h-9 rounded overflow-hidden flex-shrink-0 bg-gray-50 relative">
-                        <Image src={cat.image.url} alt={cat.name} fill sizes="36px" className="object-cover" />
-                      </div>
-                    ) : (
-                      <div className="w-9 h-9 rounded bg-[color:var(--color-subtle-bg)] flex items-center justify-center flex-shrink-0">
-                        <span className="text-[color:var(--color-muted)] font-bold text-sm">{cat.name.charAt(0)}</span>
-                      </div>
-                    )}
-                    <span className="text-sm text-[color:var(--color-heading)]">{cat.name}</span>
-                  </Link>
-                ))}
-              </div>
-
-              {/* About & Contact â€” after Categories in mobile too */}
-              {navLinksAfterCategories.map(link => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={`block px-4 py-3 text-sm font-medium uppercase tracking-[0.12em] transition-colors ${
-                    pathname === link.href ? 'text-[color:var(--color-heading)] bg-[color:var(--color-page-bg)]' : 'text-[color:var(--color-body)]'
-                  }`}
-                  style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}
-                >
-                  {link.label}
-                </Link>
-              ))}
-
-              {/* Mobile login */}
-              {!isAuthenticated && (
-                <div className="pt-3 border-t border-gray-100">
-                  <Link
-                    href="/auth/login"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="block text-center px-4 py-3 text-sm font-medium uppercase tracking-[0.12em] bg-[color:var(--color-heading)] text-[color:var(--color-subtle-bg)]"
-                    style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}
-                  >
-                    Login / Register
-                  </Link>
-                </div>
-              )}
+        {/* User block */}
+        {isAuthenticated && user && (
+          <div
+            className="flex items-center gap-3"
+            style={{ padding: '16px 20px', borderBottom: '1px solid #F0EDE6', backgroundColor: '#F3F0EB' }}
+          >
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+              style={{ backgroundColor: '#1A1208', color: '#FAFAF8', fontFamily: "'DM Sans', sans-serif" }}
+            >
+              {user?.name?.charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold truncate" style={{ color: '#1A1208', fontFamily: "'DM Sans', sans-serif" }}>{user?.name}</p>
+              <p className="text-xs truncate" style={{ color: '#6B6560', fontFamily: "'DM Sans', sans-serif" }}>{user?.email}</p>
             </div>
           </div>
+        )}
+
+        {/* Search bar */}
+        <div style={{ margin: '16px' }}>
+          <form onSubmit={(e) => { handleSearch(e); setIsMobileMenuOpen(false); }}>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search for shoes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pr-4 focus:outline-none"
+                style={{
+                  padding: '10px 14px 10px 40px',
+                  border: '1px solid #E8E4DC',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  backgroundColor: '#fff',
+                  color: '#1A1208',
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              />
+              <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#A09890' }} />
+            </div>
+          </form>
         </div>
+
+        {/* Nav links */}
+        <div>
+          {[...navLinks, ...navLinksAfterCategories].map(link => {
+            const isActive = link.href === '/' ? pathname === '/' : pathname?.startsWith(link.href);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block"
+                style={{
+                  padding: '14px 20px',
+                  fontSize: '14px',
+                  fontWeight: isActive ? 600 : 500,
+                  fontFamily: "'DM Sans', sans-serif",
+                  color: isActive ? '#1A1208' : '#3D3530',
+                  backgroundColor: isActive ? '#F3F0EB' : 'transparent',
+                  borderLeft: isActive ? '3px solid #B8973A' : '3px solid transparent',
+                  borderBottom: '1px solid #F5F2EE',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                }}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Categories section */}
+        <div>
+          <Link
+            href="/categories"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="block"
+            style={{
+              padding: '16px 20px 8px',
+              fontSize: '11px',
+              fontWeight: 600,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: '#A09890',
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+          >
+            All Categories
+          </Link>
+          {categories.map(cat => (
+            <Link
+              key={cat._id}
+              href={`/products?category=${cat.slug}`}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="flex items-center gap-3 transition-colors"
+              style={{
+                padding: '10px 20px 10px 28px',
+                fontSize: '13px',
+                color: '#3D3530',
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+            >
+              {cat.image?.url ? (
+                <div className="relative flex-shrink-0 overflow-hidden" style={{ width: '32px', height: '32px', borderRadius: '4px', backgroundColor: '#EDE9E2' }}>
+                  <Image src={cat.image.url} alt={cat.name} fill sizes="32px" className="object-cover" />
+                </div>
+              ) : (
+                <div className="flex items-center justify-center flex-shrink-0" style={{ width: '32px', height: '32px', borderRadius: '4px', backgroundColor: '#EDE9E2' }}>
+                  <span className="font-bold text-sm" style={{ color: '#A09890', fontFamily: "var(--font-playfair, 'Lora', serif)" }}>{cat.name.charAt(0)}</span>
+                </div>
+              )}
+              <span>{cat.name}</span>
+            </Link>
+          ))}
+        </div>
+
+        {/* Auth actions */}
+        <div style={{ padding: '16px 20px', borderTop: '1px solid #F0EDE6', marginTop: '8px' }}>
+          {isAuthenticated ? (
+            <div className="space-y-1">
+              <Link
+                href="/profile"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center gap-3 rounded-lg transition-colors"
+                style={{ padding: '10px 8px', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", color: '#3D3530' }}
+              >
+                <FiUser className="w-4 h-4" /> Profile
+              </Link>
+              <Link
+                href="/orders"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center gap-3 rounded-lg transition-colors"
+                style={{ padding: '10px 8px', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", color: '#3D3530' }}
+              >
+                <FiPackage className="w-4 h-4" /> Orders
+              </Link>
+              {user?.role === 'admin' && (
+                <Link
+                  href="/admin"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-3 rounded-lg transition-colors"
+                  style={{ padding: '10px 8px', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", color: '#B8973A', fontWeight: 600 }}
+                >
+                  <FiSettings className="w-4 h-4" /> Admin Panel
+                </Link>
+              )}
+              <button
+                onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
+                className="flex items-center gap-3 w-full rounded-lg transition-colors"
+                style={{ padding: '10px 8px', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", color: '#ef4444' }}
+              >
+                <FiLogOut className="w-4 h-4" /> Logout
+              </button>
+            </div>
+          ) : (
+            <Link
+              href="/auth/login"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="block text-center"
+              style={{
+                padding: '12px',
+                fontSize: '14px',
+                fontWeight: 600,
+                fontFamily: "'DM Sans', sans-serif",
+                backgroundColor: '#1A1208',
+                color: '#FAFAF8',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                borderRadius: '6px',
+              }}
+            >
+              Login / Register
+            </Link>
+          )}
+        </div>
+      </div>
     </nav>
   );
 }
