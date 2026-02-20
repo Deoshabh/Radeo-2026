@@ -247,7 +247,8 @@ export default function AnalyticsPage() {
                 <h2 className="text-sm font-semibold text-primary-800 mb-4">Device Breakdown</h2>
                 {deviceData.length > 0 ? (
                   <div className="flex items-center gap-6">
-                    <ResponsiveContainer width="50%" height={200} minWidth={0} minHeight={0}>
+                    <div className="w-1/2 min-w-[120px]">
+                    <ResponsiveContainer width="100%" height={200} minWidth={0} minHeight={0}>
                       <PieChart>
                         <Pie
                           data={deviceData}
@@ -266,6 +267,7 @@ export default function AnalyticsPage() {
                         <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
                       </PieChart>
                     </ResponsiveContainer>
+                    </div>
                     <div className="space-y-3">
                       {deviceData.map(d => {
                         const total = deviceData.reduce((s, x) => s + x.value, 0);
