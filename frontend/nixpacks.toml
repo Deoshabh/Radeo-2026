@@ -5,7 +5,7 @@ nixPkgs = ["nodejs_20", "bash"]
 cmd = "npm ci"
 
 [phases.build]
-cmd = "npm run build && cp -r .next/static .next/standalone/.next/static && cp -r public .next/standalone/public"
+cmd = "npm run build && mkdir -p .next/standalone/.next && cp -r .next/static .next/standalone/.next/static && cp -r public .next/standalone/public"
 
 [start]
-cmd = "node .next/standalone/server.js"
+cmd = "npm start"
