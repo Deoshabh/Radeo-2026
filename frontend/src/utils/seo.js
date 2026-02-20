@@ -148,7 +148,7 @@ export const generateCategoryMetadata = (category) => {
       category.description ||
       `Shop ${category.name} at Radeo. Discover our premium collection of ${category.name.toLowerCase()}.`,
     image: category.image || SITE_IMAGE,
-    url: `${SITE_URL}/products?category=${category.slug}`,
+    url: `${SITE_URL}/categories/${category.slug}`,
     keywords: [category.name, "shoes", "footwear", "buy online"],
   });
 };
