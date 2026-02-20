@@ -120,7 +120,7 @@ function ProductFormContent() {
         category: product.category?._id || product.category || '',
         brand: product.brand || '',
         sku: product.sku || '',
-        stock: product.stock || '',
+        stock: product.stock ?? '',
         sizes: sizes,
         sizeStocks: sizeStocks,
         colors: product.colors || [],
@@ -507,8 +507,10 @@ function ProductFormContent() {
       }
 
       // Step 2: Prepare product data
-      // Calculate total stock from sizeStocks
-      const totalStock = formData.sizes.reduce((sum, size) => sum + (formData.sizeStocks[size] || 0), 0);
+      // Calculate total stock from sizeStocks (only when sizes exist)
+      const totalStock = formData.sizes.length > 0
+        ? formData.sizes.reduce((sum, size) => sum + (formData.sizeStocks[size] || 0), 0)
+        : Number(formData.stock) || 0;
 
       const productData = {
         name: formData.name,
