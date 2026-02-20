@@ -71,7 +71,7 @@ export default function CategoriesClient({ categories: initialCategories = [] })
           return (
             <button
               key={category._id}
-              onClick={() => router.push(`/categories/${category.slug}`)}
+              onClick={() => router.push(`/products?category=${category.slug}`)}
               className="group text-left overflow-hidden transition-shadow duration-300"
               style={{
                 background: '#FFFFFF',
