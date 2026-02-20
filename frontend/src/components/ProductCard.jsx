@@ -112,14 +112,14 @@ export default function ProductCard({ product, priority = false }) {
             </div>
           )}
 
-          {/* Wishlist — ghost circle, visible on card hover */}
+          {/* Wishlist — ghost circle, always visible on mobile, hover on desktop */}
           <button
             onClick={handleToggleWishlist}
             aria-label={isProductInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
             className={`absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-all duration-200 ${
               isProductInWishlist
                 ? 'bg-red-500 text-white opacity-100'
-                : 'bg-white/80 text-[#1A1714] opacity-0 group-hover:opacity-100'
+                : 'bg-white/80 text-[#1A1714] opacity-100 sm:opacity-0 sm:group-hover:opacity-100'
             } hover:scale-110`}
           >
             <FiHeart className={`w-3.5 h-3.5 ${isProductInWishlist ? 'fill-current' : ''}`} />
@@ -154,7 +154,7 @@ export default function ProductCard({ product, priority = false }) {
         <div className="p-4 sm:p-5 flex-1 flex flex-col">
 
           {/* Category */}
-          <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-accent)] mb-1.5"
+          <p className="text-[11px] sm:text-[11px] uppercase tracking-[0.2em] text-[color:var(--color-accent)] mb-1.5"
             style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>
             {categoryLabel || 'Uncategorized'}
           </p>

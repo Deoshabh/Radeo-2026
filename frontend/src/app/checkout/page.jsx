@@ -305,7 +305,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 pb-32 lg:pb-16">
         {/* Page heading */}
         <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight mb-10" style={{ color: 'var(--color-text-primary)' }}>
           Checkout
@@ -469,7 +469,7 @@ export default function CheckoutPage() {
                           <div className="flex items-center gap-2 ml-3">
                             <button
                               onClick={(e) => handleEditAddress(e, address)}
-                              className="p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                              className="p-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-150"
                               style={{ color: 'var(--color-text-secondary)' }}
                               title="Edit address"
                             >
@@ -478,7 +478,7 @@ export default function CheckoutPage() {
                             {!address.isDefault && (
                               <button
                                 onClick={(e) => handleDeleteAddress(e, address._id)}
-                                className="p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                                className="p-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-150"
                                 style={{ color: 'var(--color-text-secondary)' }}
                                 title="Delete address"
                               >
@@ -687,6 +687,22 @@ export default function CheckoutPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* ── Mobile: Sticky Place Order Bar ── */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 p-4 border-t backdrop-blur-md"
+           style={{ backgroundColor: 'color-mix(in srgb, var(--color-background) 95%, transparent)', borderColor: 'var(--color-border)', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Total</span>
+          <span className="font-serif text-xl font-semibold" style={{ color: 'var(--color-text-primary)' }}>{formatPrice(total)}</span>
+        </div>
+        <button
+          onClick={handlePlaceOrder}
+          disabled={!selectedAddress || isProcessing}
+          className="btn-editorial w-full disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {isProcessing ? 'Processing\u2026' : 'Place Order'}
+        </button>
       </div>
     </div>
   );

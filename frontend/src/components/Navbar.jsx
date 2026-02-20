@@ -73,7 +73,22 @@ export default function Navbar() {
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
   }, []);
+  // ── Scroll-lock when mobile menu is open ──
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isMobileMenuOpen]);
 
+  // ── Close mobile menu on scroll ──
+  useEffect(() => {
+    const handleScroll = () => { if (isMobileMenuOpen) setIsMobileMenuOpen(false); };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isMobileMenuOpen]);
   // â”€â”€ Cart bounce animation â”€â”€
   useEffect(() => {
     if (cartCount > prevCartCount && cartRef.current) {
@@ -312,6 +327,15 @@ export default function Navbar() {
               <FiSearch className="w-5 h-5" />
             </button>
 
+            {/* Search toggle (mobile) */}
+            <button
+              onClick={() => { setIsMobileMenuOpen(true); }}
+              className="lg:hidden w-9 h-9 flex items-center justify-center text-[color:var(--color-body)] hover:text-[color:var(--color-heading)] transition-colors rounded-full hover:bg-[color:var(--color-subtle-bg)]"
+              aria-label="Search"
+            >
+              <FiSearch className="w-5 h-5" />
+            </button>
+
             {/* Wishlist */}
             <Link href="/wishlist" className="relative w-9 h-9 flex items-center justify-center text-[color:var(--color-body)] hover:text-[color:var(--color-heading)] transition-colors rounded-full hover:bg-[color:var(--color-subtle-bg)]" aria-label="Wishlist">
               <div ref={wishlistRef}><FiHeart className="w-5 h-5" /></div>
@@ -436,9 +460,36 @@ export default function Navbar() {
       )}
 
       {/* â”€â”€ Mobile Menu â”€â”€ */}
-      {isMobileMenuOpen && (
-        <div className="lg:hidden bg-white border-t border-gray-100" role="dialog" aria-modal="true" aria-label="Mobile Navigation">
-          <div className="px-6 py-4 space-y-4">
+      {/* Backdrop */}
+      <div
+        className={`lg:hidden fixed inset-0 bg-black/30 z-30 transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        onClick={() => setIsMobileMenuOpen(false)}
+      />
+      {/* Panel */}
+      <div
+        className={`lg:hidden bg-white border-t border-gray-100 transition-all duration-300 ease-out overflow-hidden ${
+          isMobileMenuOpen ? 'max-h-[calc(100vh-72px)] opacity-100' : 'max-h-0 opacity-0'
+        }`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Mobile Navigation"
+      >
+          <div className="px-6 py-4 space-y-4 max-h-[calc(100vh-72px)] overflow-y-auto">
+
+            {/* Logged-in user greeting */}
+            {isAuthenticated && user && (
+              <div className="flex items-center gap-3 px-4 py-3 mb-1" style={{ borderBottom: '1px solid var(--color-border, #e5e5e5)' }}>
+                <div className="w-9 h-9 rounded-full bg-[color:var(--color-heading)] text-[color:var(--color-subtle-bg)] flex items-center justify-center text-xs font-bold flex-shrink-0"
+                  style={{ fontFamily: "var(--font-dm-mono, 'Space Mono', monospace)" }}>
+                  {user?.name?.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-[color:var(--color-heading)] truncate">{user?.name}</p>
+                  <p className="text-xs text-[color:var(--color-body)] truncate">{user?.email}</p>
+                </div>
+              </div>
+            )}
+
             {/* Mobile search */}
             <form onSubmit={handleSearch}>
               <div className="relative">
@@ -529,7 +580,6 @@ export default function Navbar() {
             </div>
           </div>
         </div>
-      )}
     </nav>
   );
 }

@@ -246,7 +246,7 @@ export default function ProductsContent({
 
   return (
     <div className="min-h-screen bg-[color:var(--color-page-bg)] pt-8 pb-20" ref={containerRef}>
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10">
         {/* Header */}
         <div className="mb-10" ref={headerRef}>
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
@@ -460,9 +460,9 @@ export default function ProductsContent({
           </aside>
 
           {/* Mobile Filter Modal */}
-          {isFilterOpen && (
-            <div className="lg:hidden fixed inset-0 bg-black/40 z-50 backdrop-blur-sm">
-              <div className="absolute right-0 top-0 bottom-0 w-80 overflow-y-auto" style={{ backgroundColor: 'var(--color-background)' }}>
+          <div className={`lg:hidden fixed inset-0 z-50 transition-opacity duration-300 ${isFilterOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsFilterOpen(false)} />
+              <div className={`absolute right-0 top-0 bottom-0 w-80 overflow-y-auto transition-transform duration-300 ease-out ${isFilterOpen ? 'translate-x-0' : 'translate-x-full'}`} style={{ backgroundColor: 'var(--color-background)' }}>
                 <div className="p-6">
                   <div className="flex justify-between items-center mb-6 pb-4" style={{ borderBottom: '1px solid var(--color-border)' }}>
                     <h3 className="label-upper text-xs" style={{ color: 'var(--color-text-secondary)' }}>Filters</h3>
@@ -515,7 +515,6 @@ export default function ProductsContent({
                 </div>
               </div>
             </div>
-          )}
 
           {/* Products Grid */}
           <div className="flex-1 min-w-0">

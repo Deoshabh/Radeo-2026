@@ -6,6 +6,7 @@ import { SiteSettingsProvider } from '@/context/SiteSettingsContext';
 import { CartProvider } from '@/context/CartContext';
 import { WishlistProvider } from '@/context/WishlistContext';
 import Navbar from '@/components/Navbar';
+import BottomNav from '@/components/BottomNav';
 import Footer from '@/components/Footer';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import AnnouncementBar from '@/components/AnnouncementBar';
@@ -84,11 +85,12 @@ export default function RootLayout({ children }) {
                 <CartProvider>
                   <WishlistProvider>
                     <Navbar />
-                    <main className="page-transition min-h-screen" style={{ paddingTop: 'var(--navbar-offset, 80px)' }}>
+                    <main className="page-transition min-h-screen pb-16 lg:pb-0" style={{ paddingTop: 'var(--navbar-offset, 80px)' }}>
                       <AnnouncementBar />
                       <MaintenanceModeGate>{children}</MaintenanceModeGate>
                     </main>
                     <Footer />
+                    <BottomNav />
                     <Toaster
                       position="top-right"
                       toastOptions={{
