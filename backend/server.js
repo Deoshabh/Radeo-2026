@@ -266,6 +266,7 @@ app.use("/api/v1/admin/reviews", require("./routes/adminReviewRoutes"));
 app.use("/api/v1/admin/settings", require("./routes/adminSettingsRoutes"));
 app.use("/api/v1/admin/seo", require("./routes/adminSeoRoutes"));
 app.use("/api/v1/admin/analytics", require("./routes/adminAnalyticsRoutes"));
+app.use("/api/v1/admin/app", require("./routes/adminAppRoutes"));
 app.use('/api/v1/admin/cms', adminCMSRouter);
 app.use('/api/v1/cms', preventCaching, publicCMSRouter);
 
@@ -277,6 +278,11 @@ app.use("/api/v1/categories", require("./routes/categoryRoutes"));
 app.use("/api/v1/addresses", require("./routes/addressRoutes"));
 app.use("/api/v1/wishlist", require("./routes/wishlistRoutes"));
 app.use("/api/v1/user", require("./routes/userRoutes"));
+
+// ── App-specific routes (React Native) ──────────
+app.use("/api/v1/app", require("./routes/appRoutes"));
+app.use("/api/v1/user/notifications", require("./routes/notificationRoutes"));
+app.use("/api/v1/address", require("./routes/pincodeRoutes"));
 
 // ===============================
 // Basic root/static probes

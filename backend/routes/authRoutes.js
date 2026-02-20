@@ -17,6 +17,7 @@ const {
   forgotPassword,
   resetPassword,
   firebaseLogin,
+  verifyToken,
 } = require("../controllers/authController");
 
 // Strict rate limiter for auth routes (brute-force protection)
@@ -67,6 +68,9 @@ router.post(
   verifyTurnstile("login", { optional: true }),
   firebaseLogin,
 );
+
+// Verify Firebase token (for app session validation)
+router.post("/verify-token", tokenLimiter, verifyToken);
 
 // Protected auth routes
 router.get("/me", authenticate, getCurrentUser);

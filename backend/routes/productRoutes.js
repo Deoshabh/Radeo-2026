@@ -11,6 +11,7 @@ const {
   getColors,
   getSizes,
   getTopRatedProducts,
+  getRelatedProducts,
 } = require("../controllers/productController");
 
 router.get("/", getAllProducts);
@@ -22,6 +23,7 @@ router.get("/price-range", getPriceRange);
 router.get("/colors", getColors);
 router.get("/sizes", getSizes);
 router.get("/top-rated", getTopRatedProducts);
+router.get("/:id/related", getRelatedProducts);
 router.get("/:slug", getProductBySlug);
 
 module.exports = router;

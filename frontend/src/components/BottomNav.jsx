@@ -23,8 +23,9 @@ export default function BottomNav() {
 
   return (
     <nav
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 flex border-t"
+      className="lg:hidden fixed bottom-0 left-0 right-0 flex border-t"
       style={{
+        zIndex: 1000,
         backgroundColor: 'color-mix(in srgb, var(--color-background, #ffffff) 95%, transparent)',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',

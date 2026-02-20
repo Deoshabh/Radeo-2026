@@ -225,3 +225,126 @@ exports.setDefaultAddress = async (req, res) => {
       .json({ message: "Failed to set default address" });
   }
 };
+
+// ──────────────────────────────────────────────
+// POST /api/v1/user/push-token
+// Save Expo push token to user document
+// ──────────────────────────────────────────────
+exports.savePushToken = async (req, res) => {
+  try {
+    const { token, platform } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ success: false, message: "Push token is required" });
+    }
+
+    if (platform && !["ios", "android"].includes(platform)) {
+      return res.status(400).json({ success: false, message: "Platform must be ios or android" });
+    }
+
+    const updateFields = { expoPushToken: token };
+    if (platform) updateFields.pushTokenPlatform = platform;
+
+    await User.findByIdAndUpdate(req.user.id, { $set: updateFields });
+
+    res.json({ success: true, message: "Push token saved" });
+  } catch (error) {
+    log.error("savePushToken error:", error);
+    res.status(500).json({ success: false, message: "Failed to save push token" });
+  }
+};
+
+// ──────────────────────────────────────────────
+// GET /api/v1/user/recently-viewed
+// ──────────────────────────────────────────────
+exports.getRecentlyViewed = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id)
+      .select("recentlyViewed")
+      .populate({
+        path: "recentlyViewed",
+        select: "name slug price comparePrice images brand stock isOutOfStock isActive",
+        match: { isActive: true },
+      })
+      .lean();
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Filter out nulls (deleted/inactive products)
+    const products = (user.recentlyViewed || []).filter(Boolean);
+
+    res.json({ success: true, data: products });
+  } catch (error) {
+    log.error("getRecentlyViewed error:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch recently viewed" });
+  }
+};
+
+// ──────────────────────────────────────────────
+// POST /api/v1/user/recently-viewed/:productId
+// Add a product to the recently viewed list (max 20, most recent first)
+// ──────────────────────────────────────────────
+exports.addRecentlyViewed = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const mongoose = require("mongoose");
+
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({ success: false, message: "Invalid product ID" });
+    }
+
+    // Remove if already exists (to re-add at front), then prepend
+    await User.findByIdAndUpdate(req.user.id, {
+      $pull: { recentlyViewed: productId },
+    });
+
+    await User.findByIdAndUpdate(req.user.id, {
+      $push: {
+        recentlyViewed: {
+          $each: [productId],
+          $position: 0,
+          $slice: 20, // Keep only the 20 most recent
+        },
+      },
+    });
+
+    res.json({ success: true, message: "Product added to recently viewed" });
+  } catch (error) {
+    log.error("addRecentlyViewed error:", error);
+    res.status(500).json({ success: false, message: "Failed to add to recently viewed" });
+  }
+};
+
+// ──────────────────────────────────────────────
+// PATCH /api/v1/user/notification-preferences
+// ──────────────────────────────────────────────
+exports.updateNotificationPreferences = async (req, res) => {
+  try {
+    const allowed = ["orders", "promotions", "newArrivals", "priceDrops"];
+    const updates = {};
+
+    for (const key of allowed) {
+      if (typeof req.body[key] === "boolean") {
+        updates[`notificationPreferences.${key}`] = req.body[key];
+      }
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ success: false, message: "No valid preferences provided" });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { $set: updates },
+      { new: true },
+    ).select("notificationPreferences");
+
+    res.json({ success: true, data: user.notificationPreferences });
+  } catch (error) {
+    log.error("updateNotificationPreferences error:", error);
+    res.status(500).json({ success: false, message: "Failed to update preferences" });
+  }
+};
+

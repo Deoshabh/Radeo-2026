@@ -291,6 +291,31 @@ export const adminAPI = {
   updateSeoSettings: (seoSettings) => api.put('/admin/seo', { seoSettings }),
   autoGenerateSeo: (type) => api.post('/admin/seo/auto-generate', { type }),
   auditSeo: () => api.get('/admin/seo/audit'),
+
+  // ── Mobile App Management ──────────────────────────
+  // Dashboard
+  getAppStats: () => api.get("/admin/app/stats"),
+  getAppAnalytics: (period) => api.get("/admin/app/analytics", { params: { period } }),
+
+  // Config
+  getAppConfig: () => api.get("/app/config"),
+  updateAppConfig: (data) => api.put("/admin/app/config", data),
+
+  // Banners
+  getAppBanners: () => api.get("/admin/app/banners"),
+  createAppBanner: (data) => api.post("/admin/app/banners", data),
+  updateAppBanner: (id, data) => api.patch(`/admin/app/banners/${id}`, data),
+  deleteAppBanner: (id) => api.delete(`/admin/app/banners/${id}`),
+  reorderAppBanners: (orderedIds) => api.patch("/admin/app/banners/reorder", { orderedIds }),
+
+  // Push Notifications
+  sendAppNotification: (data) => api.post("/admin/app/notifications/send", data),
+  getNotificationHistory: (params) => api.get("/admin/app/notifications/history", { params }),
+  getNotificationTargetCount: (params) => api.get("/admin/app/notifications/target-count", { params }),
+
+  // Helpers
+  searchAppUsers: (q) => api.get("/admin/app/users/search", { params: { q } }),
+  getAppCities: () => api.get("/admin/app/cities"),
 };
 
 export const categoryAPI = {

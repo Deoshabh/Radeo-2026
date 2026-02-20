@@ -82,6 +82,27 @@ const userSchema = new mongoose.Schema(
 
     resetPasswordToken: String,
     resetPasswordExpires: Date,
+
+    // ─── App-specific fields (React Native) ────────────────
+    expoPushToken: { type: String, default: "" },
+    fcmToken: { type: String, default: "" },
+    pushTokenPlatform: { type: String, enum: ["ios", "android", ""], default: "" },
+
+    recentlyViewed: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Product",
+      },
+    ],
+
+    sizePreference: { type: String, default: "" },
+
+    notificationPreferences: {
+      orders: { type: Boolean, default: true },
+      promotions: { type: Boolean, default: true },
+      newArrivals: { type: Boolean, default: true },
+      priceDrops: { type: Boolean, default: true },
+    },
   },
   {
     timestamps: true,

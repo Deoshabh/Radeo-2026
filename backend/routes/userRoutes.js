@@ -4,6 +4,10 @@ const { authenticate } = require("../middleware/auth");
 const {
   getProfile,
   updateProfile,
+  savePushToken,
+  getRecentlyViewed,
+  addRecentlyViewed,
+  updateNotificationPreferences,
 } = require("../controllers/userController");
 const {
   getAddresses,
@@ -21,5 +25,11 @@ router.post("/addresses", authenticate, createAddress);
 router.patch("/addresses/:id", authenticate, updateAddress);
 router.delete("/addresses/:id", authenticate, deleteAddress);
 router.patch("/addresses/:id/default", authenticate, setDefaultAddress);
+
+// App-specific routes
+router.post("/push-token", authenticate, savePushToken);
+router.get("/recently-viewed", authenticate, getRecentlyViewed);
+router.post("/recently-viewed/:productId", authenticate, addRecentlyViewed);
+router.patch("/notification-preferences", authenticate, updateNotificationPreferences);
 
 module.exports = router;

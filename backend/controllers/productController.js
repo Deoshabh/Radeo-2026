@@ -480,3 +480,36 @@ exports.getSizes = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+// GET /api/v1/products/:id/related
+// Returns up to 10 products from the same category, excluding the current product
+exports.getRelatedProducts = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const limit = Math.min(parseInt(req.query.limit) || 10, 20);
+
+    const cacheKey = `products:related:${id}:${limit}`;
+
+    const related = await getOrSetCache(cacheKey, async () => {
+      // Find the source product to get its category
+      const product = await Product.findById(id).select("category").lean();
+      if (!product) return [];
+
+      return Product.find({
+        _id: { $ne: id },
+        category: product.category,
+        isActive: true,
+      })
+        .select("name slug price comparePrice images brand stock isOutOfStock")
+        .sort({ featured: -1, createdAt: -1 })
+        .limit(limit)
+        .lean()
+        .then((docs) => docs.map(hydrateInStock));
+    }, 600); // Cache 10 minutes
+
+    res.json({ success: true, data: related });
+  } catch (error) {
+    log.error("Get related products error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};

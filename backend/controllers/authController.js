@@ -755,3 +755,86 @@ exports.firebaseLogin = async (req, res, next) => {
     next(err);
   }
 };
+
+/* =====================
+   Verify Token (lightweight — for app session validation)
+   POST /api/v1/auth/verify-token
+   Expects: { firebaseToken } in body (same as firebaseLogin)
+   Returns: user profile without creating new JWT tokens
+===================== */
+exports.verifyToken = async (req, res, next) => {
+  try {
+    const { firebaseToken } = req.body;
+
+    if (!firebaseToken) {
+      return res.status(400).json({
+        success: false,
+        message: "Firebase token is required",
+      });
+    }
+
+    let decodedToken;
+    try {
+      const tokenHash = crypto.createHash("sha256").update(firebaseToken).digest("hex");
+      const cacheKey = `firebase:token:${tokenHash}`;
+
+      try {
+        const cached = await cacheClient.get(cacheKey);
+        if (cached) decodedToken = JSON.parse(cached);
+      } catch { /* cache miss */ }
+
+      if (!decodedToken) {
+        decodedToken = await admin.auth().verifyIdToken(firebaseToken);
+        try {
+          await cacheClient.set(cacheKey, JSON.stringify(decodedToken), "EX", 300);
+        } catch { /* non-critical */ }
+      }
+    } catch (error) {
+      log.error("verify-token: Firebase token verification failed", error);
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or expired Firebase token",
+        code: error.code === "auth/id-token-expired" ? "TOKEN_EXPIRED" : "INVALID_TOKEN",
+      });
+    }
+
+    // Find user by Firebase UID
+    const user = await User.findOne({ firebaseUid: decodedToken.uid }).select(
+      "name email phone role profilePicture emailVerified phoneVerified authProvider notificationPreferences sizePreference isBlocked",
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found. Please complete registration first.",
+        code: "USER_NOT_FOUND",
+      });
+    }
+
+    if (user.isBlocked) {
+      return res.status(403).json({
+        success: false,
+        message: "Your account has been blocked",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        profilePicture: user.profilePicture,
+        emailVerified: user.emailVerified,
+        phoneVerified: user.phoneVerified,
+        authProvider: user.authProvider,
+        notificationPreferences: user.notificationPreferences,
+        sizePreference: user.sizePreference,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};

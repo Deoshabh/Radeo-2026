@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import anime from 'animejs';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FiGrid, FiPackage, FiShoppingBag, FiUsers, FiTag, FiPercent, FiStar, FiArrowLeft, FiSettings, FiSearch, FiBarChart2, FiDatabase, FiFilter, FiFileText } from 'react-icons/fi';
+import { FiGrid, FiPackage, FiShoppingBag, FiUsers, FiTag, FiPercent, FiStar, FiArrowLeft, FiSettings, FiSearch, FiBarChart2, FiDatabase, FiFilter, FiFileText, FiSmartphone } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 import { AdminProvider, useAdmin } from '@/context/AdminContext';
 import AdminCommandPalette from '@/components/admin/AdminCommandPalette';
@@ -140,6 +140,7 @@ function AdminLayoutContent({ children }) {
     { href: '/admin/inventory', icon: FiDatabase, label: 'Inventory' },
     { href: '/admin/filters', icon: FiFilter, label: 'Filters' },
     { href: '/admin/cms', icon: FiFileText, label: 'CMS' },
+    { href: '/admin/app', icon: FiSmartphone, label: 'Mobile App' },
     { href: '/admin/settings', icon: FiSettings, label: 'Settings' },
   ];
 
