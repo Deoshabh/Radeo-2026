@@ -138,7 +138,7 @@ export default function RadeoHome() {
       root.querySelectorAll(cls).forEach(el => { if (!el.closest(`.${s.hero}`)) observer.observe(el); });
     }, 100);
     return () => { clearTimeout(timer); observer.disconnect(); };
-  }, []);
+  }, [products]); // Re-run when products load so new .revealCard elements get observed
 
   /* ── Parallax ── */
   useEffect(() => {
