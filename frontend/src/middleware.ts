@@ -5,9 +5,25 @@ import type { NextRequest } from 'next/server';
  * Server-side middleware for admin route protection.
  * Checks for the presence of an access token and validates the role claim.
  * Full auth verification still happens on the backend — this is a fast first gate.
+ *
+ * Also blocks non-GET/HEAD requests to page routes to prevent
+ * "Failed to parse body as FormData" errors from bots sending POST to pages.
  */
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const method = request.method;
+
+  // Block POST/PUT/PATCH/DELETE to page routes (not API, not _next, not static assets)
+  // Next.js 14 tries to parse these as Server Action FormData and crashes
+  if (
+    method !== 'GET' &&
+    method !== 'HEAD' &&
+    !pathname.startsWith('/api/') &&
+    !pathname.startsWith('/_next/') &&
+    !pathname.includes('.')
+  ) {
+    return new NextResponse(null, { status: 405, statusText: 'Method Not Allowed' });
+  }
 
   // Only protect admin routes
   if (!pathname.startsWith('/admin')) {
@@ -54,5 +70,13 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization)
+     * - favicon.ico, sitemap.xml, robots.txt
+     */
+    '/((?!_next/static|_next/image|favicon\\.ico|sitemap\\.xml|robots\\.txt).*)',
+  ],
 };
